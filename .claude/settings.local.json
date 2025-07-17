@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(npm run dev:*)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(brew tap:*)",
+      "Bash(brew install:*)",
+      "Bash(brew services start:*)",
+      "Bash(./start.sh:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(npm start)",
+      "Bash(find:*)"
+    ],
+    "deny": []
+  }
+}
