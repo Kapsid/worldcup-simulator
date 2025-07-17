@@ -42,6 +42,7 @@
                   <div class="country-info">
                     <h1>{{ tournament.name }}</h1>
                     <p class="host-label">Hosted by {{ tournament.hostCountry }}</p>
+                    <p class="tournament-type">{{ formatTournamentType(tournament.type) }}</p>
                   </div>
                 </div>
                 
@@ -90,23 +91,14 @@
                     </div>
                   </div>
                   
-                  <div class="form-group">
-                    <label for="editHost">Host Country</label>
-                    <select 
-                      id="editHost"
-                      v-model="editForm.selectedCountryCode" 
-                      class="input select"
-                      :class="{ 'error': editErrors.hostCountry }"
-                    >
-                      <option 
-                        v-for="country in countries" 
-                        :key="country.code"
-                        :value="country.code"
-                      >
-                        {{ country.flag }} {{ country.name }}
-                      </option>
-                    </select>
-                    <span v-if="editErrors.hostCountry" class="field-error">{{ editErrors.hostCountry }}</span>
+                  <div class="form-info">
+                    <p class="info-label">Host Country</p>
+                    <p class="info-value">{{ getCountryFlag(tournament.hostCountryCode) }} {{ tournament.hostCountry }}</p>
+                  </div>
+                  
+                  <div class="form-info">
+                    <p class="info-label">Tournament Type</p>
+                    <p class="info-value">{{ formatTournamentType(tournament.type) }}</p>
                   </div>
                   
                   <div class="form-actions">
@@ -145,70 +137,54 @@
           <!-- Tournament Content -->
           <div class="tournament-content">
             <div class="content-grid">
-              <!-- Tournament Settings -->
-              <div class="content-card glass-white">
-                <div class="card-header">
-                  <h3>Tournament Settings</h3>
-                  <i class="fas fa-cog"></i>
-                </div>
-                <div class="card-content">
-                  <div class="setting-item">
-                    <span class="setting-label">Maximum Teams</span>
-                    <span class="setting-value">{{ tournament.settings?.maxTeams || 32 }}</span>
-                  </div>
-                  <div class="setting-item">
-                    <span class="setting-label">Group Stage</span>
-                    <span class="setting-value">
-                      <i :class="tournament.settings?.groupStage ? 'fas fa-check text-success' : 'fas fa-times text-danger'"></i>
-                      {{ tournament.settings?.groupStage ? 'Enabled' : 'Disabled' }}
-                    </span>
-                  </div>
-                  <div class="setting-item">
-                    <span class="setting-label">Knockout Stage</span>
-                    <span class="setting-value">
-                      <i :class="tournament.settings?.knockoutStage ? 'fas fa-check text-success' : 'fas fa-times text-danger'"></i>
-                      {{ tournament.settings?.knockoutStage ? 'Enabled' : 'Disabled' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
               <!-- Quick Actions -->
-              <div class="content-card glass-white">
+              <div class="content-card glass-white full-width">
                 <div class="card-header">
                   <h3>Quick Actions</h3>
                   <i class="fas fa-bolt"></i>
                 </div>
                 <div class="card-content">
-                  <div class="action-grid">
-                    <button @click="toggleTeamManagement" class="action-card" :disabled="tournament.status !== 'draft'">
-                      <i class="fas fa-users"></i>
-                      <span>Manage Teams</span>
+                  <div class="action-grid-full">
+                    <!-- Qualification Process -->
+                    <button @click="toggleQualifying" class="action-card" :class="{ 'action-selected': showQualifying }" :disabled="tournament.status === 'cancelled'">
+                      <i class="fas fa-flag-checkered"></i>
+                      <span>Qualifying</span>
                     </button>
-                    <button @click="toggleDraw" class="action-card" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
-                      <i class="fas fa-random"></i>
-                      <span>World Cup Draw</span>
-                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
-                      <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
-                      <small v-else-if="tournament.teamCount !== 32" style="display: block; font-size: 0.7rem; color: #666;">Teams: {{ tournament.teamCount }}/32</small>
-                    </button>
+                    
+                    <!-- Start Tournament -->
                     <button class="action-card" :disabled="!tournament.canActivate || tournament.status !== 'draft'" @click="activateTournament">
                       <i class="fas fa-play"></i>
                       <span>Start Tournament</span>
                     </button>
-                    <button @click="toggleMatches" class="action-card" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
+                    
+                    <!-- World Cup Draw -->
+                    <button @click="toggleDraw" class="action-card" :class="{ 'action-selected': showDraw }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled' || (anyGroupMatchPlayed && tournament.status !== 'completed')">
+                      <i class="fas fa-random"></i>
+                      <span>World Cup Draw</span>
+                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
+                      <small v-else-if="anyGroupMatchPlayed" style="display: block; font-size: 0.7rem; color: #666;">Matches already played</small>
+                      <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
+                      <small v-else-if="tournament.teamCount !== 32" style="display: block; font-size: 0.7rem; color: #666;">Teams: {{ tournament.teamCount }}/32</small>
+                    </button>
+                    
+                    <!-- Group Matches -->
+                    <button @click="toggleMatches" class="action-card" :class="{ 'action-selected': showMatches }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
                       <i class="fas fa-futbol"></i>
                       <span>Group Matches</span>
                       <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
                       <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
                     </button>
-                    <button @click="toggleStandings" class="action-card" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
+                    
+                    <!-- Group Standings -->
+                    <button @click="toggleStandings" class="action-card" :class="{ 'action-selected': showStandings }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
                       <i class="fas fa-chart-bar"></i>
                       <span>Group Standings</span>
                       <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
                       <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
                     </button>
-                    <button @click="toggleKnockout" class="action-card" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
+                    
+                    <!-- Knockout Stage -->
+                    <button @click="toggleKnockout" class="action-card" :class="{ 'action-selected': showKnockout }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
                       <i class="fas fa-trophy"></i>
                       <span>Knockout Stage</span>
                       <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
@@ -235,8 +211,27 @@
                 </div>
               </div>
 
+              <!-- Qualifying -->
+              <div v-if="showQualifying" id="qualifying" class="content-card glass-white full-width">
+                <div class="card-header">
+                  <h3>Qualifying</h3>
+                  <button @click="toggleQualifying" class="close-section-btn">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="card-content">
+                  <QualificationManager 
+                    :tournament="tournament"
+                    :read-only="tournament.status === 'completed'"
+                    @qualification-started="handleQualificationStarted"
+                    @matchday-simulated="handleMatchdaySimulated"
+                    @qualification-completed="handleQualificationCompleted"
+                  />
+                </div>
+              </div>
+
               <!-- World Cup Draw -->
-              <div v-if="showDraw" class="content-card glass-white full-width">
+              <div v-if="showDraw" id="draw" class="content-card glass-white full-width">
                 <div class="card-header">
                   <h3>World Cup Draw</h3>
                   <button @click="toggleDraw" class="close-section-btn">
@@ -253,7 +248,7 @@
               </div>
 
               <!-- Group Matches -->
-              <div v-if="showMatches" class="content-card glass-white full-width">
+              <div v-if="showMatches" id="matches" class="content-card glass-white full-width">
                 <div class="card-header">
                   <h3>Group Matches</h3>
                   <button @click="toggleMatches" class="close-section-btn">
@@ -272,7 +267,7 @@
               </div>
 
               <!-- Group Standings -->
-              <div v-if="showStandings" class="content-card glass-white full-width">
+              <div v-if="showStandings" id="standings" class="content-card glass-white full-width">
                 <div class="card-header">
                   <h3>Group Standings</h3>
                   <button @click="toggleStandings" class="close-section-btn">
@@ -289,7 +284,7 @@
               </div>
 
               <!-- Knockout Stage -->
-              <div v-if="showKnockout" class="content-card glass-white full-width">
+              <div v-if="showKnockout" id="knockout" class="content-card glass-white full-width">
                 <div class="card-header">
                   <h3>Knockout Stage</h3>
                   <button @click="toggleKnockout" class="close-section-btn">
@@ -307,48 +302,6 @@
                 </div>
               </div>
 
-              <!-- Tournament Progress -->
-              <div class="content-card glass-white full-width">
-                <div class="card-header">
-                  <h3>Tournament Progress</h3>
-                  <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="card-content">
-                  <div class="progress-info">
-                    <p>This tournament is currently in <strong>{{ formatStatus(tournament.status) }}</strong> status.</p>
-                    <div class="team-progress">
-                      <div class="progress-item">
-                        <span class="progress-label">Teams Selected:</span>
-                        <span class="progress-value">{{ tournament.teamCount || 0 }}/{{ tournament.settings?.maxTeams || 32 }}</span>
-                      </div>
-                      <div class="progress-item">
-                        <span class="progress-label">Status:</span>
-                        <span class="progress-value" :class="{ 'ready': tournament.canActivate, 'not-ready': !tournament.canActivate }">
-                          {{ tournament.canActivate ? 'Ready to Activate' : 'Teams Needed' }}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="progress-steps">
-                      <div class="step" :class="{ active: tournament.teamCount === tournament.settings?.maxTeams }">
-                        <i class="fas fa-users"></i>
-                        <span>Team Setup</span>
-                      </div>
-                      <div class="step" :class="{ active: tournament.status === 'active' || tournament.status === 'completed' }">
-                        <i class="fas fa-random"></i>
-                        <span>World Cup Draw</span>
-                      </div>
-                      <div class="step" :class="{ active: tournament.status === 'completed' }">
-                        <i class="fas fa-play"></i>
-                        <span>Group Stage</span>
-                      </div>
-                      <div class="step" :class="{ active: tournament.status === 'completed' }">
-                        <i class="fas fa-trophy"></i>
-                        <span>Completed</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -360,6 +313,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import TeamManagement from '../components/TeamManagement.vue'
+import QualificationManager from '../components/QualificationManager.vue'
 import WorldCupDraw from '../components/WorldCupDraw.vue'
 import GroupMatches from '../components/GroupMatches.vue'
 import GroupStandings from '../components/GroupStandings.vue'
@@ -370,6 +324,7 @@ export default {
   components: {
     AppHeader,
     TeamManagement,
+    QualificationManager,
     WorldCupDraw,
     GroupMatches,
     GroupStandings,
@@ -388,14 +343,16 @@ export default {
       editErrors: {},
       editForm: {
         name: '',
-        status: '',
-        selectedCountryCode: ''
+        status: ''
       },
       showTeamManagement: false,
+      showQualifying: false,
       showDraw: false,
       showMatches: false,
       showStandings: false,
-      showKnockout: false
+      showKnockout: false,
+      allGroupMatchesCompleted: false,
+      anyGroupMatchPlayed: false
     }
   },
   mounted() {
@@ -411,6 +368,7 @@ export default {
     this.loadTournament()
     this.loadCountries()
     this.loadUserProfile()
+    this.checkGroupMatchesCompletion()
   },
   methods: {
     async loadTournament() {
@@ -455,8 +413,7 @@ export default {
         // Initialize edit form with current values
         this.editForm = {
           name: this.tournament.name,
-          status: this.tournament.status,
-          selectedCountryCode: this.tournament.hostCountryCode
+          status: this.tournament.status
         }
         this.editErrors = {}
         this.updateError = ''
@@ -474,10 +431,6 @@ export default {
         this.editErrors.name = 'Tournament name must not exceed 100 characters'
       }
       
-      if (!this.editForm.selectedCountryCode) {
-        this.editErrors.hostCountry = 'Please select a host country'
-      }
-      
       return Object.keys(this.editErrors).length === 0
     },
     
@@ -490,8 +443,6 @@ export default {
       this.updateError = ''
       
       try {
-        const selectedCountry = this.countries.find(c => c.code === this.editForm.selectedCountryCode)
-        
         const token = localStorage.getItem('token')
         const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}`, {
           method: 'PUT',
@@ -501,9 +452,7 @@ export default {
           },
           body: JSON.stringify({
             name: this.editForm.name,
-            status: this.editForm.status,
-            hostCountry: selectedCountry.name,
-            hostCountryCode: selectedCountry.code
+            status: this.editForm.status
           })
         })
         
@@ -537,6 +486,14 @@ export default {
       return statusMap[status] || status
     },
     
+    formatTournamentType(type) {
+      const typeMap = {
+        'manual': 'Manual Team Selection',
+        'qualification': 'Qualification Process'
+      }
+      return typeMap[type] || type
+    },
+    
     formatDate(dateString) {
       return new Date(dateString).toLocaleDateString()
     },
@@ -548,6 +505,20 @@ export default {
         this.showMatches = false
         this.showStandings = false
         this.showKnockout = false
+        this.showQualifying = false
+        this.scrollToSection('team-management')
+      }
+    },
+    
+    toggleQualifying() {
+      this.showQualifying = !this.showQualifying
+      if (this.showQualifying) {
+        this.showTeamManagement = false
+        this.showDraw = false
+        this.showMatches = false
+        this.showStandings = false
+        this.showKnockout = false
+        this.scrollToSection('qualifying')
       }
     },
 
@@ -555,9 +526,11 @@ export default {
       this.showDraw = !this.showDraw
       if (this.showDraw) {
         this.showTeamManagement = false
+        this.showQualifying = false
         this.showMatches = false
         this.showStandings = false
         this.showKnockout = false
+        this.scrollToSection('draw')
       }
     },
 
@@ -565,19 +538,39 @@ export default {
       // Reload tournament data to get updated team count and activation status
       await this.loadTournament()
     },
+    
+    async handleQualificationStarted() {
+      // Reload tournament data when qualification starts
+      await this.loadTournament()
+    },
+    
+    async handleMatchdaySimulated() {
+      // Reload tournament data when matchday is simulated
+      await this.loadTournament()
+    },
+    
+    async handleQualificationCompleted() {
+      // Reload tournament data when qualification is completed
+      await this.loadTournament()
+      // Potentially show a success message or redirect
+    },
 
     handleProceedToMatches() {
       this.showDraw = false
       this.showMatches = true
+      // Re-check match status
+      this.checkGroupMatchesCompletion()
     },
 
     toggleMatches() {
       this.showMatches = !this.showMatches
       if (this.showMatches) {
         this.showTeamManagement = false
+        this.showQualifying = false
         this.showDraw = false
         this.showStandings = false
         this.showKnockout = false
+        this.scrollToSection('matches')
       }
     },
 
@@ -585,9 +578,11 @@ export default {
       this.showStandings = !this.showStandings
       if (this.showStandings) {
         this.showTeamManagement = false
+        this.showQualifying = false
         this.showDraw = false
         this.showMatches = false
         this.showKnockout = false
+        this.scrollToSection('standings')
       }
     },
 
@@ -595,9 +590,11 @@ export default {
       this.showKnockout = !this.showKnockout
       if (this.showKnockout) {
         this.showTeamManagement = false
+        this.showQualifying = false
         this.showDraw = false
         this.showMatches = false
         this.showStandings = false
+        this.scrollToSection('knockout')
       }
     },
 
@@ -605,18 +602,24 @@ export default {
       if (this.$refs.standings) {
         this.$refs.standings.refreshStandings()
       }
+      // Re-check match status
+      this.checkGroupMatchesCompletion()
     },
 
     handleMatchSimulated() {
       if (this.$refs.standings) {
         this.$refs.standings.refreshStandings()
       }
+      // Re-check match status after simulation
+      this.checkGroupMatchesCompletion()
     },
 
     handleMatchdaySimulated() {
       if (this.$refs.standings) {
         this.$refs.standings.refreshStandings()
       }
+      // Re-check match status after matchday simulation
+      this.checkGroupMatchesCompletion()
     },
 
     handleBracketGenerated() {
@@ -686,6 +689,38 @@ export default {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       this.$router.push('/')
+    },
+    
+    scrollToSection(sectionId) {
+      this.$nextTick(() => {
+        const element = document.getElementById(sectionId)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    },
+    
+    async checkGroupMatchesCompletion() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/matches`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const matches = await response.json()
+          const completedMatches = matches.filter(match => match.status === 'completed')
+          // All group matches completed when all existing matches are completed
+          this.allGroupMatchesCompleted = matches.length > 0 && completedMatches.length === matches.length
+          
+          // Check if any group match has been played
+          this.anyGroupMatchPlayed = completedMatches.length > 0
+        }
+      } catch (error) {
+        console.error('Error checking group matches completion:', error)
+      }
     }
   }
 }
@@ -791,6 +826,13 @@ export default {
   margin: 0;
 }
 
+.tournament-type {
+  color: var(--fifa-blue);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-semibold);
+  margin: 4px 0 0 0;
+}
+
 .status-section {
   display: flex;
   align-items: center;
@@ -876,6 +918,32 @@ export default {
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.form-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.info-label {
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.info-value {
+  color: var(--gray);
+  font-size: 1rem;
+  background: rgba(0, 102, 204, 0.05);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 102, 204, 0.1);
+  margin: 0;
 }
 
 .field-error {
@@ -997,6 +1065,12 @@ export default {
   gap: 16px;
 }
 
+.action-grid-full {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
 .action-card {
   display: flex;
   flex-direction: column;
@@ -1021,6 +1095,16 @@ export default {
 .action-card:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.action-card.action-selected {
+  background: var(--fifa-blue);
+  color: var(--white);
+  border-color: var(--fifa-dark-blue);
+}
+
+.action-card.action-selected:not(:disabled) {
+  background: var(--fifa-dark-blue);
 }
 
 .close-section-btn {
@@ -1124,6 +1208,7 @@ export default {
   font-weight: var(--font-weight-medium);
 }
 
+
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
@@ -1163,7 +1248,7 @@ export default {
     flex-direction: column;
   }
   
-  .action-grid {
+  .action-grid, .action-grid-full {
     grid-template-columns: 1fr;
   }
   

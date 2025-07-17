@@ -15,7 +15,11 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(npm start)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git commit:*)",
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(kill:*)"
     ],
     "deny": []
   }

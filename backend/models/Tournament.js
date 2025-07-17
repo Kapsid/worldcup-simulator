@@ -27,8 +27,13 @@ const tournamentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'active', 'completed', 'cancelled'],
+    enum: ['draft', 'active', 'completed', 'cancelled', 'qualification_complete'],
     default: 'draft'
+  },
+  type: {
+    type: String,
+    enum: ['manual', 'qualification'],
+    required: true
   },
   lastOpenedAt: {
     type: Date,
@@ -59,7 +64,15 @@ const tournamentSchema = new mongoose.Schema({
   canActivate: {
     type: Boolean,
     default: false
-  }
+  },
+  qualifiedTeams: [{
+    teamId: String,
+    name: String,
+    country: String,
+    flag: String,
+    confederation: String,
+    qualificationMethod: String
+  }]
 }, {
   timestamps: true
 })

@@ -28,16 +28,6 @@
           <i v-else class="fas fa-fast-forward"></i>
           {{ tournamentCompleted ? 'Tournament Completed' : 'Simulate All Rounds' }}
         </button>
-        <button 
-          v-if="bracket.matches"
-          @click="fixBracket" 
-          :disabled="loading"
-          class="btn-warning"
-        >
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-wrench"></i>
-          Fix Bracket
-        </button>
       </div>
     </div>
 
@@ -93,6 +83,7 @@
               :key="match._id"
               class="knockout-match"
               :class="{ 'match-completed': match.status === 'completed' }"
+              @click="showMatchDetail(match)"
             >
               <div class="match-header">
                 <span class="match-label">{{ getMatchLabel(match) }}</span>
@@ -519,43 +510,14 @@ export default {
       }
     },
 
-    async fixBracket() {
-      if (!confirm('This will fix the bracket advancement logic. Are you sure you want to continue?')) {
-        return
-      }
-
-      this.loading = true
-      this.error = ''
-
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/fix`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          this.bracket = data.bracket
-          this.error = 'Bracket fixed successfully!'
-          setTimeout(() => {
-            this.error = ''
-          }, 3000)
-        } else {
-          this.error = data.error || 'Failed to fix bracket'
-        }
-      } catch (error) {
-        this.error = 'Network error. Please try again.'
-      } finally {
-        this.loading = false
-      }
-    },
 
     toggleBracketView() {
       this.showBracketView = !this.showBracketView
+    },
+
+    showMatchDetail(match) {
+      // Navigate to match detail page
+      this.$router.push(`/tournament/${this.tournament._id}/match/${match._id}`)
     }
   }
 }
@@ -718,6 +680,7 @@ export default {
   border-radius: var(--radius-lg);
   padding: 24px;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .knockout-match:hover {

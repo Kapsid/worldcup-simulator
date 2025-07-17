@@ -1,6 +1,6 @@
 import TournamentTeam from '../models/TournamentTeam.js'
 import Tournament from '../models/Tournament.js'
-import { getCountryByCode, getBest31PlusHost } from '../data/countries.js'
+import { getCountryByCode, getCountryByName, getBest31PlusHost } from '../data/countries.js'
 
 class TeamManagementService {
   async addTeamToTournament(tournamentId, userId, countryCode) {
@@ -247,6 +247,124 @@ class TeamManagementService {
       return team
     } catch (error) {
       console.error('Error getting team details:', error)
+      throw error
+    }
+  }
+
+  async addQualifiedTeamsToTournament(tournamentId, userId) {
+    try {
+      // Verify tournament belongs to user
+      const tournament = await Tournament.findOne({ _id: tournamentId, createdBy: userId })
+      if (!tournament) {
+        throw new Error('Tournament not found')
+      }
+
+      // Check if tournament is already active
+      if (tournament.status !== 'draft') {
+        throw new Error('Cannot modify teams in an active tournament')
+      }
+
+      // Get qualification data
+      const QualificationService = await import('./QualificationService.js')
+      const qualificationData = await QualificationService.default.getQualificationData(tournamentId)
+      
+      if (!qualificationData) {
+        throw new Error('No qualification data found')
+      }
+
+      if (!qualificationData.completed) {
+        throw new Error('Qualification not completed')
+      }
+
+      // Clear existing teams first
+      await TournamentTeam.deleteMany({ tournament: tournamentId })
+
+      // Add qualified teams
+      const teams = []
+      
+      // First, add the host country
+      const hostCountry = getCountryByCode(tournament.hostCountryCode)
+      if (hostCountry) {
+        const hostTeam = new TournamentTeam({
+          tournament: tournamentId,
+          countryCode: hostCountry.code,
+          countryName: hostCountry.name,
+          countryFlag: hostCountry.flag,
+          fifaRanking: hostCountry.fifaRanking || 999,
+          isHost: true
+        })
+        await hostTeam.save()
+        teams.push(hostTeam)
+      }
+      
+      // Get all qualified teams from the qualification groups
+      for (const confederation of qualificationData.confederations) {
+        const qualifiedFromConfederation = confederation.qualifiedTeams || []
+        
+        for (const qualifiedTeam of qualifiedFromConfederation) {
+          // Skip if it's the host country (already added)
+          if (qualifiedTeam.teamId && qualifiedTeam.teamId.includes(tournament.hostCountryCode)) {
+            continue
+          }
+          
+          let countryCode = null
+          let countryName = null
+          let countryFlag = null
+          let fifaRanking = 999
+          
+          // Extract country code from teamId (e.g., "uefa_GER" -> "GER")
+          if (qualifiedTeam.teamId) {
+            countryCode = qualifiedTeam.teamId.split('_')[1]
+            const country = getCountryByCode(countryCode)
+            if (country) {
+              countryName = country.name
+              countryFlag = country.flag
+              fifaRanking = country.fifaRanking || 999
+            }
+          }
+          
+          // Fallback to team data
+          if (!countryName) {
+            countryName = qualifiedTeam.name || qualifiedTeam.country
+            countryFlag = qualifiedTeam.flag || '🏆'
+            fifaRanking = qualifiedTeam.ranking || 999
+            
+            // Try to extract country code from name if not available
+            if (!countryCode && countryName) {
+              countryCode = countryName.substring(0, 3).toUpperCase()
+            }
+          }
+          
+          // Validate required fields
+          if (!countryCode || !countryName) {
+            console.error('ERROR: Missing required fields for qualified team:', {
+              countryCode,
+              countryName,
+              qualifiedTeam
+            })
+            continue // Skip this team instead of throwing error
+          }
+
+          const tournamentTeam = new TournamentTeam({
+            tournament: tournamentId,
+            countryCode: countryCode,
+            countryName: countryName,
+            countryFlag: countryFlag,
+            fifaRanking: fifaRanking,
+            isHost: false
+          })
+
+          await tournamentTeam.save()
+          teams.push(tournamentTeam)
+        }
+      }
+
+      // Update tournament team count
+      await this.updateTournamentStatus(tournamentId)
+
+      return teams
+    } catch (error) {
+      console.error('Error adding qualified teams:', error)
       throw error
     }
   }

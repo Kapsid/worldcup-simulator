@@ -66,6 +66,7 @@
             :key="match._id"
             class="match-card"
             :class="{ 'match-completed': match.status === 'completed' }"
+            @click="showMatchDetail(match)"
           >
             <div class="match-header">
               <span class="group-label">Group {{ match.group.groupLetter }}</span>
@@ -112,14 +113,6 @@
               </div>
             </div>
             
-            <div v-if="match.status === 'completed'" class="match-result">
-              <span class="result-text">
-                {{ getMatchResult(match) }}
-              </span>
-              <span class="simulated-time">
-                {{ formatTime(match.simulatedAt) }}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -130,8 +123,11 @@
 </template>
 
 <script>
+
 export default {
   name: 'GroupMatches',
+  components: {},
+
   props: {
     tournament: {
       type: Object,
@@ -185,6 +181,11 @@ export default {
       } catch (error) {
         console.error('Error loading matches:', error)
       }
+    },
+
+    showMatchDetail(match) {
+      // Navigate to match detail page
+      this.$router.push(`/tournament/${this.tournament._id}/match/${match._id}`)
     },
 
     async generateMatches() {
@@ -296,19 +297,6 @@ export default {
       return matchdayMatches.length > 0 && matchdayMatches.every(match => match.status === 'completed')
     },
 
-    getMatchResult(match) {
-      if (match.homeScore > match.awayScore) {
-        return `${match.homeTeam.countryName} wins`
-      } else if (match.homeScore < match.awayScore) {
-        return `${match.awayTeam.countryName} wins`
-      } else {
-        return 'Draw'
-      }
-    },
-
-    formatTime(dateString) {
-      return new Date(dateString).toLocaleTimeString()
-    }
   }
 }
 </script>
@@ -404,16 +392,17 @@ export default {
 
 .matches-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .match-card {
   background: var(--white);
   border: 1px solid rgba(0, 102, 204, 0.1);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border-radius: var(--radius-md);
+  padding: 12px;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .match-card:hover {
@@ -430,20 +419,20 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .group-label {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-blue);
   background: rgba(0, 102, 204, 0.1);
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .match-status {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--gray);
 }
 
@@ -451,26 +440,26 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .team {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
 }
 
 .team-flag {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .team-name {
   font-weight: var(--font-weight-semibold);
   color: var(--fifa-dark-blue);
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .clickable-team {
@@ -494,15 +483,15 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin: 0 20px;
+  gap: 4px;
+  margin: 0 12px;
 }
 
 .score-display {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.5rem;
+  gap: 6px;
+  font-size: 1.2rem;
   font-weight: var(--font-weight-bold);
   color: var(--fifa-dark-blue);
 }
@@ -515,10 +504,10 @@ export default {
   background: var(--fifa-blue);
   color: var(--white);
   border: none;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   transition: all 0.3s ease;
 }
 
@@ -531,23 +520,6 @@ export default {
   cursor: not-allowed;
 }
 
-.match-result {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.result-text {
-  font-weight: var(--font-weight-semibold);
-  color: var(--fifa-green);
-}
-
-.simulated-time {
-  font-size: 0.8rem;
-  color: var(--gray);
-}
 
 .error-message {
   color: var(--fifa-red);
@@ -572,15 +544,27 @@ export default {
 
   .matches-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
-  .match-teams {
-    flex-direction: column;
-    gap: 16px;
+  .match-card {
+    padding: 10px;
+  }
+
+  .team-flag {
+    font-size: 1.2rem;
+  }
+
+  .team-name {
+    font-size: 0.7rem;
+  }
+
+  .score-display {
+    font-size: 1rem;
   }
 
   .match-score {
-    margin: 0;
+    margin: 0 8px;
   }
 }
 </style>

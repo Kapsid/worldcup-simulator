@@ -93,39 +93,167 @@ class MatchService {
     }
   }
 
-  simulateRealisticScore() {
+  // Convert FIFA ranking to power (1-20 scale)
+  calculateTeamPower(fifaRanking) {
+    // FIFA rankings: 1 = best, 211 = worst
+    // Convert to power: 20 = best, 1 = worst
+    if (fifaRanking <= 5) return 20      // Top 5 teams
+    if (fifaRanking <= 10) return 19     // Top 10 teams  
+    if (fifaRanking <= 15) return 18     // Top 15 teams
+    if (fifaRanking <= 20) return 17     // Top 20 teams
+    if (fifaRanking <= 30) return 16     // Top 30 teams
+    if (fifaRanking <= 40) return 15     // Top 40 teams
+    if (fifaRanking <= 50) return 14     // Top 50 teams
+    if (fifaRanking <= 60) return 13     // Top 60 teams
+    if (fifaRanking <= 70) return 12     // Top 70 teams
+    if (fifaRanking <= 80) return 11     // Top 80 teams
+    if (fifaRanking <= 90) return 10     // Top 90 teams
+    if (fifaRanking <= 100) return 9     // Top 100 teams
+    if (fifaRanking <= 110) return 8     // Top 110 teams
+    if (fifaRanking <= 120) return 7     // Top 120 teams
+    if (fifaRanking <= 130) return 6     // Top 130 teams
+    if (fifaRanking <= 140) return 5     // Top 140 teams
+    if (fifaRanking <= 150) return 4     // Top 150 teams
+    if (fifaRanking <= 170) return 3     // Top 170 teams
+    if (fifaRanking <= 190) return 2     // Top 190 teams
+    return 1                             // Bottom teams
+  }
+
+  simulateRealisticScore(homeTeam, awayTeam) {
+    const homePower = this.calculateTeamPower(homeTeam.fifaRanking)
+    const awayPower = this.calculateTeamPower(awayTeam.fifaRanking)
+    
+    // Calculate power difference (-19 to +19)
+    const powerDiff = homePower - awayPower
+    
+    // Home advantage (+2 power boost)
+    const adjustedPowerDiff = powerDiff + 2
+    
+    // Surprise factor (1% chance, very limited based on power gap)
+    let surpriseFactor = 0
+    if (Math.random() < 0.01) {
+      // Maximum surprise severely limited by power difference
+      const maxSurprise = Math.max(2, 8 - Math.abs(powerDiff) / 2)
+      surpriseFactor = Math.random() < 0.5 ? -maxSurprise : maxSurprise
+    }
+    const finalPowerDiff = adjustedPowerDiff + surpriseFactor
+    
+    // Base outcomes with realistic football scores (slightly increased goal probability)
     const outcomes = [
-      { home: 0, away: 0, weight: 8 },
-      { home: 1, away: 0, weight: 15 },
-      { home: 0, away: 1, weight: 15 },
-      { home: 1, away: 1, weight: 12 },
-      { home: 2, away: 0, weight: 12 },
-      { home: 0, away: 2, weight: 12 },
-      { home: 2, away: 1, weight: 10 },
-      { home: 1, away: 2, weight: 10 },
-      { home: 3, away: 0, weight: 6 },
-      { home: 0, away: 3, weight: 6 },
-      { home: 2, away: 2, weight: 4 },
-      { home: 3, away: 1, weight: 4 },
-      { home: 1, away: 3, weight: 4 },
-      { home: 4, away: 0, weight: 2 },
-      { home: 0, away: 4, weight: 2 },
-      { home: 3, away: 2, weight: 2 },
-      { home: 2, away: 3, weight: 2 },
-      { home: 4, away: 1, weight: 1 },
-      { home: 1, away: 4, weight: 1 },
-      { home: 5, away: 0, weight: 0.5 },
-      { home: 0, away: 5, weight: 0.5 },
-      { home: 3, away: 3, weight: 0.5 },
-      { home: 4, away: 2, weight: 0.5 },
-      { home: 2, away: 4, weight: 0.5 }
+      { home: 0, away: 0, weight: 7 },   // Boring draw (slightly reduced)
+      { home: 1, away: 0, weight: 14 },  // Classic 1-0
+      { home: 0, away: 1, weight: 14 },  // Away win
+      { home: 1, away: 1, weight: 11 },  // Standard draw
+      { home: 2, away: 0, weight: 13 },  // Comfortable win (slightly increased)
+      { home: 0, away: 2, weight: 13 },  // Away dominance (slightly increased)
+      { home: 2, away: 1, weight: 11 },  // Exciting match (slightly increased)
+      { home: 1, away: 2, weight: 11 },  // Comeback win (slightly increased)
+      { home: 3, away: 0, weight: 7 },   // Crushing victory (slightly increased)
+      { home: 0, away: 3, weight: 7 },   // Away thrashing (slightly increased)
+      { home: 2, away: 2, weight: 5 },   // High-scoring draw (slightly increased)
+      { home: 3, away: 1, weight: 5 },   // Dominant display (slightly increased)
+      { home: 1, away: 3, weight: 5 },   // Away masterclass (slightly increased)
+      { home: 4, away: 0, weight: 2.5 }, // Demolition (slightly increased)
+      { home: 0, away: 4, weight: 2.5 }, // Away destruction (slightly increased)
+      { home: 3, away: 2, weight: 2.5 }, // Thriller (slightly increased)
+      { home: 2, away: 3, weight: 2.5 }, // Away thriller (slightly increased)
+      { home: 4, away: 1, weight: 1.2 }, // Statement win (slightly increased)
+      { home: 1, away: 4, weight: 1.2 }, // Away statement (slightly increased)
+      { home: 5, away: 0, weight: 0.6 }, // Humiliation (slightly increased)
+      { home: 0, away: 5, weight: 0.6 }, // Away humiliation (slightly increased)
+      { home: 3, away: 3, weight: 0.6 }, // Goal fest (slightly increased)
+      { home: 4, away: 2, weight: 0.6 }, // High-scoring (slightly increased)
+      { home: 2, away: 4, weight: 0.6 }, // Away goal fest (slightly increased)
+      // Crazy results (very rare)
+      { home: 6, away: 0, weight: 0.1 }, // Historic thrashing
+      { home: 0, away: 6, weight: 0.1 }, // Historic away win
+      { home: 5, away: 1, weight: 0.1 }, // Demolition job
+      { home: 1, away: 5, weight: 0.1 }, // Away demolition
+      { home: 4, away: 3, weight: 0.1 }, // Epic encounter
+      { home: 3, away: 4, weight: 0.1 }, // Epic away win
+      { home: 7, away: 0, weight: 0.05 }, // Legendary result
+      { home: 0, away: 7, weight: 0.05 }, // Legendary away win
+      { home: 5, away: 2, weight: 0.05 }, // Crazy scoreline
+      { home: 2, away: 5, weight: 0.05 }, // Crazy away win
+      { home: 4, away: 4, weight: 0.05 }, // Insane draw
+      { home: 6, away: 1, weight: 0.02 }, // Unbelievable
+      { home: 1, away: 6, weight: 0.02 }, // Unbelievable away
+      { home: 8, away: 0, weight: 0.01 }, // Once in a lifetime
+      { home: 0, away: 8, weight: 0.01 }  // Historic upset
     ]
     
-    const totalWeight = outcomes.reduce((sum, outcome) => sum + outcome.weight, 0)
+    // Adjust weights based on power difference
+    const adjustedOutcomes = outcomes.map(outcome => {
+      let weight = outcome.weight
+      const goalDiff = outcome.home - outcome.away
+      
+      // If home team is stronger, favor home wins
+      if (finalPowerDiff > 0) {
+        if (goalDiff > 0) {
+          weight *= Math.pow(1.2, Math.min(finalPowerDiff, 18)) // Boost home wins significantly
+        } else if (goalDiff < 0) {
+          weight *= Math.pow(0.8, Math.min(finalPowerDiff, 18)) // Reduce away wins significantly
+        } else {
+          // Draws become much less likely with bigger power differences
+          weight *= Math.pow(0.9, Math.min(finalPowerDiff / 1.5, 12))
+        }
+      }
+      // If away team is stronger, favor away wins
+      else if (finalPowerDiff < 0) {
+        if (goalDiff < 0) {
+          weight *= Math.pow(1.2, Math.min(Math.abs(finalPowerDiff), 18)) // Boost away wins significantly
+        } else if (goalDiff > 0) {
+          weight *= Math.pow(0.8, Math.min(Math.abs(finalPowerDiff), 18)) // Reduce home wins significantly
+        } else {
+          // Draws become much less likely with bigger power differences
+          weight *= Math.pow(0.9, Math.min(Math.abs(finalPowerDiff) / 1.5, 12))
+        }
+      }
+      
+      // For large power differences (>8), heavily favor the stronger team
+      if (Math.abs(finalPowerDiff) > 8) {
+        const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
+        if (favoredGoalDiff < 0) {
+          // Upset result - make it extremely rare
+          weight *= 0.05 // 95% reduction
+        } else if (favoredGoalDiff === 0 && Math.abs(goalDiff) === 0) {
+          // 0-0 draw with huge power gap - very rare
+          weight *= 0.1 // 90% reduction
+        } else if (favoredGoalDiff > 0 && favoredGoalDiff < 2) {
+          // Small wins when big difference expected - reduce slightly
+          weight *= 0.7
+        }
+      }
+      
+      // For extreme power differences (>12), make upsets virtually impossible
+      if (Math.abs(finalPowerDiff) > 12) {
+        const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
+        if (favoredGoalDiff < 0) {
+          weight *= 0.01 // 99% reduction - almost impossible
+        } else if (favoredGoalDiff === 0) {
+          weight *= 0.02 // 98% reduction for any draw
+        } else if (favoredGoalDiff < 3) {
+          // Expect big wins with huge power gaps
+          weight *= 0.5
+        }
+      }
+      
+      // Big power differences increase chances of big scorelines
+      if (Math.abs(finalPowerDiff) > 8) {
+        const totalGoals = outcome.home + outcome.away
+        if (totalGoals >= 4) {
+          weight *= 1.5 // Increase high-scoring games
+        }
+      }
+      
+      return { ...outcome, weight }
+    })
+    
+    const totalWeight = adjustedOutcomes.reduce((sum, outcome) => sum + outcome.weight, 0)
     const random = Math.random() * totalWeight
     
     let currentWeight = 0
-    for (const outcome of outcomes) {
+    for (const outcome of adjustedOutcomes) {
       currentWeight += outcome.weight
       if (random <= currentWeight) {
         return { homeScore: outcome.home, awayScore: outcome.away }
@@ -148,7 +276,7 @@ class MatchService {
         throw new Error('Match already completed')
       }
       
-      const { homeScore, awayScore } = this.simulateRealisticScore()
+      const { homeScore, awayScore } = this.simulateRealisticScore(match.homeTeam, match.awayTeam)
       
       match.homeScore = homeScore
       match.awayScore = awayScore

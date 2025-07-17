@@ -173,6 +173,32 @@
             <span v-if="createErrors.hostCountry" class="field-error">{{ createErrors.hostCountry }}</span>
           </div>
           
+          <div class="form-group">
+            <label for="tournamentType">Tournament Type</label>
+            <select 
+              id="tournamentType"
+              v-model="createForm.type" 
+              required
+              class="input select"
+              :class="{ 'error': createErrors.type }"
+            >
+              <option value="">Select tournament type...</option>
+              <option value="manual">Manual Team Selection</option>
+              <option value="qualification">Qualification Process</option>
+            </select>
+            <span v-if="createErrors.type" class="field-error">{{ createErrors.type }}</span>
+            <div class="type-description">
+              <p v-if="createForm.type === 'manual'" class="description-text">
+                <i class="fas fa-info-circle"></i>
+                You will manually select and add teams to the tournament
+              </p>
+              <p v-if="createForm.type === 'qualification'" class="description-text">
+                <i class="fas fa-info-circle"></i>
+                Teams will go through a qualification process to enter the tournament
+              </p>
+            </div>
+          </div>
+          
           <div class="modal-actions">
             <button type="button" @click="closeCreateModal" class="btn-secondary">
               Cancel
@@ -212,7 +238,8 @@ export default {
       createErrors: {},
       createForm: {
         name: '',
-        selectedCountryCode: ''
+        selectedCountryCode: '',
+        type: ''
       },
       showDeleteModal: false,
       tournamentToDelete: null,
@@ -285,6 +312,10 @@ export default {
         this.createErrors.hostCountry = 'Please select a host country'
       }
       
+      if (!this.createForm.type) {
+        this.createErrors.type = 'Please select a tournament type'
+      }
+      
       return Object.keys(this.createErrors).length === 0
     },
     
@@ -309,7 +340,8 @@ export default {
           body: JSON.stringify({
             name: this.createForm.name,
             hostCountry: selectedCountry.name,
-            hostCountryCode: selectedCountry.code
+            hostCountryCode: selectedCountry.code,
+            type: this.createForm.type
           })
         })
         
@@ -368,7 +400,8 @@ export default {
       this.showCreateModal = false
       this.createForm = {
         name: '',
-        selectedCountryCode: ''
+        selectedCountryCode: '',
+        type: ''
       }
       this.createErrors = {}
       this.createError = ''
@@ -834,6 +867,23 @@ export default {
 .btn-danger:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.type-description {
+  margin-top: 8px;
+}
+
+.description-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fifa-blue);
+  font-size: 0.85rem;
+  background: rgba(0, 102, 204, 0.1);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--fifa-blue);
+  margin: 0;
 }
 
 @media (max-width: 768px) {

@@ -7,6 +7,7 @@ import Dashboard from './views/Dashboard.vue'
 import Tournament from './views/Tournament.vue'
 import TournamentDetail from './views/TournamentDetail.vue'
 import TeamDetail from './views/TeamDetail.vue'
+import MatchDetail from './views/MatchDetail.vue'
 import Profile from './views/Profile.vue'
 import './styles/global.css'
 
@@ -18,6 +19,7 @@ const routes = [
   { path: '/tournament/:id', component: TournamentDetail },
   { path: '/tournament/:id/edit', component: TournamentDetail },
   { path: '/tournament/:tournamentId/team/:teamId', component: TeamDetail },
+  { path: '/tournament/:tournamentId/match/:matchId', component: MatchDetail },
   { path: '/profile', component: Profile }
 ]
 

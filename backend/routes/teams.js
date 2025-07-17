@@ -121,6 +121,32 @@ router.post('/:tournamentId/auto-fill', authenticateToken, async (req, res) => {
   }
 })
 
+// Add qualified teams to tournament
+router.post('/:tournamentId/add-qualified', authenticateToken, async (req, res) => {
+  try {
+    const teams = await TeamManagementService.addQualifiedTeamsToTournament(
+      req.params.tournamentId,
+      req.user.userId
+    )
+
+    res.json({
+      teams,
+      message: 'Qualified teams added successfully'
+    })
+  } catch (error) {
+    console.error('Error adding qualified teams:', error)
+    if (error.message === 'Tournament not found') {
+      return res.status(404).json({ error: error.message })
+    }
+    if (error.message === 'Cannot modify teams in an active tournament' ||
+        error.message === 'No qualification data found' ||
+        error.message === 'Qualification not completed') {
+      return res.status(400).json({ error: error.message })
+    }
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // Clear all teams
 router.delete('/:tournamentId/clear', authenticateToken, async (req, res) => {
   try {

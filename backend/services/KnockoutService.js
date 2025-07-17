@@ -170,7 +170,7 @@ class KnockoutService {
         throw new Error('Match is not ready for simulation')
       }
 
-      const result = this.simulateKnockoutResult()
+      const result = this.simulateKnockoutResult(match.homeTeam, match.awayTeam)
       
       match.homeScore = result.homeScore
       match.awayScore = result.awayScore
@@ -194,8 +194,8 @@ class KnockoutService {
     }
   }
 
-  simulateKnockoutResult() {
-    const regularTime = this.simulateRegularTime()
+  simulateKnockoutResult(homeTeam, awayTeam) {
+    const regularTime = this.simulateRegularTime(homeTeam, awayTeam)
     
     if (regularTime.homeScore !== regularTime.awayScore) {
       return {
@@ -210,7 +210,7 @@ class KnockoutService {
       }
     }
 
-    const extraTime = this.simulateExtraTime()
+    const extraTime = this.simulateExtraTime(homeTeam, awayTeam)
     const totalHome = regularTime.homeScore + extraTime.homeScore
     const totalAway = regularTime.awayScore + extraTime.awayScore
     
@@ -241,27 +241,93 @@ class KnockoutService {
     }
   }
 
-  simulateRegularTime() {
-    const outcomes = [
-      { home: 0, away: 0, weight: 12 },
-      { home: 1, away: 0, weight: 15 },
-      { home: 0, away: 1, weight: 15 },
-      { home: 1, away: 1, weight: 18 },
-      { home: 2, away: 0, weight: 12 },
-      { home: 0, away: 2, weight: 12 },
-      { home: 2, away: 1, weight: 8 },
-      { home: 1, away: 2, weight: 8 },
-      { home: 3, away: 0, weight: 4 },
-      { home: 0, away: 3, weight: 4 },
-      { home: 2, away: 2, weight: 6 },
-      { home: 3, away: 1, weight: 3 },
-      { home: 1, away: 3, weight: 3 }
-    ]
-    
-    return this.selectWeightedOutcome(outcomes)
+  // Convert FIFA ranking to power (1-20 scale)
+  calculateTeamPower(fifaRanking) {
+    if (fifaRanking <= 5) return 20      // Top 5 teams
+    if (fifaRanking <= 10) return 19     // Top 10 teams  
+    if (fifaRanking <= 15) return 18     // Top 15 teams
+    if (fifaRanking <= 20) return 17     // Top 20 teams
+    if (fifaRanking <= 30) return 16     // Top 30 teams
+    if (fifaRanking <= 40) return 15     // Top 40 teams
+    if (fifaRanking <= 50) return 14     // Top 50 teams
+    if (fifaRanking <= 60) return 13     // Top 60 teams
+    if (fifaRanking <= 70) return 12     // Top 70 teams
+    if (fifaRanking <= 80) return 11     // Top 80 teams
+    if (fifaRanking <= 90) return 10     // Top 90 teams
+    if (fifaRanking <= 100) return 9     // Top 100 teams
+    if (fifaRanking <= 110) return 8     // Top 110 teams
+    if (fifaRanking <= 120) return 7     // Top 120 teams
+    if (fifaRanking <= 130) return 6     // Top 130 teams
+    if (fifaRanking <= 140) return 5     // Top 140 teams
+    if (fifaRanking <= 150) return 4     // Top 150 teams
+    if (fifaRanking <= 170) return 3     // Top 170 teams
+    if (fifaRanking <= 190) return 2     // Top 190 teams
+    return 1                             // Bottom teams
   }
 
-  simulateExtraTime() {
+  simulateRegularTime(homeTeam, awayTeam) {
+    const homePower = this.calculateTeamPower(homeTeam.fifaRanking)
+    const awayPower = this.calculateTeamPower(awayTeam.fifaRanking)
+    
+    // Calculate power difference (-19 to +19)
+    const powerDiff = homePower - awayPower
+    
+    // Home advantage (+2 power boost)
+    const adjustedPowerDiff = powerDiff + 2
+    
+    // Surprise factor (0.5% chance in knockouts, very limited)
+    let surpriseFactor = 0
+    if (Math.random() < 0.005) {
+      const maxSurprise = Math.max(2, 6 - Math.abs(powerDiff) / 2)
+      surpriseFactor = Math.random() < 0.5 ? -maxSurprise : maxSurprise
+    }
+    const finalPowerDiff = adjustedPowerDiff + surpriseFactor
+    
+    // Knockout matches tend to be more cagey but slightly more goals and closer games
+    const outcomes = [
+      { home: 0, away: 0, weight: 10 },   // Cagey affair (slightly reduced)
+      { home: 1, away: 0, weight: 14 },   // Narrow home win (slightly reduced)
+      { home: 0, away: 1, weight: 14 },   // Away edge (slightly reduced)
+      { home: 1, away: 1, weight: 20 },   // Tight contest (increased for closer games)
+      { home: 2, away: 0, weight: 11 },   // Home control (slightly reduced)
+      { home: 0, away: 2, weight: 11 },   // Away dominance (slightly reduced)
+      { home: 2, away: 1, weight: 10 },   // Close victory (increased for closer games)
+      { home: 1, away: 2, weight: 10 },   // Away win (increased for closer games)
+      { home: 3, away: 0, weight: 3 },    // Convincing (slightly reduced)
+      { home: 0, away: 3, weight: 3 },    // Away statement (slightly reduced)
+      { home: 2, away: 2, weight: 8 },    // Entertaining (increased for closer games)
+      { home: 3, away: 1, weight: 2.5 },  // Dominant display (slightly reduced)
+      { home: 1, away: 3, weight: 2.5 },  // Away masterclass (slightly reduced)
+      // Rare knockout scorelines
+      { home: 4, away: 0, weight: 0.8 },  // Demolition (slightly reduced)
+      { home: 0, away: 4, weight: 0.8 },  // Away thrashing (slightly reduced)
+      { home: 3, away: 2, weight: 1.5 },  // Thriller (increased for closer games)
+      { home: 2, away: 3, weight: 1.5 },  // Away thriller (increased for closer games)
+      { home: 4, away: 1, weight: 0.4 },  // Statement (slightly reduced)
+      { home: 1, away: 4, weight: 0.4 },  // Away statement (slightly reduced)
+      { home: 5, away: 0, weight: 0.1 },  // Historic
+      { home: 0, away: 5, weight: 0.1 }   // Historic away
+    ]
+    
+    return this.selectWeightedOutcome(outcomes, finalPowerDiff)
+  }
+
+  simulateExtraTime(homeTeam, awayTeam) {
+    const homePower = this.calculateTeamPower(homeTeam.fifaRanking)
+    const awayPower = this.calculateTeamPower(awayTeam.fifaRanking)
+    
+    // Calculate power difference for extra time
+    const powerDiff = homePower - awayPower
+    const adjustedPowerDiff = powerDiff + 1 // Smaller home advantage in extra time
+    
+    // Almost no surprise factor in extra time (0.2% chance)
+    let surpriseFactor = 0
+    if (Math.random() < 0.002) {
+      const maxSurprise = Math.max(1, 3 - Math.abs(powerDiff) / 2)
+      surpriseFactor = Math.random() < 0.5 ? -maxSurprise : maxSurprise
+    }
+    const finalPowerDiff = adjustedPowerDiff + surpriseFactor
+    
     const outcomes = [
       { home: 0, away: 0, weight: 40 },
       { home: 1, away: 0, weight: 20 },
@@ -273,7 +339,7 @@ class KnockoutService {
       { home: 1, away: 2, weight: 0.5 }
     ]
     
-    return this.selectWeightedOutcome(outcomes)
+    return this.selectWeightedOutcome(outcomes, finalPowerDiff)
   }
 
   simulatePenalties() {
@@ -289,12 +355,70 @@ class KnockoutService {
     return { homeScore, awayScore }
   }
 
-  selectWeightedOutcome(outcomes) {
-    const totalWeight = outcomes.reduce((sum, outcome) => sum + outcome.weight, 0)
+  selectWeightedOutcome(outcomes, powerDiff = 0) {
+    // Adjust weights based on power difference if provided
+    const adjustedOutcomes = outcomes.map(outcome => {
+      let weight = outcome.weight
+      
+      if (powerDiff !== 0) {
+        const goalDiff = outcome.home - outcome.away
+        
+        // If home team is stronger, favor home wins (but less extreme for closer knockout games)
+        if (powerDiff > 0) {
+          if (goalDiff > 0) {
+            weight *= Math.pow(1.15, Math.min(powerDiff, 15)) // Boost home wins less extreme
+          } else if (goalDiff < 0) {
+            weight *= Math.pow(0.85, Math.min(powerDiff, 15)) // Reduce away wins less extreme
+          } else {
+            // Draws slightly more likely in knockout (closer games)
+            weight *= Math.pow(0.92, Math.min(powerDiff / 1.5, 10))
+          }
+        }
+        // If away team is stronger, favor away wins (but less extreme for closer knockout games)
+        else if (powerDiff < 0) {
+          if (goalDiff < 0) {
+            weight *= Math.pow(1.15, Math.min(Math.abs(powerDiff), 15)) // Boost away wins less extreme
+          } else if (goalDiff > 0) {
+            weight *= Math.pow(0.85, Math.min(Math.abs(powerDiff), 15)) // Reduce home wins less extreme
+          } else {
+            // Draws slightly more likely in knockout (closer games)
+            weight *= Math.pow(0.92, Math.min(Math.abs(powerDiff) / 1.5, 10))
+          }
+        }
+        
+        // For large power differences (>6), favor the stronger team but allow more upsets in knockout
+        if (Math.abs(powerDiff) > 6) {
+          const favoredGoalDiff = powerDiff > 0 ? goalDiff : -goalDiff
+          if (favoredGoalDiff < 0) {
+            weight *= 0.12 // 88% reduction - upsets slightly more possible in knockout
+          } else if (favoredGoalDiff === 0 && goalDiff === 0) {
+            weight *= 0.3 // 70% reduction for draws - closer games in knockout
+          } else if (favoredGoalDiff > 0 && favoredGoalDiff < 2) {
+            weight *= 0.7 // Expect wins but closer margins
+          }
+        }
+        
+        // For extreme power differences (>10), still allow some upsets in knockout drama
+        if (Math.abs(powerDiff) > 10) {
+          const favoredGoalDiff = powerDiff > 0 ? goalDiff : -goalDiff
+          if (favoredGoalDiff < 0) {
+            weight *= 0.05 // 95% reduction - rare but possible upsets
+          } else if (favoredGoalDiff === 0) {
+            weight *= 0.08 // 92% reduction for draws - closer knockout games
+          } else if (favoredGoalDiff < 2) {
+            weight *= 0.4 // Expect wins but closer margins in knockout
+          }
+        }
+      }
+      
+      return { ...outcome, weight }
+    })
+    
+    const totalWeight = adjustedOutcomes.reduce((sum, outcome) => sum + outcome.weight, 0)
     const random = Math.random() * totalWeight
     
     let currentWeight = 0
-    for (const outcome of outcomes) {
+    for (const outcome of adjustedOutcomes) {
       currentWeight += outcome.weight
       if (random <= currentWeight) {
         return { homeScore: outcome.home, awayScore: outcome.away }
