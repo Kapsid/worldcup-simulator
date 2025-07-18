@@ -3,6 +3,12 @@ import Tournament from '../models/Tournament.js'
 import { confederations } from '../data/confederations.js'
 import { countries } from '../data/countries.js'
 
+// Create a ranking lookup map for faster access
+const rankingLookup = new Map()
+countries.forEach(country => {
+  rankingLookup.set(country.name, country.fifaRanking || 999)
+})
+
 class QualificationService {
   // Generate teams for each confederation (ALL teams, excluding host)
   generateConfederationTeams(confederationId, hostCountryCode) {
@@ -24,14 +30,23 @@ class QualificationService {
     // Sort by FIFA ranking (best teams first)
     confederationCountries.sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))
 
-    return confederationCountries.map((country, index) => ({
-      teamId: `${confederationId}_${country.code}`,
-      name: country.name,
-      country: country.name,
-      flag: country.flag,
-      ranking: country.fifaRanking || 999,
-      confederationRank: index + 1
-    }))
+    return confederationCountries.map((country, index) => {
+      const team = {
+        teamId: `${confederationId}_${country.code}`,
+        name: country.name,
+        country: country.name,
+        flag: country.flag,
+        ranking: country.fifaRanking || 999,
+        confederationRank: index + 1
+      }
+      
+      // Debug team generation
+      if (Math.random() < 0.01) { // Log 1% of teams
+        console.log('Generated team:', team)
+      }
+      
+      return team
+    })
   }
 
   // Generate groups for a confederation with equal team distribution
@@ -68,24 +83,46 @@ class QualificationService {
       let numGroups, teamsPerGroup
       
       if (confederationId === 'uefa') {
-        // UEFA: Respect maximum 7 teams per group
+        // UEFA: Prefer groups of 5-6 teams (more realistic)
+        const preferredTeamsPerGroup = [5, 6] // Prefer 5 or 6 teams per group
         const maxTeamsPerGroup = 7
-        teamsPerGroup = Math.min(maxTeamsPerGroup, Math.ceil(totalTeams / Math.max(1, qualificationSlots)))
         
-        // Find number of groups that creates equal distribution
-        for (let candidateTeamsPerGroup = teamsPerGroup; candidateTeamsPerGroup >= minTeamsPerGroup; candidateTeamsPerGroup--) {
-          if (totalTeams % candidateTeamsPerGroup === 0) {
-            // Perfect division
-            teamsPerGroup = candidateTeamsPerGroup
-            numGroups = totalTeams / candidateTeamsPerGroup
+        // First try to find perfect division with preferred sizes
+        for (const preferred of preferredTeamsPerGroup) {
+          if (totalTeams % preferred === 0) {
+            teamsPerGroup = preferred
+            numGroups = totalTeams / preferred
             break
           }
         }
         
-        // If no perfect division found, use the closest
+        // If no perfect division with preferred sizes, try all sizes from 5-7
         if (!numGroups) {
-          teamsPerGroup = Math.min(maxTeamsPerGroup, Math.ceil(totalTeams / Math.ceil(totalTeams / maxTeamsPerGroup)))
-          numGroups = Math.ceil(totalTeams / teamsPerGroup)
+          for (let candidateTeamsPerGroup = 5; candidateTeamsPerGroup <= maxTeamsPerGroup; candidateTeamsPerGroup++) {
+            if (totalTeams % candidateTeamsPerGroup === 0) {
+              teamsPerGroup = candidateTeamsPerGroup
+              numGroups = totalTeams / candidateTeamsPerGroup
+              break
+            }
+          }
+        }
+        
+        // If still no perfect division, use 5 or 6 teams per group (whichever gives closer to equal distribution)
+        if (!numGroups) {
+          const groups5 = Math.ceil(totalTeams / 5)
+          const groups6 = Math.ceil(totalTeams / 6)
+          
+          // Choose the option that minimizes variance in group sizes
+          const remainder5 = totalTeams % 5
+          const remainder6 = totalTeams % 6
+          
+          if (remainder6 === 0 || (remainder6 > remainder5 && remainder5 !== 0)) {
+            teamsPerGroup = 6
+            numGroups = groups6
+          } else {
+            teamsPerGroup = 5
+            numGroups = groups5
+          }
         }
       } else {
         // Other confederations: Find optimal equal distribution
@@ -147,7 +184,7 @@ class QualificationService {
       for (let groupIndex = 0; groupIndex < numGroups; groupIndex++) {
         if (distributedTeams[groupIndex]) {
           for (const team of distributedTeams[groupIndex]) {
-            groups[groupIndex].teams.push({
+            const groupTeam = {
               ...team,
               played: 0,
               won: 0,
@@ -157,13 +194,25 @@ class QualificationService {
               goalsAgainst: 0,
               goalDifference: 0,
               points: 0
-            })
+            }
+            
+            // Debug group team creation
+            if (Math.random() < 0.01) { // Log 1% of group teams
+              console.log('Added team to group:', {
+                name: groupTeam.name,
+                ranking: groupTeam.ranking,
+                originalRanking: team.ranking
+              })
+            }
+            
+            groups[groupIndex].teams.push(groupTeam)
           }
         }
       }
 
-      // Filter out any empty groups
-      return groups.filter(group => group.teams.length >= minTeamsPerGroup)
+      // Filter out any empty groups (for UEFA, accept groups with 5+ teams)
+      const minRequired = confederationId === 'uefa' ? 5 : minTeamsPerGroup
+      return groups.filter(group => group.teams.length >= minRequired)
     }
 
     return groups
@@ -224,32 +273,64 @@ class QualificationService {
 
     if (n < 2) return matches
 
-    // Generate all possible matches (complete round-robin)
+    // Check if this confederation plays home and away matches
+    const isDoubleRoundRobin = confederationId === 'uefa' || confederationId === 'conmebol'
+
+    // Generate all possible matches
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
-        const homeTeam = teams[i]
-        const awayTeam = teams[j]
+        const teamA = teams[i]
+        const teamB = teams[j]
         
+        // First match: teamA at home
         matches.push({
-          matchId: `${group.groupId}_${homeTeam.teamId}_vs_${awayTeam.teamId}`,
+          matchId: `${group.groupId}_${teamA.teamId}_vs_${teamB.teamId}`,
           groupId: group.groupId,
           homeTeam: {
-            teamId: homeTeam.teamId,
-            name: homeTeam.name,
-            country: homeTeam.country,
-            flag: homeTeam.flag
+            teamId: teamA.teamId,
+            name: teamA.name,
+            country: teamA.country,
+            flag: teamA.flag,
+            ranking: teamA.ranking
           },
           awayTeam: {
-            teamId: awayTeam.teamId,
-            name: awayTeam.name,
-            country: awayTeam.country,
-            flag: awayTeam.flag
+            teamId: teamB.teamId,
+            name: teamB.name,
+            country: teamB.country,
+            flag: teamB.flag,
+            ranking: teamB.ranking
           },
           homeScore: null,
           awayScore: null,
           played: false,
           date: new Date()
         })
+
+        // For UEFA and CONMEBOL, add the return match
+        if (isDoubleRoundRobin) {
+          matches.push({
+            matchId: `${group.groupId}_${teamB.teamId}_vs_${teamA.teamId}`,
+            groupId: group.groupId,
+            homeTeam: {
+              teamId: teamB.teamId,
+              name: teamB.name,
+              country: teamB.country,
+              flag: teamB.flag,
+              ranking: teamB.ranking
+            },
+            awayTeam: {
+              teamId: teamA.teamId,
+              name: teamA.name,
+              country: teamA.country,
+              flag: teamA.flag,
+              ranking: teamA.ranking
+            },
+            homeScore: null,
+            awayScore: null,
+            played: false,
+            date: new Date()
+          })
+        }
       }
     }
 
@@ -377,6 +458,12 @@ class QualificationService {
 
   // Convert FIFA ranking to power (1-20 scale)
   calculateTeamPower(fifaRanking) {
+    // Handle undefined/null rankings (fallback to worst ranking)
+    if (!fifaRanking || fifaRanking === null || fifaRanking === undefined) {
+      console.log('WARNING: calculateTeamPower called with invalid ranking:', fifaRanking)
+      return 1
+    }
+    
     if (fifaRanking <= 5) return 20      // Top 5 teams
     if (fifaRanking <= 10) return 19     // Top 10 teams  
     if (fifaRanking <= 15) return 18     // Top 15 teams
@@ -400,20 +487,49 @@ class QualificationService {
   }
 
   simulateMatch(homeTeam, awayTeam) {
-    const homePower = this.calculateTeamPower(homeTeam.ranking)
-    const awayPower = this.calculateTeamPower(awayTeam.ranking)
+    // Get rankings from lookup if missing from team object
+    let homeRanking = homeTeam.ranking || rankingLookup.get(homeTeam.name) || rankingLookup.get(homeTeam.country) || 150
+    let awayRanking = awayTeam.ranking || rankingLookup.get(awayTeam.name) || rankingLookup.get(awayTeam.country) || 150
+    
+    // Debug logging to check rankings
+    if (!homeTeam.ranking || !awayTeam.ranking) {
+      console.log('Fixed missing rankings in qualifying match:', {
+        home: { name: homeTeam.name, oldRanking: homeTeam.ranking, newRanking: homeRanking },
+        away: { name: awayTeam.name, oldRanking: awayTeam.ranking, newRanking: awayRanking }
+      })
+    }
+    
+    // Additional debug for extreme cases
+    if (Math.random() < 0.05) { // Log 5% of matches for debugging
+      console.log('Qualifying match sim:', {
+        home: `${homeTeam.name} (rank ${homeRanking})`,
+        away: `${awayTeam.name} (rank ${awayRanking})`,
+      })
+    }
+    
+    const homePower = this.calculateTeamPower(homeRanking)
+    const awayPower = this.calculateTeamPower(awayRanking)
     
     // Calculate power difference (-19 to +19)
     const powerDiff = homePower - awayPower
     
+    // Debug power calculations occasionally
+    if (Math.random() < 0.02) { // Log 2% of matches for power debugging
+      console.log('Power calculation:', {
+        home: `${homeTeam.name} (rank ${homeRanking} = power ${homePower})`,
+        away: `${awayTeam.name} (rank ${awayRanking} = power ${awayPower})`,
+        powerDiff
+      })
+    }
+    
     // Home advantage (+2 power boost)
     const adjustedPowerDiff = powerDiff + 2
     
-    // Surprise factor (1% chance, very limited based on power gap)
+    // Surprise factor for qualifying - MUCH rarer and smaller (0.5% chance instead of 1%)
     let surpriseFactor = 0
-    if (Math.random() < 0.01) {
-      // Maximum surprise severely limited by power difference
-      const maxSurprise = Math.max(2, 8 - Math.abs(powerDiff) / 2)
+    if (Math.random() < 0.005) {
+      // Maximum surprise VERY limited for qualifying
+      const maxSurprise = Math.max(1, 4 - Math.abs(powerDiff) / 3)
       surpriseFactor = Math.random() < 0.5 ? -maxSurprise : maxSurprise
     }
     const finalPowerDiff = adjustedPowerDiff + surpriseFactor
@@ -467,41 +583,53 @@ class QualificationService {
       let weight = outcome.weight
       const goalDiff = outcome.home - outcome.away
       
-      // If home team is stronger, favor home wins
+      // If home team is stronger, favor home wins - MILD for qualifying
       if (finalPowerDiff > 0) {
         if (goalDiff > 0) {
-          weight *= Math.pow(1.2, Math.min(finalPowerDiff, 18)) // Boost home wins significantly
+          weight *= Math.pow(1.15, Math.min(finalPowerDiff, 12)) // Mild boost for favorites in qualifying
         } else if (goalDiff < 0) {
-          weight *= Math.pow(0.8, Math.min(finalPowerDiff, 18)) // Reduce away wins significantly
+          weight *= Math.pow(0.85, Math.min(finalPowerDiff, 12)) // Mild reduction for upsets
         } else {
-          // Draws become much less likely with bigger power differences
-          weight *= Math.pow(0.9, Math.min(finalPowerDiff / 1.5, 12))
+          // Draws become slightly less likely with bigger power differences
+          weight *= Math.pow(0.95, Math.min(finalPowerDiff / 2, 8))
         }
       }
-      // If away team is stronger, favor away wins
+      // If away team is stronger, favor away wins - MILD for qualifying
       else if (finalPowerDiff < 0) {
         if (goalDiff < 0) {
-          weight *= Math.pow(1.2, Math.min(Math.abs(finalPowerDiff), 18)) // Boost away wins significantly
+          weight *= Math.pow(1.15, Math.min(Math.abs(finalPowerDiff), 12)) // Mild boost for favorites
         } else if (goalDiff > 0) {
-          weight *= Math.pow(0.8, Math.min(Math.abs(finalPowerDiff), 18)) // Reduce home wins significantly
+          weight *= Math.pow(0.85, Math.min(Math.abs(finalPowerDiff), 12)) // Mild reduction for upsets
         } else {
-          // Draws become much less likely with bigger power differences
-          weight *= Math.pow(0.9, Math.min(Math.abs(finalPowerDiff) / 1.5, 12))
+          // Draws become slightly less likely with bigger power differences
+          weight *= Math.pow(0.95, Math.min(Math.abs(finalPowerDiff) / 2, 8))
         }
       }
       
-      // For large power differences (>8), heavily favor the stronger team
-      if (Math.abs(finalPowerDiff) > 8) {
+      // For medium power differences (>7), start favoring the stronger team in qualifying
+      if (Math.abs(finalPowerDiff) > 7 && Math.abs(finalPowerDiff) <= 12) {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
-          // Upset result - make it extremely rare
-          weight *= 0.05 // 95% reduction
+          // Upset result - make it somewhat less likely
+          weight *= 0.75 // 25% reduction (was 40%)
         } else if (favoredGoalDiff === 0 && Math.abs(goalDiff) === 0) {
-          // 0-0 draw with huge power gap - very rare
-          weight *= 0.1 // 90% reduction
+          // 0-0 draw with decent power gap
+          weight *= 0.85 // 15% reduction (was 25%)
+        }
+      }
+      
+      // For large power differences (>12), favor the stronger team - MILD for qualifying
+      if (Math.abs(finalPowerDiff) > 12) {
+        const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
+        if (favoredGoalDiff < 0) {
+          // Upset result - make it less likely but still possible
+          weight *= 0.4 // 60% reduction (was 85%)
+        } else if (favoredGoalDiff === 0 && Math.abs(goalDiff) === 0) {
+          // 0-0 draw with huge power gap - somewhat less likely
+          weight *= 0.6 // 40% reduction (was 70%)
         } else if (favoredGoalDiff > 0 && favoredGoalDiff < 2) {
-          // Small wins when big difference expected - reduce slightly
-          weight *= 0.7
+          // Small wins when big difference expected - mild reduction
+          weight *= 0.8 // Was 0.7
         }
         
         // Big power differences should lead to more goals
@@ -511,16 +639,16 @@ class QualificationService {
         }
       }
       
-      // For extreme power differences (>12), make upsets virtually impossible
-      if (Math.abs(finalPowerDiff) > 12) {
+      // For extreme power differences (>17), make upsets rare - MODERATE for qualifying
+      if (Math.abs(finalPowerDiff) > 17) {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
-          weight *= 0.01 // 99% reduction - almost impossible
+          weight *= 0.2 // 80% reduction - rare but not impossible
         } else if (favoredGoalDiff === 0) {
-          weight *= 0.02 // 98% reduction for any draw
+          weight *= 0.4 // 60% reduction for any draw
         } else if (favoredGoalDiff < 3) {
-          // Expect big wins with huge power gaps
-          weight *= 0.5
+          // Expect bigger wins with huge power gaps
+          weight *= 0.7 // Was 0.5
         }
       }
       
@@ -600,7 +728,15 @@ class QualificationService {
     const groupResults = []
     
     for (const group of groups) {
-      const totalMatches = (group.teams.length * (group.teams.length - 1)) / 2
+      // Check if this confederation plays home and away matches
+      const isDoubleRoundRobin = confederationId === 'uefa' || confederationId === 'conmebol'
+      
+      // Calculate total matches based on format
+      const n = group.teams.length
+      const totalMatches = isDoubleRoundRobin 
+        ? n * (n - 1)  // Each team plays every other team twice
+        : (n * (n - 1)) / 2  // Each team plays every other team once
+      
       const playedMatches = group.teams.reduce((sum, team) => sum + team.played, 0) / 2
       
       if (playedMatches === totalMatches) {
