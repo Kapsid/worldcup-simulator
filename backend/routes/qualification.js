@@ -252,4 +252,30 @@ function getConfederationTotalRounds(confederationId) {
   }
 }
 
+// Simulate OFC playoff match
+router.post('/:tournamentId/simulate-ofc-playoff', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId } = req.params
+    const { matchId } = req.body
+    
+    if (!matchId) {
+      return res.status(400).json({ error: 'Match ID is required' })
+    }
+    
+    console.log(`Simulating OFC playoff match ${matchId} for tournament ${tournamentId}`)
+    
+    const result = await QualificationService.simulateOFCPlayoffMatch(tournamentId, matchId)
+    
+    res.json({
+      success: true,
+      message: 'OFC playoff match simulated successfully',
+      match: result.match,
+      updated: result.updated
+    })
+  } catch (error) {
+    console.error('Error simulating OFC playoff match:', error)
+    res.status(500).json({ error: error.message || 'Internal server error' })
+  }
+})
+
 export default router

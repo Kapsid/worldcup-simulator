@@ -124,6 +124,10 @@ class QualificationService {
             numGroups = groups5
           }
         }
+      } else if (confederationId === 'ofc') {
+        // OFC: Always 2 groups for playoff system
+        numGroups = 2
+        teamsPerGroup = Math.ceil(totalTeams / 2)
       } else {
         // Other confederations: Find optimal equal distribution
         // Try different team per group sizes to find one that divides evenly
@@ -401,7 +405,7 @@ class QualificationService {
         const teams = this.generateConfederationTeams(confederation.id, hostCountryCode)
         const groups = this.generateConfederationGroups(confederation.id, teams)
         
-        qualificationData.confederations.push({
+        const confederationData = {
           confederationId: confederation.id,
           name: confederation.name,
           started: true,
@@ -410,7 +414,20 @@ class QualificationService {
           groups: groups,
           matches: [], // Will be populated below
           qualifiedTeams: []
-        })
+        }
+
+
+        // Add playoff structure for OFC
+        if (confederation.id === 'ofc') {
+          confederationData.playoffs = {
+            available: false,
+            completed: false,
+            matches: [],
+            winner: null
+          }
+        }
+
+        qualificationData.confederations.push(confederationData)
       }
 
       // Generate all matches with proper matchday scheduling
@@ -721,6 +738,11 @@ class QualificationService {
     const confederation = confederations.find(c => c.id === confederationId)
     if (!confederation) return []
 
+    // OFC uses playoff system - no qualified teams until playoff is complete
+    if (confederationId === 'ofc') {
+      return []
+    }
+
     const qualifiedTeams = []
     const totalSlots = confederation.qualificationSlots
 
@@ -815,9 +837,95 @@ class QualificationService {
     return qualifiedTeams
   }
 
+  // Check and populate OFC playoff matches when groups are complete
+  checkAndPopulateOFCPlayoffs(confederation) {
+    if (confederation.confederationId !== 'ofc' || !confederation.playoffs) {
+      return
+    }
+
+    // Skip if already populated
+    if (confederation.playoffs.available) {
+      return
+    }
+
+    // Check if both groups are complete
+    const groupWinners = []
+    for (const group of confederation.groups) {
+      const n = group.teams.length
+      const totalMatches = (n * (n - 1)) / 2
+      const playedMatches = group.teams.reduce((sum, team) => sum + team.played, 0) / 2
+      
+      if (playedMatches === totalMatches) {
+        // Group is complete, get winner
+        const winner = group.teams[0].toObject() // Convert Mongoose subdocument to plain object
+        groupWinners.push({
+          ...winner,
+          groupName: group.name
+        })
+      }
+    }
+
+    if (groupWinners.length === 2) {
+      // Both groups complete, create playoff matches
+      const [team1, team2] = groupWinners
+
+      confederation.playoffs.matches = [
+        {
+          matchId: `ofc_playoff_${team1.teamId}_vs_${team2.teamId}_leg1`,
+          homeTeam: {
+            teamId: team1.teamId,
+            name: team1.name,
+            country: team1.country,
+            flag: team1.flag,
+            ranking: team1.ranking
+          },
+          awayTeam: {
+            teamId: team2.teamId,
+            name: team2.name,
+            country: team2.country,
+            flag: team2.flag,
+            ranking: team2.ranking
+          },
+          homeScore: null,
+          awayScore: null,
+          played: false,
+          leg: 1,
+          description: 'First Leg'
+        },
+        {
+          matchId: `ofc_playoff_${team2.teamId}_vs_${team1.teamId}_leg2`,
+          homeTeam: {
+            teamId: team2.teamId,
+            name: team2.name,
+            country: team2.country,
+            flag: team2.flag,
+            ranking: team2.ranking
+          },
+          awayTeam: {
+            teamId: team1.teamId,
+            name: team1.name,
+            country: team1.country,
+            flag: team1.flag,
+            ranking: team1.ranking
+          },
+          homeScore: null,
+          awayScore: null,
+          played: false,
+          leg: 2,
+          description: 'Second Leg'
+        }
+      ]
+
+      confederation.playoffs.available = true
+    }
+  }
+
   // Update confederation status
   updateConfederationStatus(qualification) {
     for (const confederation of qualification.confederations) {
+      // Check and populate OFC playoffs if ready
+      this.checkAndPopulateOFCPlayoffs(confederation)
+      
       const qualifiedFromConfederation = this.determineQualifiedTeams(
         confederation.confederationId, 
         confederation.groups
@@ -827,7 +935,17 @@ class QualificationService {
       
       const totalMatches = confederation.matches.length
       const playedMatches = confederation.matches.filter(m => m.played).length
-      confederation.completed = playedMatches === totalMatches && qualifiedFromConfederation.length > 0
+      
+      // For OFC, also check playoff completion
+      if (confederation.confederationId === 'ofc' && confederation.playoffs) {
+        const playoffMatches = confederation.playoffs.matches || []
+        const playoffPlayed = playoffMatches.filter(m => m.played).length
+        const allPlayoffComplete = playoffMatches.length > 0 && playoffPlayed === playoffMatches.length
+        
+        confederation.completed = playedMatches === totalMatches && allPlayoffComplete && qualifiedFromConfederation.length > 0
+      } else {
+        confederation.completed = playedMatches === totalMatches && qualifiedFromConfederation.length > 0
+      }
       
       const directQualified = qualifiedFromConfederation.filter(t => 
         t.qualificationMethod === 'direct' || 
@@ -1050,6 +1168,8 @@ class QualificationService {
     }
   }
 
+
+
   // Regenerate qualification
   async regenerateQualification(tournamentId) {
     try {
@@ -1120,6 +1240,76 @@ class QualificationService {
       }
     } catch (error) {
       console.error('Error finalizing qualification:', error)
+      throw error
+    }
+  }
+
+  // Simulate OFC playoff match
+  async simulateOFCPlayoffMatch(tournamentId, matchId) {
+    try {
+      const qualification = await Qualification.findOne({ tournament: tournamentId })
+      if (!qualification || !qualification.started) {
+        throw new Error('Qualification not started')
+      }
+
+      const ofcConfederation = qualification.confederations.find(conf => conf.confederationId === 'ofc')
+      if (!ofcConfederation || !ofcConfederation.playoffs) {
+        throw new Error('OFC playoffs not available')
+      }
+
+      if (!ofcConfederation.playoffs.available) {
+        throw new Error('OFC playoff teams not yet determined. Complete group stages first.')
+      }
+
+      const match = ofcConfederation.playoffs.matches.find(m => m.matchId === matchId)
+      if (!match) {
+        throw new Error('Playoff match not found')
+      }
+
+      if (match.played) {
+        throw new Error('Match already played')
+      }
+
+      const result = this.simulateMatch(match.homeTeam, match.awayTeam)
+      match.homeScore = result.homeScore
+      match.awayScore = result.awayScore
+      match.played = true
+
+      // Check if both legs are complete
+      const allMatchesPlayed = ofcConfederation.playoffs.matches.every(m => m.played)
+      if (allMatchesPlayed) {
+        // Calculate aggregate winner
+        const match1 = ofcConfederation.playoffs.matches[0]
+        const match2 = ofcConfederation.playoffs.matches[1]
+        
+        const team1Goals = match1.homeScore + match2.awayScore
+        const team2Goals = match1.awayScore + match2.homeScore
+        
+        let winner
+        if (team1Goals > team2Goals) {
+          winner = match1.homeTeam
+        } else if (team2Goals > team1Goals) {
+          winner = match1.awayTeam
+        } else {
+          // If tied, away goals rule or penalty shootout (simplified to random)
+          winner = Math.random() > 0.5 ? match1.homeTeam : match1.awayTeam
+        }
+
+        ofcConfederation.playoffs.winner = winner
+        ofcConfederation.playoffs.completed = true
+        
+        // Add qualified team
+        ofcConfederation.qualifiedTeams = [{
+          ...winner,
+          qualificationMethod: 'playoff_winner'
+        }]
+      }
+
+      await qualification.save()
+      
+      return { match: match, updated: true }
+    } catch (error) {
+      console.error('Error simulating OFC playoff match:', error)
       throw error
     }
   }

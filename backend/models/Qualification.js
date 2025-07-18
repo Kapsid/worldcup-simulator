@@ -85,7 +85,36 @@ const QualificationSchema = new mongoose.Schema({
       country: String,
       flag: String,
       qualificationMethod: String // 'group_winner', 'playoff_winner', etc.
-    }]
+    }],
+    playoffs: {
+      available: { type: Boolean, default: false },
+      completed: { type: Boolean, default: false },
+      matches: [{
+        matchId: String,
+        homeTeam: {
+          teamId: String,
+          name: String,
+          country: String,
+          flag: String
+        },
+        awayTeam: {
+          teamId: String,
+          name: String,
+          country: String,
+          flag: String
+        },
+        homeScore: { type: Number, default: null },
+        awayScore: { type: Number, default: null },
+        played: { type: Boolean, default: false },
+        date: Date
+      }],
+      winner: {
+        teamId: String,
+        name: String,
+        country: String,
+        flag: String
+      }
+    }
   }],
   qualifiedTeams: [{
     teamId: String,

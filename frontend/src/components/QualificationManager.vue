@@ -111,6 +111,14 @@
                   Matches
                 </button>
                 <button 
+                  v-if="activeConfederation === 'ofc'"
+                  @click="activeSubTab = 'playoff'"
+                  :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
+                >
+                  <i class="fas fa-medal"></i>
+                  Play off
+                </button>
+                <button 
                   @click="activeSubTab = 'qualified'"
                   :class="['sub-tab', { active: activeSubTab === 'qualified' }]"
                 >
@@ -225,6 +233,80 @@
                             <span v-else class="match-status played">Played</span>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Play off Tab -->
+                <div v-else-if="activeSubTab === 'playoff'" class="playoff-tab">
+                  <div class="playoff-section">
+                    <div class="playoff-header">
+                      <h4>
+                        <i class="fas fa-medal"></i>
+                        Play off Matches
+                      </h4>
+                    </div>
+                    
+                    <div class="playoff-content">
+                      <div v-if="getPlayoffMatches().length > 0" class="playoff-matches">
+                        <div v-for="match in getPlayoffMatches()" :key="match.matchId" class="playoff-match">
+                          <div class="match-info">
+                            <div class="match-leg">
+                              <i class="fas fa-medal"></i>
+                              <span>{{ match.description }}</span>
+                            </div>
+                          </div>
+                          <div class="match-teams">
+                            <div class="team home-team">
+                              <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                              <span class="team-name">{{ match.homeTeam?.name || 'TBD' }}</span>
+                            </div>
+                            <div class="match-score">
+                              <span v-if="match.played" class="score">{{ match.homeScore }} - {{ match.awayScore }}</span>
+                              <span v-else class="vs">vs</span>
+                            </div>
+                            <div class="team away-team">
+                              <span class="team-name">{{ match.awayTeam?.name || 'TBD' }}</span>
+                              <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                            </div>
+                          </div>
+                          <div class="match-actions">
+                            <button 
+                              v-if="!match.played"
+                              @click="simulatePlayoffMatch(match)"
+                              :disabled="simulatingPlayoffMatch === match.matchId"
+                              class="simulate-match-btn"
+                            >
+                              <i v-if="simulatingPlayoffMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
+                              <i v-else class="fas fa-play"></i>
+                              Simulate
+                            </button>
+                            <span v-else class="match-completed">
+                              <i class="fas fa-check"></i>
+                              Completed
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div v-if="getPlayoffWinner()" class="playoff-winner">
+                          <div class="winner-header">
+                            <h5>
+                              <i class="fas fa-trophy"></i>
+                              Playoff Winner
+                            </h5>
+                          </div>
+                          <div class="winner-team">
+                            <span class="team-flag">{{ getPlayoffWinner().flag }}</span>
+                            <span class="team-name">{{ getPlayoffWinner().name }}</span>
+                            <span class="qualification-badge">World Cup Qualified</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="empty-playoff">
+                        <i class="fas fa-calendar-alt"></i>
+                        <p>No playoff matches scheduled for this confederation yet.</p>
+                        <p class="help-text">Playoff matches will appear here when group stages are complete.</p>
                       </div>
                     </div>
                   </div>
@@ -380,6 +462,7 @@ export default {
       finalizing: false,
       regenerating: false,
       simulatingMatch: null,
+      simulatingPlayoffMatch: null,
       error: '',
       activeConfederation: 'uefa',
       confederations: [],
@@ -398,6 +481,10 @@ export default {
     // Auto-select first unfinished matchday when confederation changes
     activeConfederation() {
       this.activeMatchday = this.defaultActiveMatchday
+      // Reset playoff tab if switching away from OFC
+      if (this.activeSubTab === 'playoff' && this.activeConfederation !== 'ofc') {
+        this.activeSubTab = 'groups'
+      }
     },
     
     // Auto-select first unfinished matchday when qualification data loads
@@ -874,6 +961,80 @@ export default {
       
       // If found, return it; otherwise return the first matchday
       return unfinishedMatchday ? unfinishedMatchday.matchday : matchdays[0].matchday
+    },
+
+    // Get playoff matches for active confederation
+    getPlayoffMatches() {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        return []
+      }
+      
+      const confederation = this.qualificationData.confederations.find(
+        conf => conf.confederationId === this.activeConfederation
+      )
+      
+      if (!confederation || !confederation.playoffs || !confederation.playoffs.available) {
+        return []
+      }
+      
+      return confederation.playoffs.matches || []
+    },
+
+    // Get playoff winner
+    getPlayoffWinner() {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        return null
+      }
+      
+      const confederation = this.qualificationData.confederations.find(
+        conf => conf.confederationId === this.activeConfederation
+      )
+      
+      if (!confederation || !confederation.playoffs) {
+        return null
+      }
+      
+      return confederation.playoffs.winner
+    },
+
+    // Simulate playoff match
+    async simulatePlayoffMatch(match) {
+      if (!this.tournament._id || this.simulatingPlayoffMatch) return
+      
+      this.simulatingPlayoffMatch = match.matchId
+      this.error = ''
+      
+      try {
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-ofc-playoff`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            matchId: match.matchId
+          })
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to simulate playoff match')
+        }
+        
+        const data = await response.json()
+        console.log('Playoff match simulated:', data)
+        
+        // Refresh qualification data
+        await this.loadQualificationData()
+        
+        this.$emit('playoff-match-simulated', data)
+        
+      } catch (error) {
+        console.error('Error simulating playoff match:', error)
+        this.error = error.message
+      } finally {
+        this.simulatingPlayoffMatch = null
+      }
     }
   }
 }
@@ -1826,13 +1987,230 @@ export default {
   min-height: 400px;
 }
 
-.groups-tab, .matches-tab, .qualified-tab {
+.groups-tab, .matches-tab, .playoff-tab, .qualified-tab {
   animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.playoff-section {
+  padding: 2rem;
+}
+
+.playoff-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.playoff-header h4 {
+  font-size: 1.5rem;
+  color: var(--fifa-blue);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.playoff-header p {
+  color: var(--gray);
+  font-size: 0.9rem;
+}
+
+.empty-playoff {
+  text-align: center;
+  padding: 3rem;
+  color: var(--gray);
+}
+
+.empty-playoff i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--light-gray);
+}
+
+.empty-playoff p {
+  margin-bottom: 0.5rem;
+}
+
+.empty-playoff .help-text {
+  font-size: 0.85rem;
+  color: var(--light-gray);
+}
+
+.playoff-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.playoff-match {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+
+.playoff-match:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.playoff-match .match-info {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.match-leg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--fifa-blue);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  font-size: 0.9rem;
+}
+
+.playoff-match .match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.playoff-match .team {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.playoff-match .team.away-team {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.playoff-match .team-flag {
+  font-size: 1.5rem;
+}
+
+.playoff-match .team-name {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  font-size: 1.1rem;
+}
+
+.playoff-match .match-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--light-bg);
+}
+
+.playoff-match .score {
+  font-weight: var(--font-weight-bold);
+  font-size: 1.2rem;
+  color: var(--fifa-blue);
+}
+
+.playoff-match .vs {
+  color: var(--gray);
+  font-weight: var(--font-weight-medium);
+}
+
+.playoff-match .match-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.playoff-match .simulate-match-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--fifa-green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.playoff-match .simulate-match-btn:hover:not(:disabled) {
+  background: #28a745;
+  transform: translateY(-1px);
+}
+
+.playoff-match .simulate-match-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.playoff-match .match-completed {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fifa-green);
+  font-weight: var(--font-weight-bold);
+}
+
+.playoff-winner {
+  margin-top: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--fifa-dark-blue);
+  box-shadow: var(--shadow-hover);
+}
+
+.playoff-winner .winner-header h5 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.playoff-winner .winner-team {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.playoff-winner .team-flag {
+  font-size: 2rem;
+}
+
+.playoff-winner .team-name {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.playoff-winner .qualification-badge {
+  background: var(--fifa-dark-blue);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .no-qualified-teams {
