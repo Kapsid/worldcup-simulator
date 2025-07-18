@@ -187,54 +187,54 @@ class MatchService {
       let weight = outcome.weight
       const goalDiff = outcome.home - outcome.away
       
-      // If home team is stronger, favor home wins
+      // If home team is stronger, favor home wins - REDUCED for more randomness
       if (finalPowerDiff > 0) {
         if (goalDiff > 0) {
-          weight *= Math.pow(1.2, Math.min(finalPowerDiff, 18)) // Boost home wins significantly
+          weight *= Math.pow(1.12, Math.min(finalPowerDiff, 18)) // Mild boost for home wins
         } else if (goalDiff < 0) {
-          weight *= Math.pow(0.8, Math.min(finalPowerDiff, 18)) // Reduce away wins significantly
+          weight *= Math.pow(0.88, Math.min(finalPowerDiff, 18)) // Mild reduction for away wins
         } else {
-          // Draws become much less likely with bigger power differences
-          weight *= Math.pow(0.9, Math.min(finalPowerDiff / 1.5, 12))
+          // Draws become less likely with bigger power differences
+          weight *= Math.pow(0.94, Math.min(finalPowerDiff / 1.5, 12))
         }
       }
-      // If away team is stronger, favor away wins
+      // If away team is stronger, favor away wins - REDUCED for more randomness
       else if (finalPowerDiff < 0) {
         if (goalDiff < 0) {
-          weight *= Math.pow(1.2, Math.min(Math.abs(finalPowerDiff), 18)) // Boost away wins significantly
+          weight *= Math.pow(1.12, Math.min(Math.abs(finalPowerDiff), 18)) // Mild boost for away wins
         } else if (goalDiff > 0) {
-          weight *= Math.pow(0.8, Math.min(Math.abs(finalPowerDiff), 18)) // Reduce home wins significantly
+          weight *= Math.pow(0.88, Math.min(Math.abs(finalPowerDiff), 18)) // Mild reduction for home wins
         } else {
-          // Draws become much less likely with bigger power differences
-          weight *= Math.pow(0.9, Math.min(Math.abs(finalPowerDiff) / 1.5, 12))
+          // Draws become less likely with bigger power differences
+          weight *= Math.pow(0.94, Math.min(Math.abs(finalPowerDiff) / 1.5, 12))
         }
       }
       
-      // For large power differences (>8), heavily favor the stronger team
+      // For large power differences (>8), favor the stronger team - REDUCED for more upsets
       if (Math.abs(finalPowerDiff) > 8) {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
-          // Upset result - make it extremely rare
-          weight *= 0.05 // 95% reduction
+          // Upset result - make it less likely but still possible
+          weight *= 0.25 // 75% reduction (was 95%)
         } else if (favoredGoalDiff === 0 && Math.abs(goalDiff) === 0) {
-          // 0-0 draw with huge power gap - very rare
-          weight *= 0.1 // 90% reduction
+          // 0-0 draw with huge power gap - still possible
+          weight *= 0.35 // 65% reduction (was 90%)
         } else if (favoredGoalDiff > 0 && favoredGoalDiff < 2) {
           // Small wins when big difference expected - reduce slightly
-          weight *= 0.7
+          weight *= 0.8 // Was 0.7
         }
       }
       
-      // For extreme power differences (>12), make upsets virtually impossible
+      // For extreme power differences (>12), make upsets rare but not impossible
       if (Math.abs(finalPowerDiff) > 12) {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
-          weight *= 0.01 // 99% reduction - almost impossible
+          weight *= 0.1 // 90% reduction - rare but possible (was 99%)
         } else if (favoredGoalDiff === 0) {
-          weight *= 0.02 // 98% reduction for any draw
+          weight *= 0.15 // 85% reduction for any draw (was 98%)
         } else if (favoredGoalDiff < 3) {
           // Expect big wins with huge power gaps
-          weight *= 0.5
+          weight *= 0.65 // Was 0.5
         }
       }
       

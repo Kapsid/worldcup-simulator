@@ -796,26 +796,26 @@ class QualificationService {
       let weight = outcome.weight
       const goalDiff = outcome.home - outcome.away
       
-      // If home team is stronger, favor home wins - MILD for qualifying
+      // If home team is stronger, favor home wins - VERY MILD for qualifying
       if (finalPowerDiff > 0) {
         if (goalDiff > 0) {
-          weight *= Math.pow(1.15, Math.min(finalPowerDiff, 12)) // Mild boost for favorites in qualifying
+          weight *= Math.pow(1.08, Math.min(finalPowerDiff, 12)) // Very mild boost for favorites in qualifying
         } else if (goalDiff < 0) {
-          weight *= Math.pow(0.85, Math.min(finalPowerDiff, 12)) // Mild reduction for upsets
+          weight *= Math.pow(0.92, Math.min(finalPowerDiff, 12)) // Very mild reduction for upsets
         } else {
           // Draws become slightly less likely with bigger power differences
-          weight *= Math.pow(0.95, Math.min(finalPowerDiff / 2, 8))
+          weight *= Math.pow(0.98, Math.min(finalPowerDiff / 2, 8))
         }
       }
-      // If away team is stronger, favor away wins - MILD for qualifying
+      // If away team is stronger, favor away wins - VERY MILD for qualifying
       else if (finalPowerDiff < 0) {
         if (goalDiff < 0) {
-          weight *= Math.pow(1.15, Math.min(Math.abs(finalPowerDiff), 12)) // Mild boost for favorites
+          weight *= Math.pow(1.08, Math.min(Math.abs(finalPowerDiff), 12)) // Very mild boost for favorites
         } else if (goalDiff > 0) {
-          weight *= Math.pow(0.85, Math.min(Math.abs(finalPowerDiff), 12)) // Mild reduction for upsets
+          weight *= Math.pow(0.92, Math.min(Math.abs(finalPowerDiff), 12)) // Very mild reduction for upsets
         } else {
           // Draws become slightly less likely with bigger power differences
-          weight *= Math.pow(0.95, Math.min(Math.abs(finalPowerDiff) / 2, 8))
+          weight *= Math.pow(0.98, Math.min(Math.abs(finalPowerDiff) / 2, 8))
         }
       }
       
@@ -823,11 +823,11 @@ class QualificationService {
       if (Math.abs(finalPowerDiff) > 7 && Math.abs(finalPowerDiff) <= 12) {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
-          // Upset result - make it somewhat less likely
-          weight *= 0.75 // 25% reduction (was 40%)
+          // Upset result - make it less likely but still quite possible
+          weight *= 0.85 // 15% reduction (was 25%)
         } else if (favoredGoalDiff === 0 && Math.abs(goalDiff) === 0) {
           // 0-0 draw with decent power gap
-          weight *= 0.85 // 15% reduction (was 25%)
+          weight *= 0.9 // 10% reduction (was 15%)
         }
       }
       
@@ -836,19 +836,19 @@ class QualificationService {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
           // Upset result - make it less likely but still possible
-          weight *= 0.4 // 60% reduction (was 85%)
+          weight *= 0.6 // 40% reduction (was 60%)
         } else if (favoredGoalDiff === 0 && Math.abs(goalDiff) === 0) {
           // 0-0 draw with huge power gap - somewhat less likely
-          weight *= 0.6 // 40% reduction (was 70%)
+          weight *= 0.7 // 30% reduction (was 40%)
         } else if (favoredGoalDiff > 0 && favoredGoalDiff < 2) {
           // Small wins when big difference expected - mild reduction
-          weight *= 0.8 // Was 0.7
+          weight *= 0.85 // Was 0.8
         }
         
         // Big power differences should lead to more goals
         const totalGoals = outcome.home + outcome.away
         if (totalGoals >= 4 && favoredGoalDiff > 2) {
-          weight *= 1.5 // Increase high-scoring games when favorite dominates
+          weight *= 1.3 // Increase high-scoring games when favorite dominates (was 1.5)
         }
       }
       
@@ -856,12 +856,12 @@ class QualificationService {
       if (Math.abs(finalPowerDiff) > 17) {
         const favoredGoalDiff = finalPowerDiff > 0 ? goalDiff : -goalDiff
         if (favoredGoalDiff < 0) {
-          weight *= 0.2 // 80% reduction - rare but not impossible
+          weight *= 0.35 // 65% reduction - rare but not impossible (was 80%)
         } else if (favoredGoalDiff === 0) {
-          weight *= 0.4 // 60% reduction for any draw
+          weight *= 0.5 // 50% reduction for any draw (was 60%)
         } else if (favoredGoalDiff < 3) {
           // Expect bigger wins with huge power gaps
-          weight *= 0.7 // Was 0.5
+          weight *= 0.8 // Was 0.7
         }
       }
       
