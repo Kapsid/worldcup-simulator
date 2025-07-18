@@ -6,29 +6,6 @@
     </div>
     
     <div v-else class="qualification-content">
-      <!-- Header -->
-      <div class="qualification-header">
-        <div class="header-info">
-          <h2>FIFA World Cup Qualification</h2>
-          <p class="subtitle">Continental qualification tournaments to determine World Cup participants</p>
-        </div>
-        <div class="qualification-progress">
-          <div class="progress-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ totalQualifiedTeams }}</span>
-              <span class="stat-label">Qualified</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ totalSlots }}</span>
-              <span class="stat-label">Total Slots</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ completedMatchdays }}</span>
-              <span class="stat-label">Matchdays</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Confederation Tabs -->
       <div class="confederation-tabs">
@@ -45,36 +22,6 @@
         </button>
       </div>
 
-      <!-- Unified Qualified Teams Section -->
-      <div v-if="allQualifiedTeams.length > 0" class="unified-qualified-section">
-        <div class="qualified-header" @click="showQualifiedTeams = !showQualifiedTeams">
-          <h3>
-            <i class="fas fa-trophy"></i>
-            Qualified Teams ({{ totalQualifiedTeams }}/{{ totalSlots }})
-          </h3>
-          <button class="toggle-btn">
-            <i :class="showQualifiedTeams ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-          </button>
-        </div>
-        <div v-if="showQualifiedTeams" class="all-qualified-teams">
-          <div v-for="team in allQualifiedTeams" :key="team.teamId || team.name" class="unified-team-card">
-            <div class="team-info">
-              <span class="team-flag">{{ team.flag }}</span>
-              <span class="team-name">{{ team.name }}</span>
-            </div>
-            <div class="team-confederation">
-              <span class="confederation-badge" :class="'conf-' + team.confederation">
-                {{ team.confederationName }}
-              </span>
-            </div>
-            <div class="qualification-method">
-              <span class="method-badge" :class="getQualificationMethodClass(team.qualificationMethod)">
-                {{ formatQualificationMethod(team.qualificationMethod) }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Active Confederation Content -->
       <div v-if="activeConfederationData" class="confederation-content">
@@ -473,14 +420,17 @@ export default {
       completedMatchdays: 0,
       totalSlots: 32,
       activeMatchday: 1,
-      activeSubTab: 'groups', // groups, matches, standings
-      showQualifiedTeams: false
+      activeSubTab: 'groups' // groups, matches, standings
     }
   },
   watch: {
     // Auto-select first unfinished matchday when confederation changes
     activeConfederation() {
-      this.activeMatchday = this.defaultActiveMatchday
+      this.activeMatchday = this.defaultActiveMatchday()
+      // Reset to groups tab when switching confederations (unless it's a special tab like playoff)
+      if (this.activeSubTab !== 'playoff' || this.activeConfederation !== 'ofc') {
+        this.activeSubTab = 'groups'
+      }
       // Reset playoff tab if switching away from OFC
       if (this.activeSubTab === 'playoff' && this.activeConfederation !== 'ofc') {
         this.activeSubTab = 'groups'
@@ -489,7 +439,9 @@ export default {
     
     // Auto-select first unfinished matchday when qualification data loads
     qualificationData() {
-      this.activeMatchday = this.defaultActiveMatchday
+      this.activeMatchday = this.defaultActiveMatchday()
+      // Only auto-select matches tab on initial load, not during simulation
+      // This prevents forcing users to matches tab when they're viewing other tabs
     }
   },
   computed: {
@@ -540,6 +492,10 @@ export default {
   },
   async mounted() {
     await this.loadQualificationData()
+    // Only auto-select matches tab on initial mount if there are unfinished matches
+    if (this.qualificationStarted && this.hasUnplayedMatches()) {
+      this.activeSubTab = 'matches'
+    }
   },
   methods: {
     async loadQualificationData() {
@@ -564,6 +520,10 @@ export default {
           this.qualificationFinalized = this.qualificationData.completed
           this.qualifiedTeams = this.qualificationData.qualifiedTeams || []
           this.completedMatchdays = this.qualificationData.completedMatchdays || 0
+          
+          // Set default matchday after loading data
+          this.activeMatchday = this.defaultActiveMatchday()
+          // Tab switching is only handled on initial mount, not during refreshes
         }
       } catch (error) {
         this.error = 'Failed to load qualification data'
@@ -1060,8 +1020,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
   border-bottom: 2px solid var(--glass-border);
 }
 
@@ -1110,24 +1070,24 @@ export default {
 
 .confederation-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
 }
 
 .tab-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 1rem;
+  gap: 0.125rem;
+  padding: 0.5rem 0.75rem;
   background: rgba(255, 255, 255, 0.1);
-  border: 2px solid transparent;
-  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 120px;
+  min-width: 80px;
   text-align: center;
 }
 
@@ -1143,17 +1103,17 @@ export default {
 }
 
 .tab-flag {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .tab-name {
   font-weight: var(--font-weight-bold);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--fifa-dark-blue);
 }
 
 .tab-slots {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--gray);
 }
 
@@ -1739,144 +1699,6 @@ export default {
   }
 }
 
-/* Unified Qualified Teams Section */
-.unified-qualified-section {
-  background: linear-gradient(135deg, #4caf50, #45a049);
-  color: white;
-  padding: 2rem;
-  border-radius: var(--radius-lg);
-  margin-bottom: 2rem;
-}
-
-.qualified-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  margin-bottom: 1rem;
-  transition: all 0.2s ease;
-}
-
-.qualified-header:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
-  padding: 0.5rem 1rem;
-}
-
-.qualified-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.toggle-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.toggle-btn i {
-  color: white;
-  font-size: 1rem;
-}
-
-.all-qualified-teams {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-}
-
-.unified-team-card {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.unified-team-card .team-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-}
-
-.unified-team-card .team-flag {
-  font-size: 1.2rem;
-}
-
-.unified-team-card .team-name {
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.unified-team-card .team-confederation {
-  min-width: 60px;
-}
-
-.confederation-badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.confederation-badge.conf-host {
-  background: #ffd700;
-  color: #000;
-}
-
-.confederation-badge.conf-uefa {
-  background: #003366;
-}
-
-.confederation-badge.conf-conmebol {
-  background: #ffd700;
-  color: #000;
-}
-
-.confederation-badge.conf-concacaf {
-  background: #ff6b35;
-}
-
-.confederation-badge.conf-afc {
-  background: #ff4444;
-}
-
-.confederation-badge.conf-caf {
-  background: #4caf50;
-}
-
-.confederation-badge.conf-ofc {
-  background: #2196f3;
-}
-
-.qualification-method .method-badge {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
 
 /* Matchday Tabs */
 .matchday-tabs {

@@ -117,20 +117,6 @@
               </div>
               
               <!-- Tournament Meta -->
-              <div class="tournament-meta">
-                <div class="meta-item">
-                  <i class="fas fa-calendar"></i>
-                  <span>Created {{ formatDate(tournament.createdAt) }}</span>
-                </div>
-                <div class="meta-item">
-                  <i class="fas fa-clock"></i>
-                  <span>Last opened {{ formatDate(tournament.lastOpenedAt) }}</span>
-                </div>
-                <div class="meta-item">
-                  <i class="fas fa-user"></i>
-                  <span>Created by {{ tournament.createdBy?.name || 'Unknown' }}</span>
-                </div>
-              </div>
             </div>
           </div>
           
