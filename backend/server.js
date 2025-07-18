@@ -44,11 +44,16 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' })
 })
 
-// Connect to MongoDB
-connectDB()
+// Connect to MongoDB only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  connectDB()
+  
+  app.listen(PORT, () => {
+    console.log(`🏆 World Cup Simulator API running on port ${PORT}`)
+    console.log(`📍 Health check: http://localhost:${PORT}/health`)
+    console.log(`📍 API endpoints: http://localhost:${PORT}/api`)
+  })
+}
 
-app.listen(PORT, () => {
-  console.log(`🏆 World Cup Simulator API running on port ${PORT}`)
-  console.log(`📍 Health check: http://localhost:${PORT}/health`)
-  console.log(`📍 API endpoints: http://localhost:${PORT}/api`)
-})
+// Export for testing
+export default app

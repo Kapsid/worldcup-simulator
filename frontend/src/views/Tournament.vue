@@ -108,10 +108,11 @@
         </div>
         
         <div class="modal-actions">
-          <button @click="closeDeleteModal" class="btn-secondary">
+          <button @click="closeDeleteModal" class="btn-secondary modal-btn">
+            <i class="fas fa-times"></i>
             Cancel
           </button>
-          <button @click="deleteTournament" :disabled="deleting" class="btn-danger">
+          <button @click="deleteTournament" :disabled="deleting" class="btn-danger modal-btn">
             <i v-if="deleting" class="fas fa-spinner fa-spin"></i>
             <i v-else class="fas fa-trash"></i>
             {{ deleting ? 'Deleting...' : 'Delete Tournament' }}
@@ -200,10 +201,11 @@
           </div>
           
           <div class="modal-actions">
-            <button type="button" @click="closeCreateModal" class="btn-secondary">
+            <button type="button" @click="closeCreateModal" class="btn-secondary modal-btn">
+              <i class="fas fa-times"></i>
               Cancel
             </button>
-            <button type="submit" :disabled="creating" class="btn-primary">
+            <button type="submit" :disabled="creating" class="btn-primary modal-btn">
               <i v-if="creating" class="fas fa-spinner fa-spin"></i>
               <i v-else class="fas fa-plus"></i>
               {{ creating ? 'Creating...' : 'Create Tournament' }}
@@ -797,10 +799,12 @@ export default {
 .modal-actions {
   display: flex;
   gap: 16px;
-  margin-top: 32px;
+  margin-top: 0;
+  padding: 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.modal-actions button {
+.modal-btn {
   flex: 1;
   height: 48px;
   font-size: 1rem;
@@ -808,6 +812,12 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  padding: 12px 24px;
 }
 
 .error-message {
@@ -827,7 +837,7 @@ export default {
 }
 
 .modal-content {
-  padding: 0 24px;
+  padding: 0 24px 24px 24px;
   text-align: center;
 }
 

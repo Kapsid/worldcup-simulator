@@ -20,7 +20,8 @@
       "Bash(grep:*)",
       "Bash(git add:*)",
       "Bash(kill:*)",
-      "Bash(mongo:*)"
+      "Bash(mongo:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }

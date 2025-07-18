@@ -131,8 +131,12 @@
                 </div>
                 <div class="card-content">
                   <div class="action-grid-full">
-                    <!-- Qualification Process -->
-                    <button @click="toggleQualifying" class="action-card" :class="{ 'action-selected': showQualifying }" :disabled="tournament.status === 'cancelled'">
+                    <!-- Team Selection (Manual) or Qualification Process -->
+                    <button v-if="tournament.type === 'manual'" @click="toggleTeamManagement" class="action-card" :class="{ 'action-selected': showTeamManagement }" :disabled="tournament.status === 'cancelled'">
+                      <i class="fas fa-users"></i>
+                      <span>Team Selection</span>
+                    </button>
+                    <button v-else @click="toggleQualifying" class="action-card" :class="{ 'action-selected': showQualifying }" :disabled="tournament.status === 'cancelled'">
                       <i class="fas fa-flag-checkered"></i>
                       <span>Qualifying</span>
                     </button>
@@ -180,10 +184,10 @@
                 </div>
               </div>
               
-              <!-- Team Management -->
-              <div v-if="showTeamManagement" class="content-card glass-white full-width">
+              <!-- Team Management (only for manual tournaments) -->
+              <div v-if="showTeamManagement && tournament.type === 'manual'" id="team-management" class="content-card glass-white full-width">
                 <div class="card-header">
-                  <h3>Team Management</h3>
+                  <h3>Team Selection</h3>
                   <button @click="toggleTeamManagement" class="close-section-btn">
                     <i class="fas fa-times"></i>
                   </button>
@@ -197,8 +201,8 @@
                 </div>
               </div>
 
-              <!-- Qualifying -->
-              <div v-if="showQualifying" id="qualifying" class="content-card glass-white full-width">
+              <!-- Qualifying (only for qualification tournaments) -->
+              <div v-if="showQualifying && tournament.type === 'qualification'" id="qualifying" class="content-card glass-white full-width">
                 <div class="card-header">
                   <h3>Qualifying</h3>
                   <button @click="toggleQualifying" class="close-section-btn">
@@ -487,11 +491,11 @@ export default {
     toggleTeamManagement() {
       this.showTeamManagement = !this.showTeamManagement
       if (this.showTeamManagement) {
+        this.showQualifying = false
         this.showDraw = false
         this.showMatches = false
         this.showStandings = false
         this.showKnockout = false
-        this.showQualifying = false
         this.scrollToSection('team-management')
       }
     },

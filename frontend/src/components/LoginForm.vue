@@ -51,13 +51,6 @@
       Create Account
     </button>
     
-    <div class="demo-info">
-      <div class="demo-badge">
-        <i class="fas fa-info-circle"></i>
-        Demo
-      </div>
-      <span>Username: <strong>admin</strong> • Password: <strong>admin</strong></span>
-    </div>
   </div>
 </template>
 
@@ -227,31 +220,6 @@ export default {
   gap: 8px;
 }
 
-.demo-info {
-  text-align: center;
-  padding: 16px;
-  background: linear-gradient(135deg, var(--fifa-gold), #FFE55C);
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
-  color: var(--fifa-dark-blue);
-  position: relative;
-  box-shadow: var(--shadow-sm);
-}
-
-.demo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--fifa-dark-blue);
-  color: var(--white);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
 
 @media (max-width: 768px) {
   .login-card {
