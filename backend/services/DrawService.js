@@ -138,15 +138,42 @@ class DrawService {
       for (const pot of pots) {
         const shuffledTeams = this.shuffleArray([...pot.teams])
 
-        for (let i = 0; i < shuffledTeams.length; i++) {
-          const team = shuffledTeams[i]
-          const groupIndex = i % 8
-          const groupLetter = String.fromCharCode(65 + groupIndex)
+        // Special handling for Pot 1 to ensure host goes to Group A
+        if (pot.potNumber === 1) {
+          const hostTeam = shuffledTeams.find(team => team.isHost)
+          const nonHostTeams = shuffledTeams.filter(team => !team.isHost)
+          
+          if (hostTeam) {
+            // Always place host team in Group A at random position
+            await this.insertTeamAtRandomPosition(tournamentId, 'A', hostTeam._id)
+            
+            // Place remaining teams from Pot 1 in groups B-H at random positions
+            for (let i = 0; i < nonHostTeams.length; i++) {
+              const team = nonHostTeams[i]
+              const groupIndex = (i + 1) % 8 // Start from group B (index 1)
+              const groupLetter = String.fromCharCode(65 + groupIndex)
 
-          await TournamentGroup.findOneAndUpdate(
-              { tournament: tournamentId, groupLetter },
-              { $push: { teams: team._id } }
-          )
+              await this.insertTeamAtRandomPosition(tournamentId, groupLetter, team._id)
+            }
+          } else {
+            // Fallback: if no host team found, use normal distribution with random positions
+            for (let i = 0; i < shuffledTeams.length; i++) {
+              const team = shuffledTeams[i]
+              const groupIndex = i % 8
+              const groupLetter = String.fromCharCode(65 + groupIndex)
+
+              await this.insertTeamAtRandomPosition(tournamentId, groupLetter, team._id)
+            }
+          }
+        } else {
+          // For other pots, use normal distribution with random positions
+          for (let i = 0; i < shuffledTeams.length; i++) {
+            const team = shuffledTeams[i]
+            const groupIndex = i % 8
+            const groupLetter = String.fromCharCode(65 + groupIndex)
+
+            await this.insertTeamAtRandomPosition(tournamentId, groupLetter, team._id)
+          }
         }
       }
 
@@ -201,15 +228,42 @@ class DrawService {
 
       const shuffledTeams = this.shuffleArray([...unassignedTeams])
 
-      for (let i = 0; i < shuffledTeams.length; i++) {
-        const team = shuffledTeams[i]
-        const groupIndex = i % 8
-        const groupLetter = String.fromCharCode(65 + groupIndex)
+      // Special handling for Pot 1 to ensure host goes to Group A
+      if (potNumber === 1) {
+        const hostTeam = shuffledTeams.find(team => team.isHost)
+        const nonHostTeams = shuffledTeams.filter(team => !team.isHost)
+        
+        if (hostTeam) {
+          // Always place host team in Group A at random position
+          await this.insertTeamAtRandomPosition(tournamentId, 'A', hostTeam._id)
+          
+          // Place remaining teams from Pot 1 in groups B-H at random positions
+          for (let i = 0; i < nonHostTeams.length; i++) {
+            const team = nonHostTeams[i]
+            const groupIndex = (i + 1) % 8 // Start from group B (index 1)
+            const groupLetter = String.fromCharCode(65 + groupIndex)
 
-        await TournamentGroup.findOneAndUpdate(
-            { tournament: tournamentId, groupLetter },
-            { $push: { teams: team._id } }
-        )
+            await this.insertTeamAtRandomPosition(tournamentId, groupLetter, team._id)
+          }
+        } else {
+          // Fallback: if no host team found, use normal distribution with random positions
+          for (let i = 0; i < shuffledTeams.length; i++) {
+            const team = shuffledTeams[i]
+            const groupIndex = i % 8
+            const groupLetter = String.fromCharCode(65 + groupIndex)
+
+            await this.insertTeamAtRandomPosition(tournamentId, groupLetter, team._id)
+          }
+        }
+      } else {
+        // For other pots, use normal distribution with random positions
+        for (let i = 0; i < shuffledTeams.length; i++) {
+          const team = shuffledTeams[i]
+          const groupIndex = i % 8
+          const groupLetter = String.fromCharCode(65 + groupIndex)
+
+          await this.insertTeamAtRandomPosition(tournamentId, groupLetter, team._id)
+        }
       }
 
       return await this.getGroups(tournamentId, userId)
@@ -279,6 +333,42 @@ class DrawService {
       ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
     return shuffled
+  }
+
+  async insertTeamAtRandomPosition(tournamentId, groupLetter, teamId) {
+    // Get the current group
+    const group = await TournamentGroup.findOne({ 
+      tournament: tournamentId, 
+      groupLetter: groupLetter 
+    })
+    
+    if (!group) {
+      throw new Error(`Group ${groupLetter} not found`)
+    }
+    
+    // Get current teams array
+    const currentTeams = group.teams || []
+    
+    // If group is empty, just add the team
+    if (currentTeams.length === 0) {
+      await TournamentGroup.findOneAndUpdate(
+        { tournament: tournamentId, groupLetter: groupLetter },
+        { $push: { teams: teamId } }
+      )
+      return
+    }
+    
+    // Generate random position (0 to current length, inclusive)
+    const randomPosition = Math.floor(Math.random() * (currentTeams.length + 1))
+    
+    // Insert team at random position
+    currentTeams.splice(randomPosition, 0, teamId)
+    
+    // Update the group with the new teams array
+    await TournamentGroup.findOneAndUpdate(
+      { tournament: tournamentId, groupLetter: groupLetter },
+      { $set: { teams: currentTeams } }
+    )
   }
 }
 

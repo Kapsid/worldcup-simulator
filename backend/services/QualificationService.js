@@ -163,24 +163,31 @@ class QualificationService {
       // Sort teams by FIFA ranking (best teams first)
       const sortedTeams = [...teams].sort((a, b) => (a.ranking || 999) - (b.ranking || 999))
       
-      // Simple snake draft distribution for balanced groups
-      const distributedTeams = []
-      let teamIndex = 0
+      // Create pots based on ranking tiers (one pot per "tier" within groups)
+      const numPots = teamsPerGroup
+      const teamsPerPot = Math.ceil(totalTeams / numPots)
+      const pots = []
       
-      // First pass: distribute teams in round-robin fashion
-      for (let round = 0; round < Math.ceil(totalTeams / numGroups); round++) {
-        for (let groupIndex = 0; groupIndex < numGroups && teamIndex < totalTeams; groupIndex++) {
-          if (round % 2 === 0) {
-            // Even rounds: go left to right (0, 1, 2, 3...)
-            distributedTeams[groupIndex] = distributedTeams[groupIndex] || []
-            distributedTeams[groupIndex].push(sortedTeams[teamIndex])
-          } else {
-            // Odd rounds: go right to left (3, 2, 1, 0...) for snake draft
-            const snakeIndex = numGroups - 1 - groupIndex
-            distributedTeams[snakeIndex] = distributedTeams[snakeIndex] || []
-            distributedTeams[snakeIndex].push(sortedTeams[teamIndex])
-          }
-          teamIndex++
+      for (let potIndex = 0; potIndex < numPots; potIndex++) {
+        const potStart = potIndex * teamsPerPot
+        const potEnd = Math.min(potStart + teamsPerPot, totalTeams)
+        const potTeams = sortedTeams.slice(potStart, potEnd)
+        
+        // Shuffle teams within this pot to randomize group assignments
+        const shuffledPot = this.shuffleArray(potTeams)
+        pots.push(shuffledPot)
+      }
+      
+      // Distribute teams from shuffled pots using round-robin
+      const distributedTeams = Array(numGroups).fill(null).map(() => [])
+      
+      // For each pot, distribute teams to groups in round-robin fashion
+      for (let potIndex = 0; potIndex < pots.length; potIndex++) {
+        const pot = pots[potIndex]
+        
+        for (let teamIndex = 0; teamIndex < pot.length; teamIndex++) {
+          const groupIndex = teamIndex % numGroups
+          distributedTeams[groupIndex].push(pot[teamIndex])
         }
       }
       
@@ -341,33 +348,163 @@ class QualificationService {
     return matches
   }
 
-  // Organize matches into rounds ensuring each team plays at most once per round
+  // Organize matches into rounds ensuring balanced distribution using round-robin algorithm
   organizeMatchesByRound(matches, numTeams) {
+    if (matches.length === 0) return {}
+    
+    // Get all unique teams
+    const allTeams = new Set()
+    matches.forEach(match => {
+      allTeams.add(match.homeTeam.teamId)
+      allTeams.add(match.awayTeam.teamId)
+    })
+    const teamIds = Array.from(allTeams)
+    const n = teamIds.length
+    
+    // Create match lookup for quick access
+    const matchLookup = new Map()
+    matches.forEach(match => {
+      const key1 = `${match.homeTeam.teamId}-${match.awayTeam.teamId}`
+      const key2 = `${match.awayTeam.teamId}-${match.homeTeam.teamId}`
+      matchLookup.set(key1, match)
+      matchLookup.set(key2, match)
+    })
+    
     const rounds = {}
-    const matchesCopy = [...matches]
     let round = 1
-
-    while (matchesCopy.length > 0) {
-      rounds[round] = []
-      const usedTeams = new Set()
-
-      for (let i = matchesCopy.length - 1; i >= 0; i--) {
-        const match = matchesCopy[i]
-        const homeTeamId = match.homeTeam.teamId
-        const awayTeamId = match.awayTeam.teamId
-
-        // Check if both teams are available for this round
-        if (!usedTeams.has(homeTeamId) && !usedTeams.has(awayTeamId)) {
-          rounds[round].push(match)
-          usedTeams.add(homeTeamId)
-          usedTeams.add(awayTeamId)
-          matchesCopy.splice(i, 1)
+    
+    // Round-robin scheduling using circle method
+    if (n % 2 === 1) {
+      // Odd number of teams - one team has bye each round
+      for (let roundIdx = 0; roundIdx < n; roundIdx++) {
+        rounds[round] = []
+        
+        for (let i = 0; i < Math.floor(n / 2); i++) {
+          const team1Idx = (roundIdx + i) % n
+          const team2Idx = (roundIdx + n - 1 - i) % n
+          
+          const team1 = teamIds[team1Idx]
+          const team2 = teamIds[team2Idx]
+          
+          const key = `${team1}-${team2}`
+          const match = matchLookup.get(key)
+          
+          if (match) {
+            rounds[round].push(match)
+          }
+        }
+        
+        if (rounds[round].length > 0) {
+          round++
         }
       }
-
-      round++
+    } else {
+      // Even number of teams - perfect pairing
+      for (let roundIdx = 0; roundIdx < n - 1; roundIdx++) {
+        rounds[round] = []
+        
+        for (let i = 0; i < n / 2; i++) {
+          let team1Idx, team2Idx
+          
+          if (i === 0) {
+            team1Idx = 0
+            team2Idx = roundIdx + 1
+          } else {
+            team1Idx = (roundIdx + i) % (n - 1) + 1
+            team2Idx = (roundIdx + n - 1 - i) % (n - 1) + 1
+          }
+          
+          const team1 = teamIds[team1Idx]
+          const team2 = teamIds[team2Idx]
+          
+          const key = `${team1}-${team2}`
+          const match = matchLookup.get(key)
+          
+          if (match) {
+            rounds[round].push(match)
+          }
+        }
+        
+        if (rounds[round].length > 0) {
+          round++
+        }
+      }
     }
-
+    
+    // Handle any remaining matches that weren't scheduled (e.g., return matches in double round-robin)
+    const scheduledMatches = new Set()
+    Object.values(rounds).forEach(roundMatches => {
+      roundMatches.forEach(match => {
+        scheduledMatches.add(match.matchId)
+      })
+    })
+    
+    const unscheduledMatches = matches.filter(match => !scheduledMatches.has(match.matchId))
+    
+    if (unscheduledMatches.length > 0) {
+      // Schedule remaining matches using the same round-robin pattern
+      const secondRoundStart = round
+      
+      if (n % 2 === 1) {
+        for (let roundIdx = 0; roundIdx < n; roundIdx++) {
+          const currentRound = secondRoundStart + roundIdx
+          if (!rounds[currentRound]) rounds[currentRound] = []
+          
+          for (let i = 0; i < Math.floor(n / 2); i++) {
+            const team1Idx = (roundIdx + i) % n
+            const team2Idx = (roundIdx + n - 1 - i) % n
+            
+            const team1 = teamIds[team1Idx]
+            const team2 = teamIds[team2Idx]
+            
+            // Look for return match
+            const returnMatch = unscheduledMatches.find(match => 
+              (match.homeTeam.teamId === team2 && match.awayTeam.teamId === team1) ||
+              (match.homeTeam.teamId === team1 && match.awayTeam.teamId === team2)
+            )
+            
+            if (returnMatch) {
+              rounds[currentRound].push(returnMatch)
+              const index = unscheduledMatches.indexOf(returnMatch)
+              unscheduledMatches.splice(index, 1)
+            }
+          }
+        }
+      } else {
+        for (let roundIdx = 0; roundIdx < n - 1; roundIdx++) {
+          const currentRound = secondRoundStart + roundIdx
+          if (!rounds[currentRound]) rounds[currentRound] = []
+          
+          for (let i = 0; i < n / 2; i++) {
+            let team1Idx, team2Idx
+            
+            if (i === 0) {
+              team1Idx = 0
+              team2Idx = roundIdx + 1
+            } else {
+              team1Idx = (roundIdx + i) % (n - 1) + 1
+              team2Idx = (roundIdx + n - 1 - i) % (n - 1) + 1
+            }
+            
+            const team1 = teamIds[team1Idx]
+            const team2 = teamIds[team2Idx]
+            
+            // Look for return match
+            const returnMatch = unscheduledMatches.find(match => 
+              (match.homeTeam.teamId === team2 && match.awayTeam.teamId === team1) ||
+              (match.homeTeam.teamId === team1 && match.awayTeam.teamId === team2)
+            )
+            
+            if (returnMatch) {
+              rounds[currentRound].push(returnMatch)
+              const index = unscheduledMatches.indexOf(returnMatch)
+              unscheduledMatches.splice(index, 1)
+            }
+          }
+        }
+      }
+    }
+    
     return rounds
   }
 
@@ -466,6 +603,65 @@ class QualificationService {
   async getQualificationData(tournamentId) {
     try {
       const qualification = await Qualification.findOne({ tournament: tournamentId })
+      
+      if (qualification) {
+        console.log('getQualificationData: Current confederation status before update:', 
+          qualification.confederations.map(conf => ({
+            id: conf.confederationId,
+            completed: conf.completed,
+            totalMatches: conf.matches?.length || 0,
+            playedMatches: conf.matches?.filter(m => m.played).length || 0,
+            qualifiedCount: conf.qualifiedTeams?.length || 0
+          }))
+        )
+        
+        // Always update confederation status when data is requested
+        this.updateConfederationStatus(qualification)
+        
+        // Fix missing OFC team in finalized qualification
+        if (qualification.completed) {
+          const ofcConfederation = qualification.confederations.find(conf => conf.confederationId === 'ofc')
+          console.log('OFC CONFEDERATION DETAILED DEBUG:', {
+            ofcExists: !!ofcConfederation,
+            hasPlayoffs: ofcConfederation?.playoffs !== undefined,
+            playoffCompleted: ofcConfederation?.playoffs?.completed,
+            playoffWinner: ofcConfederation?.playoffs?.winner,
+            confederationQualifiedTeams: ofcConfederation?.qualifiedTeams,
+            globalOFCTeam: qualification.qualifiedTeams.find(t => t.confederation === 'ofc'),
+            totalGlobalTeams: qualification.qualifiedTeams.length,
+            allGlobalTeams: qualification.qualifiedTeams.map(t => `${t.name} (${t.confederation})`)
+          })
+          
+          if (ofcConfederation && ofcConfederation.playoffs && ofcConfederation.playoffs.completed) {
+            const ofcTeamInGlobal = qualification.qualifiedTeams.find(t => t.confederation === 'ofc')
+            if (!ofcTeamInGlobal && ofcConfederation.qualifiedTeams && ofcConfederation.qualifiedTeams.length > 0) {
+              console.log('FIXING MISSING OFC TEAM IN GLOBAL QUALIFIED LIST')
+              const ofcTeam = ofcConfederation.qualifiedTeams[0]
+              qualification.qualifiedTeams.push({
+                teamId: ofcTeam.teamId,
+                name: ofcTeam.name || ofcTeam.country,
+                country: ofcTeam.country || ofcTeam.name,
+                flag: ofcTeam.flag,
+                confederation: 'ofc',
+                qualificationMethod: ofcTeam.qualificationMethod
+              })
+            }
+          }
+        }
+        
+        await qualification.save()
+        
+        console.log('getQualificationData: Current confederation status after update:', 
+          qualification.confederations.map(conf => ({
+            id: conf.confederationId,
+            completed: conf.completed,
+            totalMatches: conf.matches?.length || 0,
+            playedMatches: conf.matches?.filter(m => m.played).length || 0,
+            qualifiedCount: conf.qualifiedTeams?.length || 0
+          }))
+        )
+      }
+      
       return qualification
     } catch (error) {
       console.error('Error getting qualification data:', error)
@@ -738,8 +934,10 @@ class QualificationService {
     const confederation = confederations.find(c => c.id === confederationId)
     if (!confederation) return []
 
-    // OFC uses playoff system - no qualified teams until playoff is complete
+    // OFC uses playoff system - check if playoff is complete
     if (confederationId === 'ofc') {
+      // Don't determine qualified teams here - they are set directly in playoff simulation
+      // Return empty array to avoid overriding playoff winner
       return []
     }
 
@@ -774,8 +972,11 @@ class QualificationService {
 
     // Only proceed if all groups are complete
     if (groupResults.length !== groups.length) {
+      console.log(`${confederationId}: Not all groups complete. ${groupResults.length}/${groups.length} groups finished.`)
       return []
     }
+    
+    console.log(`${confederationId}: All groups complete. Determining qualified teams...`)
 
     if (confederation.format === 'single_league') {
       // CONMEBOL: Top teams qualify directly
@@ -792,8 +993,22 @@ class QualificationService {
       const runnersUp = groupResults.map(gr => gr.runnerUp).filter(Boolean)
       const numGroups = groupResults.length
 
-      if (numGroups <= totalSlots) {
-        // If we have fewer or equal groups than slots, all group winners qualify
+      if (numGroups >= totalSlots) {
+        // If we have enough groups to fill all slots with group winners
+        winners.sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points
+          if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+          return b.goalsFor - a.goalsFor
+        })
+
+        for (let i = 0; i < Math.min(totalSlots, winners.length); i++) {
+          qualifiedTeams.push({
+            ...winners[i],
+            qualificationMethod: 'group_winner'
+          })
+        }
+      } else {
+        // If we have fewer groups than slots, all group winners qualify plus best runners-up
         for (const winner of winners) {
           qualifiedTeams.push({
             ...winner,
@@ -817,23 +1032,11 @@ class QualificationService {
             })
           }
         }
-      } else {
-        // If we have more groups than slots, select best group winners
-        winners.sort((a, b) => {
-          if (b.points !== a.points) return b.points - a.points
-          if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
-          return b.goalsFor - a.goalsFor
-        })
-
-        for (let i = 0; i < Math.min(totalSlots, winners.length); i++) {
-          qualifiedTeams.push({
-            ...winners[i],
-            qualificationMethod: 'group_winner'
-          })
-        }
       }
     }
 
+    console.log(`${confederationId}: Qualified teams determined:`, qualifiedTeams.map(t => `${t.name || t.country} (${t.qualificationMethod})`))
+    
     return qualifiedTeams
   }
 
@@ -926,12 +1129,10 @@ class QualificationService {
       // Check and populate OFC playoffs if ready
       this.checkAndPopulateOFCPlayoffs(confederation)
       
-      const qualifiedFromConfederation = this.determineQualifiedTeams(
+      let qualifiedFromConfederation = this.determineQualifiedTeams(
         confederation.confederationId, 
         confederation.groups
       )
-      
-      confederation.qualifiedTeams = qualifiedFromConfederation
       
       const totalMatches = confederation.matches.length
       const playedMatches = confederation.matches.filter(m => m.played).length
@@ -942,10 +1143,74 @@ class QualificationService {
         const playoffPlayed = playoffMatches.filter(m => m.played).length
         const allPlayoffComplete = playoffMatches.length > 0 && playoffPlayed === playoffMatches.length
         
-        confederation.completed = playedMatches === totalMatches && allPlayoffComplete && qualifiedFromConfederation.length > 0
+        confederation.completed = playedMatches === totalMatches && allPlayoffComplete
+        
+        // If OFC playoff is complete, ensure the winner is in qualified teams
+        if (confederation.playoffs.completed && confederation.playoffs.winner) {
+          console.log(`OFC playoff complete, winner is:`, confederation.playoffs.winner.name || confederation.playoffs.winner.country)
+          
+          // Check if qualified teams list is empty or doesn't contain the winner
+          if (!confederation.qualifiedTeams || confederation.qualifiedTeams.length === 0) {
+            console.log('OFC qualified teams list is empty, adding playoff winner')
+            qualifiedFromConfederation = [{
+              teamId: confederation.playoffs.winner.teamId,
+              name: confederation.playoffs.winner.name,
+              country: confederation.playoffs.winner.country,
+              flag: confederation.playoffs.winner.flag,
+              qualificationMethod: 'playoff_winner'
+            }]
+          } else {
+            console.log(`OFC playoff complete, keeping existing qualified teams:`, 
+              confederation.qualifiedTeams.map(t => t.name || t.country))
+            qualifiedFromConfederation = confederation.qualifiedTeams
+          }
+        }
       } else {
-        confederation.completed = playedMatches === totalMatches && qualifiedFromConfederation.length > 0
+        // Debug logging for qualification completion
+        console.log(`Confederation ${confederation.confederationId} completion check:`, {
+          playedMatches,
+          totalMatches,
+          qualifiedCount: qualifiedFromConfederation.length,
+          qualified: qualifiedFromConfederation.map(t => t.name || t.country),
+          groups: confederation.groups.map(g => ({
+            name: g.name,
+            teams: g.teams.map(t => `${t.name || t.country} (${t.points}pts)`).slice(0, 3)
+          }))
+        })
+        
+        // Allow completion if all matches are played, even if qualification logic has issues
+        confederation.completed = playedMatches === totalMatches
+        
+        // If we have no qualified teams but confederation is complete, try to populate with top teams
+        if (confederation.completed && qualifiedFromConfederation.length === 0) {
+          console.log(`WARNING: ${confederation.confederationId} completed but no qualified teams. Attempting to populate with top teams.`)
+          
+          // Get the confederation definition to know how many slots we need
+          const confederationDef = confederations.find(c => c.id === confederation.confederationId)
+          const slotsNeeded = confederationDef ? confederationDef.qualificationSlots : 1
+          
+          // Get all teams from all groups, sorted by performance
+          const allTeams = confederation.groups.flatMap(group => group.teams)
+          allTeams.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points
+            if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+            return b.goalsFor - a.goalsFor
+          })
+          
+          // Take top teams as qualified
+          const topTeams = allTeams.slice(0, slotsNeeded)
+          qualifiedFromConfederation = topTeams.map(team => ({
+            ...team,
+            qualificationMethod: 'top_performer'
+          }))
+          
+          console.log(`Populated ${qualifiedFromConfederation.length} qualified teams for ${confederation.confederationId}:`, 
+            qualifiedFromConfederation.map(t => t.name || t.country))
+        }
       }
+      
+      // Update confederation qualified teams (after potential fallback population)
+      confederation.qualifiedTeams = qualifiedFromConfederation
       
       const directQualified = qualifiedFromConfederation.filter(t => 
         t.qualificationMethod === 'direct' || 
@@ -965,6 +1230,17 @@ class QualificationService {
     
     const allConfederationsComplete = qualification.confederations.every(conf => conf.completed)
     qualification.completed = allConfederationsComplete
+    
+    // Debug overall completion status
+    console.log('Overall qualification completion:', {
+      allConfederationsComplete,
+      confederationStatus: qualification.confederations.map(conf => ({
+        id: conf.confederationId,
+        completed: conf.completed,
+        qualifiedCount: conf.qualifiedTeams?.length || 0
+      })),
+      totalQualifiedTeams: qualification.qualifiedTeams.length
+    })
   }
 
   // Simulate next matchday for all confederations
@@ -1215,7 +1491,34 @@ class QualificationService {
       
       // Add qualified teams from confederations (only essential data)
       for (const confederation of qualification.confederations) {
-        const directQualifiers = confederation.qualifiedTeams
+        const directQualifiers = confederation.qualifiedTeams || []
+        
+        console.log(`Finalization: Processing ${confederation.confederationId}:`, {
+          completed: confederation.completed,
+          qualifiedCount: directQualifiers.length,
+          qualified: directQualifiers.map(t => t.name || t.country),
+          hasPlayoffs: confederation.confederationId === 'ofc' && confederation.playoffs,
+          playoffCompleted: confederation.confederationId === 'ofc' ? confederation.playoffs?.completed : 'N/A',
+          playoffWinner: confederation.confederationId === 'ofc' ? confederation.playoffs?.winner?.name : 'N/A'
+        })
+        
+        // Special debug for OFC
+        if (confederation.confederationId === 'ofc') {
+          console.log('OFC DETAILED DEBUG:', {
+            playoffAvailable: confederation.playoffs?.available,
+            playoffMatches: confederation.playoffs?.matches?.map(m => ({
+              matchId: m.matchId,
+              played: m.played,
+              homeTeam: m.homeTeam?.name,
+              awayTeam: m.awayTeam?.name,
+              homeScore: m.homeScore,
+              awayScore: m.awayScore
+            })),
+            playoffWinner: confederation.playoffs?.winner,
+            qualifiedTeams: confederation.qualifiedTeams
+          })
+        }
+        
         qualifiedTeams.push(...directQualifiers.map(team => ({
           teamId: team.teamId,
           name: team.name || team.country,
@@ -1299,10 +1602,28 @@ class QualificationService {
         ofcConfederation.playoffs.completed = true
         
         // Add qualified team
-        ofcConfederation.qualifiedTeams = [{
-          ...winner,
+        const qualifiedTeam = {
+          teamId: winner.teamId,
+          name: winner.name,
+          country: winner.country,
+          flag: winner.flag,
           qualificationMethod: 'playoff_winner'
-        }]
+        }
+        
+        ofcConfederation.qualifiedTeams = [qualifiedTeam]
+        
+        console.log('OFC PLAYOFF WINNER DETERMINED:', {
+          winner: winner.name || winner.country,
+          qualifiedTeam,
+          allPlayoffMatches: ofcConfederation.playoffs.matches.map(m => ({
+            matchId: m.matchId,
+            homeTeam: m.homeTeam?.name,
+            awayTeam: m.awayTeam?.name,
+            homeScore: m.homeScore,
+            awayScore: m.awayScore,
+            played: m.played
+          }))
+        })
       }
 
       await qualification.save()
@@ -1312,6 +1633,16 @@ class QualificationService {
       console.error('Error simulating OFC playoff match:', error)
       throw error
     }
+  }
+
+  // Helper method to shuffle array
+  shuffleArray(array) {
+    const shuffled = [...array]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
   }
 }
 

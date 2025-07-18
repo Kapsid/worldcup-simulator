@@ -369,14 +369,6 @@
           {{ finalizing ? 'Finalizing...' : 'Finalize Qualification & Start Tournament' }}
         </button>
 
-        <button 
-          v-if="qualificationFinalized"
-          @click="goToTournament"
-          class="btn-success action-btn"
-        >
-          <i class="fas fa-arrow-right"></i>
-          Go to Tournament
-        </button>
       </div>
 
       <!-- Error Display -->
@@ -458,6 +450,31 @@ export default {
       const hasQualifiedTeams = this.qualificationData.confederations.some(conf => 
         conf.qualifiedTeams && conf.qualifiedTeams.length > 0
       )
+      
+      // Debug logging
+      console.log('allQualificationComplete check:', {
+        allConfederationsComplete,
+        hasQualifiedTeams,
+        confederationStatus: this.qualificationData.confederations.map(conf => ({
+          id: conf.confederationId,
+          completed: conf.completed,
+          qualifiedCount: conf.qualifiedTeams?.length || 0,
+          totalMatches: conf.matches?.length || 0,
+          playedMatches: conf.matches?.filter(m => m.played).length || 0
+        }))
+      })
+      
+      // Special OFC debug
+      const ofcConfederation = this.qualificationData.confederations.find(conf => conf.confederationId === 'ofc')
+      if (ofcConfederation) {
+        console.log('FRONTEND OFC DEBUG:', {
+          ofcCompleted: ofcConfederation.completed,
+          ofcQualifiedTeams: ofcConfederation.qualifiedTeams,
+          ofcPlayoffs: ofcConfederation.playoffs,
+          totalGlobalQualified: this.qualificationData.qualifiedTeams?.length || 0,
+          globalOFCTeam: this.qualificationData.qualifiedTeams?.find(t => t.confederation === 'ofc')
+        })
+      }
       
       return allConfederationsComplete && hasQualifiedTeams
     },
@@ -669,8 +686,11 @@ export default {
         })
         
         if (response.ok) {
-          // Navigate to tournament detail page
-          this.$router.push(`/tournament/${this.tournament._id}`)
+          // Navigate to tournament detail page and force a refresh
+          this.$router.push(`/tournament/${this.tournament._id}`).then(() => {
+            // Force a full page refresh to ensure all data is loaded correctly
+            window.location.reload()
+          })
         } else {
           const data = await response.json()
           this.error = data.error || 'Failed to add qualified teams to tournament'

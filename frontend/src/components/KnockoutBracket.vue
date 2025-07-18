@@ -83,7 +83,6 @@
               :key="match._id"
               class="knockout-match"
               :class="{ 'match-completed': match.status === 'completed' }"
-              @click="showMatchDetail(match)"
             >
               <div class="match-header">
                 <span class="match-label">{{ getMatchLabel(match) }}</span>
@@ -116,14 +115,22 @@
                 
                 <div class="vs-divider">
                   <span class="vs-text">VS</span>
-                  <button 
-                    v-if="match.status === 'ready' && !readOnly"
-                    @click="simulateMatch(match._id)"
-                    :disabled="loading"
-                    class="btn-small simulate-btn"
-                  >
-                    <i class="fas fa-play"></i>
-                  </button>
+                  <div class="match-actions">
+                    <button 
+                      v-if="match.status === 'ready' && !readOnly"
+                      @click="simulateMatch(match._id)"
+                      :disabled="loading"
+                      class="btn-small simulate-btn"
+                    >
+                      <i class="fas fa-play"></i>
+                    </button>
+                    <button 
+                      @click="showMatchDetail(match)"
+                      class="btn-small detail-btn"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
                 </div>
                 
                 <div class="team" :class="{ winner: match.winner && match.winner._id === match.awayTeam?._id }">
@@ -670,17 +677,16 @@ export default {
 
 .matches-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 16px;
 }
 
 .knockout-match {
   background: var(--white);
   border: 1px solid rgba(0, 102, 204, 0.1);
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  border-radius: var(--radius-md);
+  padding: 16px;
   transition: all 0.3s ease;
-  cursor: pointer;
 }
 
 .knockout-match:hover {
@@ -697,20 +703,20 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .match-label {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-blue);
-  font-size: 1.1rem;
+  font-size: 0.9rem;
 }
 
 .match-status {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--gray);
   text-transform: uppercase;
-  padding: 4px 8px;
+  padding: 2px 6px;
   background: rgba(0, 102, 204, 0.1);
   border-radius: 4px;
 }
@@ -726,10 +732,10 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
-  padding: 16px;
-  border-radius: var(--radius-md);
+  padding: 8px;
+  border-radius: var(--radius-sm);
   transition: all 0.3s ease;
 }
 
@@ -746,13 +752,14 @@ export default {
 }
 
 .team-flag {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .team-name {
   font-weight: var(--font-weight-semibold);
   color: var(--fifa-dark-blue);
   text-align: center;
+  font-size: 0.85rem;
 }
 
 .clickable-team {
@@ -776,7 +783,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: var(--font-weight-bold);
 }
 
@@ -798,24 +805,30 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin: 0 16px;
+  gap: 4px;
+  margin: 0 8px;
 }
 
 .vs-text {
   font-weight: var(--font-weight-bold);
   color: var(--gray);
-  font-size: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.match-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .simulate-btn {
   background: var(--fifa-blue);
   color: var(--white);
   border: none;
-  padding: 8px 16px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   transition: all 0.3s ease;
 }
 
@@ -826,6 +839,21 @@ export default {
 .simulate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.detail-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.3s ease;
+}
+
+.detail-btn:hover {
+  background: #00aa44;
 }
 
 .match-result {

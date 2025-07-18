@@ -66,7 +66,6 @@
             :key="match._id"
             class="match-card"
             :class="{ 'match-completed': match.status === 'completed' }"
-            @click="showMatchDetail(match)"
           >
             <div class="match-header">
               <span class="group-label">Group {{ match.group.groupLetter }}</span>
@@ -92,14 +91,22 @@
                   <span class="score-separator">:</span>
                   <span class="away-score">{{ match.awayScore ?? '-' }}</span>
                 </div>
-                <button 
-                  v-if="match.status === 'scheduled' && !readOnly"
-                  @click="simulateMatch(match._id)"
-                  :disabled="loading"
-                  class="btn-small simulate-btn"
-                >
-                  <i class="fas fa-play"></i>
-                </button>
+                <div class="match-actions">
+                  <button 
+                    v-if="match.status === 'scheduled' && !readOnly"
+                    @click="simulateMatch(match._id)"
+                    :disabled="loading"
+                    class="btn-small simulate-btn"
+                  >
+                    <i class="fas fa-play"></i>
+                  </button>
+                  <button 
+                    @click="showMatchDetail(match)"
+                    class="btn-small detail-btn"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
               </div>
               
               <div class="team away-team">
@@ -402,7 +409,6 @@ export default {
   border-radius: var(--radius-md);
   padding: 12px;
   transition: all 0.3s ease;
-  cursor: pointer;
 }
 
 .match-card:hover {
@@ -487,6 +493,12 @@ export default {
   margin: 0 12px;
 }
 
+.match-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
 .score-display {
   display: flex;
   align-items: center;
@@ -518,6 +530,21 @@ export default {
 .simulate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.detail-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.3s ease;
+}
+
+.detail-btn:hover {
+  background: #00aa44;
 }
 
 

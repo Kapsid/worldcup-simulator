@@ -116,40 +116,6 @@
           </div>
         </div>
 
-        <div class="control-group">
-          <h4>Manual Team Assignment</h4>
-          <div class="manual-draw">
-            <select v-model="selectedTeamForDraw" class="team-select">
-              <option value="">Select a team to draw...</option>
-              <option 
-                v-for="team in availableTeamsForDraw" 
-                :key="team._id"
-                :value="team._id"
-              >
-                {{ team.countryFlag }} {{ team.countryName }} (Pot {{ getTeamPot(team) }})
-              </option>
-            </select>
-            <select v-model="selectedGroupForDraw" class="group-select">
-              <option value="">Select target group...</option>
-              <option 
-                v-for="group in groups" 
-                :key="group.groupLetter"
-                :value="group.groupLetter"
-                :disabled="group.teams.length >= 4"
-              >
-                Group {{ group.groupLetter }} ({{ group.teams.length }}/4)
-              </option>
-            </select>
-            <button 
-              @click="drawSingleTeam" 
-              :disabled="loading || !selectedTeamForDraw || !selectedGroupForDraw"
-              class="btn-primary"
-            >
-              <i class="fas fa-arrow-right"></i>
-              Draw Team
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="groups-preview">
@@ -263,33 +229,10 @@ export default {
       pots: [],
       groups: [],
       loading: false,
-      error: '',
-      selectedTeamForDraw: '',
-      selectedGroupForDraw: ''
+      error: ''
     }
   },
   computed: {
-    availableTeamsForDraw() {
-      if (!this.pots.length) return []
-      
-      const assignedTeamIds = new Set()
-      this.groups.forEach(group => {
-        group.teams.forEach(team => {
-          assignedTeamIds.add(team._id)
-        })
-      })
-      
-      const availableTeams = []
-      this.pots.forEach(pot => {
-        pot.teams.forEach(team => {
-          if (!assignedTeamIds.has(team._id)) {
-            availableTeams.push(team)
-          }
-        })
-      })
-      
-      return availableTeams.sort((a, b) => a.countryName.localeCompare(b.countryName))
-    },
     
     allGroupsComplete() {
       if (!this.groups || this.groups.length !== 8) {
@@ -363,6 +306,8 @@ export default {
         if (response.ok) {
           this.pots = data.pots
           await this.loadGroups()
+          // Reload pots to ensure team names are populated
+          await this.loadPots()
         } else {
           this.error = data.error || 'Failed to generate pots'
         }
@@ -436,43 +381,6 @@ export default {
       }
     },
 
-    async drawSingleTeam() {
-      this.loading = true
-      this.error = ''
-
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/team`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            teamId: this.selectedTeamForDraw,
-            groupLetter: this.selectedGroupForDraw
-          })
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          this.groups = data.groups
-          this.selectedTeamForDraw = ''
-          this.selectedGroupForDraw = ''
-          // Check if all groups are complete after drawing
-          if (this.groups.length === 8 && this.groups.every(group => group.teams && group.teams.length === 4)) {
-            this.currentPhase = 'groups'
-          }
-        } else {
-          this.error = data.error || 'Failed to draw team'
-        }
-      } catch (error) {
-        this.error = 'Network error. Please try again.'
-      } finally {
-        this.loading = false
-      }
-    },
 
     async clearDraw() {
       if (!confirm('Are you sure you want to clear the draw? This will remove all team assignments.')) {
@@ -768,22 +676,6 @@ export default {
   font-size: 0.9rem;
 }
 
-.manual-draw {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.team-select, .group-select {
-  flex: 1;
-  min-width: 200px;
-  padding: 8px 12px;
-  border: 1px solid rgba(0, 102, 204, 0.2);
-  border-radius: var(--radius-md);
-  background: var(--white);
-  font-size: 0.9rem;
-}
 
 .groups-grid {
   display: grid;
@@ -923,13 +815,5 @@ export default {
     justify-content: center;
   }
 
-  .manual-draw {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .team-select, .group-select {
-    min-width: auto;
-  }
 }
 </style>
