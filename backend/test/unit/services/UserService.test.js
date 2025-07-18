@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import sinon from 'sinon'
+import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import UserService from '../../../services/UserService.js'
@@ -232,7 +233,8 @@ describe('UserService Unit Tests', () => {
         password: 'shouldnotupdate' // This should be ignored
       }
 
-      const result = await UserService.updateProfile('123', updates)
+      const testUserId = new mongoose.Types.ObjectId()
+      const result = await UserService.updateProfile(testUserId, updates)
 
       expect(mockUser.username).to.equal('newusername')
       expect(mockUser.email).to.equal('new@example.com')
@@ -243,7 +245,7 @@ describe('UserService Unit Tests', () => {
 
     it('should handle duplicate username error', async () => {
       const mockUser = {
-        _id: '123',
+        _id: new mongoose.Types.ObjectId(),
         username: 'testuser',
         save: sinon.stub().rejects(new Error('E11000 duplicate key error'))
       }
@@ -251,7 +253,8 @@ describe('UserService Unit Tests', () => {
       sandbox.stub(User, 'findById').resolves(mockUser)
 
       try {
-        await UserService.updateProfile('123', { username: 'existinguser' })
+        const testUserId = new mongoose.Types.ObjectId()
+        await UserService.updateProfile(testUserId, { username: 'existinguser' })
         expect.fail('Should have thrown an error')
       } catch (error) {
         expect(error.message).to.include('duplicate')

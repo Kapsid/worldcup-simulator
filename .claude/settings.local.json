@@ -21,7 +21,10 @@
       "Bash(git add:*)",
       "Bash(kill:*)",
       "Bash(mongo:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(npm test)",
+      "Bash(git check-ignore:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }
