@@ -455,6 +455,8 @@ export default {
       console.log('allQualificationComplete check:', {
         allConfederationsComplete,
         hasQualifiedTeams,
+        qualificationFinalized: this.qualificationFinalized,
+        qualificationDataCompleted: this.qualificationData.completed,
         confederationStatus: this.qualificationData.confederations.map(conf => ({
           id: conf.confederationId,
           completed: conf.completed,
@@ -508,6 +510,8 @@ export default {
     }
   },
   async mounted() {
+    console.log('🟢 QualificationManager mounted successfully')
+    console.log('🟢 Tournament:', this.tournament)
     await this.loadQualificationData()
     // Only auto-select matches tab on initial mount if there are unfinished matches
     if (this.qualificationStarted && this.hasUnplayedMatches()) {
@@ -638,6 +642,7 @@ export default {
     },
     
     async finalizeQualification() {
+      
       this.finalizing = true
       this.error = ''
       try {

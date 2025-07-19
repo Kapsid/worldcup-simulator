@@ -2,8 +2,31 @@ import TournamentPot from '../models/TournamentPot.js'
 import TournamentGroup from '../models/TournamentGroup.js'
 import TournamentTeam from '../models/TournamentTeam.js'
 import Tournament from '../models/Tournament.js'
+import World from '../models/World.js'
 
 class DrawService {
+  /**
+   * Get the ranking for a team based on world-specific rankings or FIFA rankings as fallback
+   */
+  async getTeamRanking(team, world) {
+    if (!world || !world.countryRankings) {
+      // Fallback to FIFA ranking if no world or no rankings
+      return team.fifaRanking || 999
+    }
+    
+    // Find team in world rankings
+    const worldRanking = world.countryRankings.find(
+      ranking => ranking.code === team.countryCode
+    )
+    
+    if (worldRanking) {
+      return worldRanking.rank || 999
+    }
+    
+    // Fallback to FIFA ranking if team not found in world rankings
+    return team.fifaRanking || 999
+  }
+
   async generatePots(tournamentId, userId) {
     try {
       const tournament = await Tournament.findOne({ _id: tournamentId, createdBy: userId })
@@ -21,9 +44,20 @@ class DrawService {
 
       const teams = await TournamentTeam.find({ tournament: tournamentId })
 
+      // Load world data if tournament belongs to a world
+      let world = null
+      if (tournament.worldId) {
+        world = await World.findById(tournament.worldId)
+      }
+
       const hostTeam = teams.find(team => team.isHost)
       const nonHostTeams = teams.filter(team => !team.isHost)
-      nonHostTeams.sort((a, b) => a.fifaRanking - b.fifaRanking)
+      
+      // Sort teams using world rankings if available, otherwise FIFA rankings
+      for (const team of nonHostTeams) {
+        team._worldRanking = await this.getTeamRanking(team, world)
+      }
+      nonHostTeams.sort((a, b) => a._worldRanking - b._worldRanking)
 
       const pots = []
 

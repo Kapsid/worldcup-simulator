@@ -25,6 +25,17 @@ const tournamentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  worldId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'World',
+    required: false
+  },
+  year: {
+    type: Number,
+    required: false,
+    min: 1900,
+    max: 2200
+  },
   status: {
     type: String,
     enum: ['draft', 'active', 'completed', 'cancelled', 'qualification_complete'],
@@ -72,7 +83,22 @@ const tournamentSchema = new mongoose.Schema({
     flag: String,
     confederation: String,
     qualificationMethod: String
-  }]
+  }],
+  winner: {
+    name: String,
+    code: String,
+    flag: String
+  },
+  runnerUp: {
+    name: String,
+    code: String,
+    flag: String
+  },
+  finalScore: String,
+  completedAt: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 })

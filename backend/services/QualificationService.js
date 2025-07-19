@@ -1,5 +1,6 @@
 import Qualification from '../models/Qualification.js'
 import Tournament from '../models/Tournament.js'
+import World from '../models/World.js'
 import { confederations } from '../data/confederations.js'
 import { countries } from '../data/countries.js'
 
@@ -10,7 +11,28 @@ countries.forEach(country => {
 })
 
 class QualificationService {
-  // Generate teams for each confederation (ALL teams, excluding host)
+  constructor() {
+    this.currentWorld = null  // Store current world data for ranking lookups
+  }
+
+  /**
+   * Load world context for a tournament
+   */
+  async loadWorldContext(tournamentId) {
+    try {
+      const tournament = await Tournament.findById(tournamentId)
+      if (tournament && tournament.worldId) {
+        this.currentWorld = await World.findById(tournament.worldId)
+      } else {
+        this.currentWorld = null
+      }
+    } catch (error) {
+      console.error('Error loading world context:', error)
+      this.currentWorld = null
+    }
+  }
+
+  // Generate teams for each confederation (ALL teams, excluding host for qualification)
   generateConfederationTeams(confederationId, hostCountryCode) {
     const confederation = confederations.find(c => c.id === confederationId)
     if (!confederation) return []
@@ -20,15 +42,18 @@ class QualificationService {
       country.confederation === confederationId
     )
 
-    // Remove host country if it's in this confederation
+    // Remove host country from confederation teams (host gets automatic qualification)
     if (hostCountryCode) {
-      confederationCountries = confederationCountries.filter(
-        country => country.code !== hostCountryCode
+      confederationCountries = confederationCountries.filter(country => 
+        country.code !== hostCountryCode
       )
     }
+    
+    console.log(`QualificationService: Generating teams for ${confederationId}: ${confederationCountries.length} countries total` + 
+      (hostCountryCode ? ` (excluding host: ${hostCountryCode})` : ''))
 
-    // Sort by FIFA ranking (best teams first)
-    confederationCountries.sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))
+    // Sort by ranking (world rankings if available, otherwise FIFA ranking)
+    confederationCountries.sort((a, b) => this.getTeamRanking(a) - this.getTeamRanking(b))
 
     return confederationCountries.map((country, index) => {
       const team = {
@@ -160,8 +185,8 @@ class QualificationService {
         })
       }
 
-      // Sort teams by FIFA ranking (best teams first)
-      const sortedTeams = [...teams].sort((a, b) => (a.ranking || 999) - (b.ranking || 999))
+      // Sort teams by ranking (world rankings if available, otherwise FIFA ranking)
+      const sortedTeams = [...teams].sort((a, b) => this.getTeamRanking(a) - this.getTeamRanking(b))
       
       // Create pots based on ranking tiers (one pot per "tier" within groups)
       const numPots = teamsPerGroup
@@ -520,6 +545,13 @@ class QualificationService {
 
       const hostCountryCode = tournament.hostCountryCode
 
+      // Load world data if tournament belongs to a world
+      if (tournament.worldId) {
+        this.currentWorld = await World.findById(tournament.worldId)
+      } else {
+        this.currentWorld = null
+      }
+
       // Check if qualification already exists
       let qualification = await Qualification.findOne({ tournament: tournamentId })
       
@@ -699,10 +731,25 @@ class QualificationService {
     return 1                             // Bottom teams
   }
 
+  getTeamRanking(team) {
+    // First try to use world rankings if available
+    if (this.currentWorld && this.currentWorld.countryRankings) {
+      const worldRanking = this.currentWorld.countryRankings.find(
+        ranking => ranking.code === team.countryCode || ranking.code === team.code
+      )
+      if (worldRanking) {
+        return worldRanking.rank || 999
+      }
+    }
+    
+    // Fallback to existing system
+    return team.ranking || rankingLookup.get(team.name) || rankingLookup.get(team.country) || 999
+  }
+
   simulateMatch(homeTeam, awayTeam) {
-    // Get rankings from lookup if missing from team object
-    let homeRanking = homeTeam.ranking || rankingLookup.get(homeTeam.name) || rankingLookup.get(homeTeam.country) || 150
-    let awayRanking = awayTeam.ranking || rankingLookup.get(awayTeam.name) || rankingLookup.get(awayTeam.country) || 150
+    // Get rankings using world rankings if available, otherwise FIFA rankings
+    let homeRanking = this.getTeamRanking(homeTeam)
+    let awayRanking = this.getTeamRanking(awayTeam)
     
     // Debug logging to check rankings
     if (!homeTeam.ranking || !awayTeam.ranking) {
@@ -930,7 +977,7 @@ class QualificationService {
   }
 
   // Determine qualified teams based on new structure
-  determineQualifiedTeams(confederationId, groups) {
+  determineQualifiedTeams(confederationId, groups, hostCountryCode) {
     const confederation = confederations.find(c => c.id === confederationId)
     if (!confederation) return []
 
@@ -942,7 +989,15 @@ class QualificationService {
     }
 
     const qualifiedTeams = []
-    const totalSlots = confederation.qualificationSlots
+    // Adjust slots if host is from this confederation
+    const hostCountry = countries.find(c => c.code === hostCountryCode)
+    const isHostFromThisConfederation = hostCountry && hostCountry.confederation === confederationId
+    const totalSlots = isHostFromThisConfederation 
+      ? confederation.qualificationSlots - 1  // One less slot since host qualifies automatically
+      : confederation.qualificationSlots
+    
+    console.log(`Determining qualified teams for ${confederationId}: ${totalSlots} slots available` + 
+      (isHostFromThisConfederation ? ` (adjusted from ${confederation.qualificationSlots} due to host)` : ''))
 
     // Collect all group winners and runners-up
     const groupResults = []
@@ -1131,7 +1186,8 @@ class QualificationService {
       
       let qualifiedFromConfederation = this.determineQualifiedTeams(
         confederation.confederationId, 
-        confederation.groups
+        confederation.groups,
+        qualification.hostCountryCode
       )
       
       const totalMatches = confederation.matches.length
@@ -1180,6 +1236,7 @@ class QualificationService {
         
         // Allow completion if all matches are played, even if qualification logic has issues
         confederation.completed = playedMatches === totalMatches
+        
         
         // If we have no qualified teams but confederation is complete, try to populate with top teams
         if (confederation.completed && qualifiedFromConfederation.length === 0) {
@@ -1246,6 +1303,9 @@ class QualificationService {
   // Simulate next matchday for all confederations
   async simulateNextMatchday(tournamentId) {
     try {
+      // Load world context for ranking lookups
+      await this.loadWorldContext(tournamentId)
+      
       const qualification = await Qualification.findOne({ tournament: tournamentId })
       if (!qualification || !qualification.started) {
         throw new Error('Qualification not started')
@@ -1291,6 +1351,9 @@ class QualificationService {
   // Simulate next matchday for a specific confederation
   async simulateNextMatchdayForConfederation(tournamentId, confederationId) {
     try {
+      // Load world context for ranking lookups
+      await this.loadWorldContext(tournamentId)
+      
       const qualification = await Qualification.findOne({ tournament: tournamentId })
       if (!qualification || !qualification.started) {
         throw new Error('Qualification not started')
@@ -1354,6 +1417,9 @@ class QualificationService {
   // Simulate individual match
   async simulateIndividualMatch(tournamentId, matchId) {
     try {
+      // Load world context for ranking lookups
+      await this.loadWorldContext(tournamentId)
+      
       const qualification = await Qualification.findOne({ tournament: tournamentId })
       if (!qualification || !qualification.started) {
         throw new Error('Qualification not started')
@@ -1402,6 +1468,9 @@ class QualificationService {
   // Simulate all matches for a confederation
   async simulateAllConfederationMatches(tournamentId, confederationId) {
     try {
+      // Load world context for ranking lookups
+      await this.loadWorldContext(tournamentId)
+      
       const qualification = await Qualification.findOne({ tournament: tournamentId })
       if (!qualification || !qualification.started) {
         throw new Error('Qualification not started')
@@ -1465,8 +1534,27 @@ class QualificationService {
         throw new Error('Qualification not started')
       }
 
+      // Debug confederation completion status
+      console.log('🔍 FINALIZATION DEBUG: Checking confederation completion status')
+      const completionStatus = qualification.confederations.map(conf => ({
+        id: conf.confederationId,
+        completed: conf.completed,
+        totalMatches: conf.matches?.length || 0,
+        playedMatches: conf.matches?.filter(m => m.played).length || 0,
+        qualifiedTeams: conf.qualifiedTeams?.length || 0,
+        groups: conf.groups?.length || 0
+      }))
+      console.log('📊 Confederation status:', completionStatus)
+
       const allComplete = qualification.confederations.every(conf => conf.completed)
       if (!allComplete) {
+        const incompleteConfs = qualification.confederations.filter(conf => !conf.completed)
+        console.log('❌ INCOMPLETE CONFEDERATIONS:', incompleteConfs.map(c => ({
+          id: c.confederationId,
+          totalMatches: c.matches?.length || 0,
+          playedMatches: c.matches?.filter(m => m.played).length || 0,
+          completed: c.completed
+        })))
         throw new Error('Not all confederations have completed qualification')
       }
 
@@ -1535,6 +1623,16 @@ class QualificationService {
       
       await qualification.save()
 
+      // Update tournament status to qualification_complete and add qualified teams
+      const TournamentService = await import('./TournamentService.js')
+      await TournamentService.default.updateTournament(tournamentId, tournament.createdBy, {
+        status: 'qualification_complete',
+        qualifiedTeams: qualifiedTeams,
+        teamCount: qualifiedTeams.length
+      })
+
+      console.log('✅ Tournament updated to qualification_complete status')
+
       return {
         success: true,
         qualifiedTeams: qualifiedTeams,
@@ -1550,6 +1648,9 @@ class QualificationService {
   // Simulate OFC playoff match
   async simulateOFCPlayoffMatch(tournamentId, matchId) {
     try {
+      // Load world context for ranking lookups
+      await this.loadWorldContext(tournamentId)
+      
       const qualification = await Qualification.findOne({ tournament: tournamentId })
       if (!qualification || !qualification.started) {
         throw new Error('Qualification not started')

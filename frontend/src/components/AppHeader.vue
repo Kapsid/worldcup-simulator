@@ -11,6 +11,10 @@
         <i class="fas fa-home"></i>
         Dashboard
       </router-link>
+      <router-link to="/worlds" class="nav-link" :class="{ active: $route.path.startsWith('/worlds') }">
+        <i class="fas fa-globe"></i>
+        Worlds
+      </router-link>
       <router-link to="/tournaments" class="nav-link" :class="{ active: $route.path.startsWith('/tournament') }">
         <i class="fas fa-trophy"></i>
         Tournament

@@ -1,15 +1,25 @@
 import Tournament from '../models/Tournament.js'
+import World from '../models/World.js'
+import WorldRankingService from './WorldRankingService.js'
 import { getCountryByCode } from '../data/countries.js'
 
 class TournamentService {
   async createTournament(userId, tournamentData) {
     try {
-      const { name, hostCountry, hostCountryCode, type } = tournamentData
+      const { name, hostCountry, hostCountryCode, type, worldId, year } = tournamentData
 
       // Validate host country
       const country = getCountryByCode(hostCountryCode)
       if (!country) {
         throw new Error('Invalid host country')
+      }
+
+      // If worldId is provided, validate that the world exists and belongs to the user
+      if (worldId) {
+        const world = await World.findOne({ _id: worldId, createdBy: userId, isActive: true })
+        if (!world) {
+          throw new Error('Invalid world or world not found')
+        }
       }
 
       const tournament = new Tournament({
@@ -18,10 +28,22 @@ class TournamentService {
         hostCountryCode,
         type,
         createdBy: userId,
+        worldId: worldId || undefined,
+        year: year || undefined,
         lastOpenedAt: new Date()
       })
 
       await tournament.save()
+
+      // If tournament is linked to a world, add it to the world's tournaments array
+      if (worldId) {
+        await World.findByIdAndUpdate(
+          worldId,
+          { $push: { tournaments: tournament._id } },
+          { new: true }
+        )
+      }
+
       return tournament
     } catch (error) {
       console.error('Error creating tournament:', error)
@@ -31,8 +53,12 @@ class TournamentService {
 
   async getTournamentsByUser(userId) {
     try {
+      // Only return tournaments that are NOT linked to a world
       const tournaments = await Tournament
-        .find({ createdBy: userId })
+        .find({ 
+          createdBy: userId,
+          worldId: { $exists: false }
+        })
         .sort({ lastOpenedAt: -1 })
         .populate('createdBy', 'username name')
 
@@ -86,6 +112,48 @@ class TournamentService {
         { new: true, runValidators: true }
       ).populate('createdBy', 'username name')
 
+      console.log('Tournament update complete - checking conditions:', {
+        status: updateData.status,
+        worldId: tournament.worldId,
+        winner: tournament.winner,
+        tournamentId: tournament._id
+      })
+
+      // If tournament is completed and linked to a world, update rankings
+      if (updateData.status === 'completed' && tournament.worldId && tournament.winner && tournament.runnerUp) {
+        console.log('✓ Tournament completed and linked to world, updating rankings...')
+        try {
+          const tournamentResults = WorldRankingService.generateMockTournamentResults(
+            tournament.year || new Date().getFullYear(),
+            tournament.winner,
+            tournament.runnerUp,
+            tournament.hostCountry
+          )
+          
+          // Extract qualification results if tournament had qualification
+          let qualificationResults = []
+          if (tournament.type === 'qualification') {
+            console.log('📊 Extracting qualification results for ranking update...')
+            const Qualification = await import('../models/Qualification.js')
+            const qualification = await Qualification.default.findOne({ tournament: tournamentId })
+            if (qualification) {
+              qualificationResults = await WorldRankingService.extractQualificationResults(qualification._id)
+            }
+          }
+          
+          await WorldRankingService.updateRankingsAfterTournament(
+            tournament.worldId, 
+            tournamentResults,
+            qualificationResults
+          )
+          console.log('✅ Rankings updated successfully')
+        } catch (rankingError) {
+          console.error('❌ Error updating rankings:', rankingError)
+        }
+      } else {
+        console.log('✗ Conditions not met for ranking update - status:', updateData.status, 'worldId:', tournament.worldId, 'winner:', !!tournament.winner)
+      }
+
       return tournament
     } catch (error) {
       console.error('Error updating tournament:', error)
@@ -93,10 +161,15 @@ class TournamentService {
     }
   }
 
+
   async getLastOpenedTournament(userId) {
     try {
+      // Only return last opened tournament that is NOT linked to a world
       const tournament = await Tournament
-        .findOne({ createdBy: userId })
+        .findOne({ 
+          createdBy: userId,
+          worldId: { $exists: false }
+        })
         .sort({ lastOpenedAt: -1 })
         .populate('createdBy', 'username name')
 

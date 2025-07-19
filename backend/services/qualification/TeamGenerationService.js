@@ -8,7 +8,7 @@ countries.forEach(country => {
 })
 
 class TeamGenerationService {
-  // Generate teams for each confederation (ALL teams, excluding host)
+  // Generate teams for each confederation (ALL teams, excluding host for qualification)
   generateConfederationTeams(confederationId, hostCountryCode) {
     const confederation = confederations.find(c => c.id === confederationId)
     if (!confederation) return []
@@ -18,12 +18,15 @@ class TeamGenerationService {
       country.confederation === confederationId
     )
 
-    // Remove host country if it's in this confederation
+    // Remove host country from confederation teams (host gets automatic qualification)
     if (hostCountryCode) {
-      confederationCountries = confederationCountries.filter(
-        country => country.code !== hostCountryCode
+      confederationCountries = confederationCountries.filter(country => 
+        country.code !== hostCountryCode
       )
     }
+    
+    console.log(`Generating teams for ${confederationId}: ${confederationCountries.length} countries total` + 
+      (hostCountryCode ? ` (excluding host: ${hostCountryCode})` : ''))
 
     // Sort by FIFA ranking (best teams first)
     confederationCountries.sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))

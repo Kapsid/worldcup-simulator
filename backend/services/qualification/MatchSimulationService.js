@@ -1,10 +1,27 @@
 import TeamGenerationService from './TeamGenerationService.js'
 
 class MatchSimulationService {
+  /**
+   * Get team ranking from world rankings if available, otherwise use FIFA ranking
+   */
+  getTeamRanking(team, world) {
+    if (world && world.countryRankings) {
+      const worldRanking = world.countryRankings.find(
+        ranking => ranking.code === team.countryCode || ranking.code === team.code
+      )
+      if (worldRanking) {
+        return worldRanking.rank || 999
+      }
+    }
+    
+    // Fallback to existing ranking system
+    return team.ranking || TeamGenerationService.getTeamRanking(team.name) || 999
+  }
+
   // Calculate match outcome based on team rankings with adjusted weights for qualifying
-  calculateMatchOutcome(homeTeam, awayTeam, isQualifying = true) {
-    const homeRanking = homeTeam.ranking || TeamGenerationService.getTeamRanking(homeTeam.name) || 999
-    const awayRanking = awayTeam.ranking || TeamGenerationService.getTeamRanking(awayTeam.name) || 999
+  calculateMatchOutcome(homeTeam, awayTeam, isQualifying = true, world = null) {
+    const homeRanking = this.getTeamRanking(homeTeam, world)
+    const awayRanking = this.getTeamRanking(awayTeam, world)
     
     // Calculate power based on ranking (lower ranking = higher power)
     const homePower = this.calculateTeamPower(homeRanking)
@@ -127,21 +144,22 @@ class MatchSimulationService {
   }
 
   // Simulate a single match
-  simulateMatch(match, isQualifying = true) {
+  simulateMatch(match, isQualifying = true, world = null) {
     if (match.played) return match
 
-    // Ensure teams have rankings
+    // Ensure teams have rankings - use world rankings if available
     if (!match.homeTeam.ranking) {
-      match.homeTeam.ranking = TeamGenerationService.getTeamRanking(match.homeTeam.name) || 999
+      match.homeTeam.ranking = this.getTeamRanking(match.homeTeam, world)
     }
     if (!match.awayTeam.ranking) {
-      match.awayTeam.ranking = TeamGenerationService.getTeamRanking(match.awayTeam.name) || 999
+      match.awayTeam.ranking = this.getTeamRanking(match.awayTeam, world)
     }
 
     const { homeScore, awayScore } = this.calculateMatchOutcome(
       match.homeTeam, 
       match.awayTeam, 
-      isQualifying
+      isQualifying,
+      world
     )
     
     match.homeScore = homeScore

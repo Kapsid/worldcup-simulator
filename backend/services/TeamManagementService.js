@@ -1,8 +1,26 @@
 import TournamentTeam from '../models/TournamentTeam.js'
 import Tournament from '../models/Tournament.js'
+import World from '../models/World.js'
 import { getCountryByCode, getCountryByName, getBest31PlusHost } from '../data/countries.js'
 
 class TeamManagementService {
+  /**
+   * Get team ranking from world rankings if available, otherwise use FIFA ranking
+   */
+  getTeamRanking(country, world) {
+    if (world && world.countryRankings) {
+      const worldRanking = world.countryRankings.find(
+        ranking => ranking.code === country.code
+      )
+      if (worldRanking) {
+        return worldRanking.rank || 999
+      }
+    }
+    
+    // Fallback to FIFA ranking
+    return country.fifaRanking || 999
+  }
+
   async addTeamToTournament(tournamentId, userId, countryCode) {
     try {
       // Verify tournament belongs to user
@@ -40,13 +58,22 @@ class TeamManagementService {
       // Check if this is the host country
       const isHost = tournament.hostCountryCode === countryCode
 
+      // Load world data if tournament belongs to a world
+      let world = null
+      if (tournament.worldId) {
+        world = await World.findById(tournament.worldId)
+      }
+
+      // Use world ranking if available, otherwise FIFA ranking
+      const teamRanking = this.getTeamRanking(country, world)
+
       // Create new team
       const tournamentTeam = new TournamentTeam({
         tournament: tournamentId,
         countryCode: country.code,
         countryName: country.name,
         countryFlag: country.flag,
-        fifaRanking: country.fifaRanking,
+        fifaRanking: teamRanking, // Store effective ranking (world or FIFA)
         isHost
       })
 
@@ -105,7 +132,7 @@ class TeamManagementService {
 
       const teams = await TournamentTeam
         .find({ tournament: tournamentId })
-        .sort({ fifaRanking: 1 })
+        .sort({ fifaRanking: 1 }) // Sort by effective ranking (which is world ranking when available)
 
       return teams
     } catch (error) {
@@ -130,8 +157,38 @@ class TeamManagementService {
       // Clear existing teams
       await TournamentTeam.deleteMany({ tournament: tournamentId })
 
-      // Get best 31 teams plus host
-      const bestTeams = getBest31PlusHost(tournament.hostCountryCode)
+      // Load world data if tournament belongs to a world
+      let world = null
+      if (tournament.worldId) {
+        world = await World.findById(tournament.worldId)
+      }
+
+      // Get best 31 teams plus host - if using world rankings, we need to sort differently
+      let bestTeams
+      if (world && world.countryRankings) {
+        // Use world rankings to select best teams
+        const { countries } = await import('../data/countries.js')
+        const allCountries = [...countries]
+        
+        // Sort by world ranking and take top 31 plus host
+        allCountries.forEach(country => {
+          country._effectiveRanking = this.getTeamRanking(country, world)
+        })
+        allCountries.sort((a, b) => a._effectiveRanking - b._effectiveRanking)
+        
+        // Ensure host is included
+        const hostIndex = allCountries.findIndex(c => c.code === tournament.hostCountryCode)
+        if (hostIndex > 31) {
+          // Move host to top 32 if not already there
+          const hostCountry = allCountries.splice(hostIndex, 1)[0]
+          allCountries.splice(31, 0, hostCountry)
+        }
+        
+        bestTeams = allCountries.slice(0, 32)
+      } else {
+        // Use existing FIFA-based selection
+        bestTeams = getBest31PlusHost(tournament.hostCountryCode)
+      }
 
       // Create tournament teams
       const tournamentTeams = bestTeams.map(country => ({
@@ -139,7 +196,7 @@ class TeamManagementService {
         countryCode: country.code,
         countryName: country.name,
         countryFlag: country.flag,
-        fifaRanking: country.fifaRanking,
+        fifaRanking: this.getTeamRanking(country, world), // Use effective ranking
         isHost: country.code === tournament.hostCountryCode
       }))
 
@@ -259,8 +316,8 @@ class TeamManagementService {
         throw new Error('Tournament not found')
       }
 
-      // Check if tournament is already active
-      if (tournament.status !== 'draft') {
+      // Check if tournament is already active (allow draft and qualification_complete)
+      if (tournament.status !== 'draft' && tournament.status !== 'qualification_complete') {
         throw new Error('Cannot modify teams in an active tournament')
       }
 
@@ -274,6 +331,12 @@ class TeamManagementService {
 
       if (!qualificationData.completed) {
         throw new Error('Qualification not completed')
+      }
+
+      // Load world data if tournament belongs to a world
+      let world = null
+      if (tournament.worldId) {
+        world = await World.findById(tournament.worldId)
       }
 
       // Clear existing teams first
@@ -290,7 +353,7 @@ class TeamManagementService {
           countryCode: hostCountry.code,
           countryName: hostCountry.name,
           countryFlag: hostCountry.flag,
-          fifaRanking: hostCountry.fifaRanking || 999,
+          fifaRanking: this.getTeamRanking(hostCountry, world), // Use world ranking if available
           isHost: true
         })
         await hostTeam.save()
@@ -319,7 +382,7 @@ class TeamManagementService {
             if (country) {
               countryName = country.name
               countryFlag = country.flag
-              fifaRanking = country.fifaRanking || 999
+              fifaRanking = this.getTeamRanking(country, world) // Use world ranking if available
             }
           }
           

@@ -4,6 +4,8 @@ import App from './App.vue'
 import Login from './views/Login.vue'
 import Register from './views/Register.vue'
 import Dashboard from './views/Dashboard.vue'
+import Worlds from './views/Worlds.vue'
+import WorldDetail from './views/WorldDetail.vue'
 import Tournament from './views/Tournament.vue'
 import TournamentDetail from './views/TournamentDetail.vue'
 import TeamDetail from './views/TeamDetail.vue'
@@ -15,6 +17,8 @@ const routes = [
   { path: '/', component: Login },
   { path: '/register', component: Register },
   { path: '/dashboard', component: Dashboard },
+  { path: '/worlds', component: Worlds },
+  { path: '/worlds/:id', component: WorldDetail },
   { path: '/tournaments', component: Tournament },
   { path: '/tournament/:id', component: TournamentDetail },
   { path: '/tournament/:id/edit', component: TournamentDetail },

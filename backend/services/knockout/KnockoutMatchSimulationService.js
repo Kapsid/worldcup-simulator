@@ -51,17 +51,29 @@ class KnockoutMatchSimulationService {
     const team1Power = this.calculateTeamPower(team1.ranking || 999)
     const team2Power = this.calculateTeamPower(team2.ranking || 999)
     
-    // Use different weights for knockout matches (closer results)
-    const team1Weight = 1.12
-    const team2Weight = 0.88
+    // Determine which team is stronger and apply stronger weights
+    const strongerTeam = team1Power > team2Power ? 'team1' : 'team2'
+    const powerDifference = Math.abs(team1Power - team2Power)
+    
+    // Increase advantage for stronger teams (reduce surprises)
+    const baseWeight = 1.0
+    const advantageMultiplier = Math.min(0.4, powerDifference * 0.03) // Max 40% advantage
+    
+    let team1Weight, team2Weight
+    if (strongerTeam === 'team1') {
+      team1Weight = baseWeight + advantageMultiplier
+      team2Weight = baseWeight - (advantageMultiplier * 0.6)
+    } else {
+      team1Weight = baseWeight - (advantageMultiplier * 0.6)
+      team2Weight = baseWeight + advantageMultiplier
+    }
     
     // Calculate win probabilities
     const totalPower = (team1Power * team1Weight) + (team2Power * team2Weight)
     const team1WinProb = (team1Power * team1Weight) / totalPower
     
-    // Draw probability is higher in knockout matches
-    const powerDifference = Math.abs(team1Power - team2Power)
-    const drawProb = Math.max(0.25, 0.45 - (powerDifference * 0.02))
+    // Reduce draw probability and make it dependent on power difference
+    const drawProb = Math.max(0.15, 0.25 - (powerDifference * 0.015))
     
     // Adjust win probabilities to account for draws
     const adjustedTeam1WinProb = team1WinProb * (1 - drawProb)
@@ -155,9 +167,9 @@ class KnockoutMatchSimulationService {
 
   // Simulate penalty shootout
   simulatePenaltyShootout(team1Power, team2Power) {
-    // Base penalty success rate (80% + power bonus)
-    const team1SuccessRate = Math.min(0.95, 0.75 + (team1Power / 100))
-    const team2SuccessRate = Math.min(0.95, 0.75 + (team2Power / 100))
+    // Improved penalty success rate that better reflects team strength
+    const team1SuccessRate = Math.min(0.90, 0.70 + (team1Power / 80))
+    const team2SuccessRate = Math.min(0.90, 0.70 + (team2Power / 80))
     
     let team1PenaltyGoals = 0
     let team2PenaltyGoals = 0

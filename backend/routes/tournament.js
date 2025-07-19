@@ -56,7 +56,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create new tournament
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { name, hostCountry, hostCountryCode, type } = req.body
+    const { name, hostCountry, hostCountryCode, type, worldId, year } = req.body
 
     // Validation
     if (!name || !hostCountry || !hostCountryCode || !type) {
@@ -80,7 +80,9 @@ router.post('/', authenticateToken, async (req, res) => {
       name,
       hostCountry,
       hostCountryCode,
-      type
+      type,
+      worldId,
+      year
     })
     console.log('Tournament created:', tournament.type)
 
@@ -100,7 +102,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // Update tournament
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { name, status } = req.body
+    const { name, status, winner, runnerUp, finalScore } = req.body
 
     const updateData = {}
     if (name !== undefined) updateData.name = name
@@ -120,6 +122,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
       }
       updateData.status = status
+      
+      // If completing tournament, store results
+      if (status === 'completed') {
+        if (winner) updateData.winner = winner
+        if (runnerUp) updateData.runnerUp = runnerUp
+        if (finalScore) updateData.finalScore = finalScore
+      }
     }
 
     // Validation

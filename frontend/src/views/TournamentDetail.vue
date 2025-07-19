@@ -19,9 +19,9 @@
           </div>
           <h3>Tournament not found</h3>
           <p>The tournament you're looking for doesn't exist or you don't have access to it.</p>
-          <button @click="$router.push('/tournaments')" class="btn-primary">
+          <button @click="goBack" class="btn-primary">
             <i class="fas fa-arrow-left"></i>
-            Back to Tournaments
+            {{ backButtonText }}
           </button>
         </div>
         
@@ -29,9 +29,9 @@
           <!-- Tournament Header -->
           <div class="tournament-header glass-white">
             <div class="back-navigation">
-              <button @click="$router.push('/tournaments')" class="back-btn">
+              <button @click="goBack" class="back-btn">
                 <i class="fas fa-arrow-left"></i>
-                Back to Tournaments
+                {{ backButtonText }}
               </button>
             </div>
             
@@ -337,6 +337,7 @@ export default {
       },
       showTeamManagement: false,
       showQualifying: false,
+      worldId: null,
       showDraw: false,
       showMatches: false,
       showStandings: false,
@@ -345,7 +346,15 @@ export default {
       anyGroupMatchPlayed: false
     }
   },
-  mounted() {
+  computed: {
+    isWorldTournament() {
+      return !!this.worldId
+    },
+    backButtonText() {
+      return this.isWorldTournament ? 'Back to World' : 'Back to Tournaments'
+    }
+  },
+  async mounted() {
     this.username = localStorage.getItem('username') || 'User'
     
     // Check if user is authenticated
@@ -355,12 +364,27 @@ export default {
       return
     }
     
-    this.loadTournament()
+    // Check if this is a world tournament
+    this.worldId = this.$route.query.worldId
+    
+    await this.loadTournament()
     this.loadCountries()
     this.loadUserProfile()
-    this.checkGroupMatchesCompletion()
+    
+    // Only check group matches if tournament was loaded successfully
+    if (this.tournament) {
+      this.checkGroupMatchesCompletion()
+    }
   },
   methods: {
+    goBack() {
+      if (this.isWorldTournament) {
+        this.$router.push(`/worlds/${this.worldId}`)
+      } else {
+        this.$router.push('/tournaments')
+      }
+    },
+    
     async loadTournament() {
       this.loading = true
       try {

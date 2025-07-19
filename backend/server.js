@@ -9,6 +9,7 @@ import matchesRoutes from './routes/matches.js'
 import knockoutRoutes from './routes/knockout.js'
 import profileRoutes from './routes/profile.js'
 import qualificationRoutes from './routes/qualification.js'
+import worldsRoutes from './routes/worlds.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -25,6 +26,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api', authRoutes)
+app.use('/api/worlds', worldsRoutes)
 app.use('/api/tournaments', tournamentRoutes)
 app.use('/api/teams', teamsRoutes)
 app.use('/api/draw', drawRoutes)

@@ -190,7 +190,26 @@ router.post('/:tournamentId/finalize', authenticateToken, async (req, res) => {
   try {
     const { tournamentId } = req.params
     
-    console.log(`Finalizing qualification for tournament ${tournamentId}`)
+    console.log(`🎯 FINALIZE REQUEST RECEIVED for tournament ${tournamentId}`)
+    
+    // First, let's update the qualification status to ensure it's current
+    const qualification = await QualificationService.getQualificationData(tournamentId)
+    if (!qualification) {
+      console.log('❌ No qualification found')
+      return res.status(404).json({ error: 'Qualification not found' })
+    }
+    
+    console.log('📊 Qualification status before finalization:', {
+      started: qualification.started,
+      completed: qualification.completed,
+      confederationCount: qualification.confederations.length,
+      confederationStatus: qualification.confederations.map(c => ({
+        id: c.confederationId,
+        completed: c.completed,
+        matches: `${c.matches?.filter(m => m.played).length || 0}/${c.matches?.length || 0}`,
+        qualified: c.qualifiedTeams?.length || 0
+      }))
+    })
     
     const result = await QualificationService.finalizeQualification(tournamentId)
     
@@ -202,8 +221,42 @@ router.post('/:tournamentId/finalize', authenticateToken, async (req, res) => {
       readyForTournament: result.readyForTournament
     })
   } catch (error) {
-    console.error('Error finalizing qualification:', error)
+    console.error('❌ ERROR finalizing qualification:', error.message)
+    console.error('Full error:', error)
     res.status(500).json({ error: error.message || 'Internal server error' })
+  }
+})
+
+// Debug route to check qualification status
+router.get('/:tournamentId/debug-status', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId } = req.params
+    const qualification = await Qualification.findOne({ tournament: tournamentId })
+    
+    if (!qualification) {
+      return res.json({ error: 'No qualification found' })
+    }
+
+    const status = {
+      tournament: tournamentId,
+      started: qualification.started,
+      completed: qualification.completed,
+      confederations: qualification.confederations.map(conf => ({
+        id: conf.confederationId,
+        completed: conf.completed,
+        totalMatches: conf.matches?.length || 0,
+        playedMatches: conf.matches?.filter(m => m.played).length || 0,
+        qualifiedTeams: conf.qualifiedTeams?.length || 0,
+        qualifiedTeamNames: conf.qualifiedTeams?.map(t => t.name || t.country) || [],
+        groups: conf.groups?.length || 0
+      })),
+      allComplete: qualification.confederations.every(conf => conf.completed)
+    }
+
+    res.json(status)
+  } catch (error) {
+    console.error('Error getting debug status:', error)
+    res.status(500).json({ error: error.message })
   }
 })
 

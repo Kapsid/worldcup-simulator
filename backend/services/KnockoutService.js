@@ -272,13 +272,13 @@ class KnockoutService {
     // Calculate power difference (-19 to +19)
     const powerDiff = homePower - awayPower
     
-    // Home advantage (+2 power boost)
-    const adjustedPowerDiff = powerDiff + 2
+    // Home advantage (+1.5 power boost - reduced from 2)
+    const adjustedPowerDiff = powerDiff + 1.5
     
-    // Surprise factor (0.5% chance in knockouts, very limited)
+    // Reduced surprise factor (0.2% chance in knockouts, very limited)
     let surpriseFactor = 0
-    if (Math.random() < 0.005) {
-      const maxSurprise = Math.max(2, 6 - Math.abs(powerDiff) / 2)
+    if (Math.random() < 0.002) {
+      const maxSurprise = Math.max(1, 4 - Math.abs(powerDiff) / 3)
       surpriseFactor = Math.random() < 0.5 ? -maxSurprise : maxSurprise
     }
     const finalPowerDiff = adjustedPowerDiff + surpriseFactor
@@ -363,50 +363,50 @@ class KnockoutService {
       if (powerDiff !== 0) {
         const goalDiff = outcome.home - outcome.away
         
-        // If home team is stronger, favor home wins (but less extreme for closer knockout games)
+        // If home team is stronger, favor home wins more strongly
         if (powerDiff > 0) {
           if (goalDiff > 0) {
-            weight *= Math.pow(1.15, Math.min(powerDiff, 15)) // Boost home wins less extreme
+            weight *= Math.pow(1.25, Math.min(powerDiff, 15)) // Stronger boost for home wins
           } else if (goalDiff < 0) {
-            weight *= Math.pow(0.85, Math.min(powerDiff, 15)) // Reduce away wins less extreme
+            weight *= Math.pow(0.75, Math.min(powerDiff, 15)) // Stronger reduction for away wins
           } else {
-            // Draws slightly more likely in knockout (closer games)
-            weight *= Math.pow(0.92, Math.min(powerDiff / 1.5, 10))
+            // Draws less likely when there's a clear stronger team
+            weight *= Math.pow(0.85, Math.min(powerDiff / 1.2, 10))
           }
         }
-        // If away team is stronger, favor away wins (but less extreme for closer knockout games)
+        // If away team is stronger, favor away wins more strongly
         else if (powerDiff < 0) {
           if (goalDiff < 0) {
-            weight *= Math.pow(1.15, Math.min(Math.abs(powerDiff), 15)) // Boost away wins less extreme
+            weight *= Math.pow(1.25, Math.min(Math.abs(powerDiff), 15)) // Stronger boost for away wins
           } else if (goalDiff > 0) {
-            weight *= Math.pow(0.85, Math.min(Math.abs(powerDiff), 15)) // Reduce home wins less extreme
+            weight *= Math.pow(0.75, Math.min(Math.abs(powerDiff), 15)) // Stronger reduction for home wins
           } else {
-            // Draws slightly more likely in knockout (closer games)
-            weight *= Math.pow(0.92, Math.min(Math.abs(powerDiff) / 1.5, 10))
+            // Draws less likely when there's a clear stronger team
+            weight *= Math.pow(0.85, Math.min(Math.abs(powerDiff) / 1.2, 10))
           }
         }
         
-        // For large power differences (>6), favor the stronger team but allow more upsets in knockout
+        // For large power differences (>6), strongly favor the stronger team
         if (Math.abs(powerDiff) > 6) {
           const favoredGoalDiff = powerDiff > 0 ? goalDiff : -goalDiff
           if (favoredGoalDiff < 0) {
-            weight *= 0.12 // 88% reduction - upsets slightly more possible in knockout
+            weight *= 0.08 // 92% reduction - upsets very rare
           } else if (favoredGoalDiff === 0 && goalDiff === 0) {
-            weight *= 0.3 // 70% reduction for draws - closer games in knockout
+            weight *= 0.2 // 80% reduction for draws
           } else if (favoredGoalDiff > 0 && favoredGoalDiff < 2) {
-            weight *= 0.7 // Expect wins but closer margins
+            weight *= 0.8 // Expect wins with reasonable margins
           }
         }
         
-        // For extreme power differences (>10), still allow some upsets in knockout drama
+        // For extreme power differences (>10), heavily favor the stronger team
         if (Math.abs(powerDiff) > 10) {
           const favoredGoalDiff = powerDiff > 0 ? goalDiff : -goalDiff
           if (favoredGoalDiff < 0) {
-            weight *= 0.05 // 95% reduction - rare but possible upsets
+            weight *= 0.02 // 98% reduction - upsets extremely rare
           } else if (favoredGoalDiff === 0) {
-            weight *= 0.08 // 92% reduction for draws - closer knockout games
+            weight *= 0.04 // 96% reduction for draws
           } else if (favoredGoalDiff < 2) {
-            weight *= 0.4 // Expect wins but closer margins in knockout
+            weight *= 0.6 // Expect convincing wins
           }
         }
       }
@@ -525,8 +525,108 @@ class KnockoutService {
 
   async completeTournament(tournamentId) {
     const tournament = await Tournament.findById(tournamentId)
+    
+    // Get final match results to set winner and runner-up
+    const finalMatch = await KnockoutMatch.findOne({
+      tournament: tournamentId,
+      round: 'final',
+      status: 'completed'
+    }).populate('winner loser homeTeam awayTeam')
+    
+    console.log('🔍 Final match data:', {
+      exists: !!finalMatch,
+      winner: finalMatch?.winner,
+      loser: finalMatch?.loser,
+      homeTeam: finalMatch?.homeTeam,
+      awayTeam: finalMatch?.awayTeam,
+      score: finalMatch ? `${finalMatch.homeScore}-${finalMatch.awayScore}` : 'N/A'
+    })
+    
+    if (finalMatch && finalMatch.winner && finalMatch.loser) {
+      // Set winner and runner-up matching the Tournament schema
+      tournament.winner = {
+        name: finalMatch.winner.countryName || finalMatch.winner.name || finalMatch.winner.country,
+        code: finalMatch.winner.countryCode || finalMatch.winner.code,
+        flag: finalMatch.winner.countryFlag || finalMatch.winner.flag || '🏆'
+      }
+      
+      tournament.runnerUp = {
+        name: finalMatch.loser.countryName || finalMatch.loser.name || finalMatch.loser.country,
+        code: finalMatch.loser.countryCode || finalMatch.loser.code,
+        flag: finalMatch.loser.countryFlag || finalMatch.loser.flag || '🥈'
+      }
+      
+      // Set final score
+      tournament.finalScore = `${finalMatch.homeScore}-${finalMatch.awayScore}`
+      
+      console.log('🏆 Tournament completion data set:', {
+        winner: tournament.winner,
+        runnerUp: tournament.runnerUp,
+        finalScore: tournament.finalScore,
+        finalMatchData: {
+          winnerId: finalMatch.winner._id,
+          loserId: finalMatch.loser._id,
+          homeScore: finalMatch.homeScore,
+          awayScore: finalMatch.awayScore
+        }
+      })
+    } else {
+      console.error('❌ Final match or winner/loser data missing:', {
+        finalMatchExists: !!finalMatch,
+        winnerExists: finalMatch?.winner ? true : false,
+        loserExists: finalMatch?.loser ? true : false
+      })
+    }
+    
     tournament.status = 'completed'
-    await tournament.save()
+    tournament.completedAt = new Date()
+    const savedTournament = await tournament.save()
+    
+    console.log('✅ Tournament completed and saved with results:', {
+      id: savedTournament._id,
+      winner: savedTournament.winner,
+      runnerUp: savedTournament.runnerUp,
+      finalScore: savedTournament.finalScore,
+      status: savedTournament.status
+    })
+    
+    // Trigger rankings update if this is a world tournament
+    if (tournament.worldId && tournament.winner && tournament.runnerUp) {
+      console.log('🌍 Tournament linked to world, updating rankings...')
+      const WorldRankingService = await import('./WorldRankingService.js')
+      
+      try {
+        // Generate tournament results
+        const tournamentResults = WorldRankingService.default.generateMockTournamentResults(
+          tournament.year || new Date().getFullYear(),
+          tournament.winner,
+          tournament.runnerUp,
+          tournament.hostCountry
+        )
+        
+        // Extract qualification results if tournament had qualification
+        let qualificationResults = []
+        if (tournament.type === 'qualification') {
+          console.log('📊 Extracting qualification results for ranking update...')
+          // Find qualification by tournamentId
+          const Qualification = await import('../models/Qualification.js')
+          const qualification = await Qualification.default.findOne({ tournament: tournamentId })
+          if (qualification) {
+            qualificationResults = await WorldRankingService.default.extractQualificationResults(qualification._id)
+          }
+        }
+        
+        // Update rankings with both tournament and qualification results
+        await WorldRankingService.default.updateRankingsAfterTournament(
+          tournament.worldId, 
+          tournamentResults,
+          qualificationResults
+        )
+        console.log('✅ Rankings updated successfully after tournament completion')
+      } catch (rankingError) {
+        console.error('❌ Error updating rankings:', rankingError)
+      }
+    }
   }
 
   async simulateRound(tournamentId, round) {

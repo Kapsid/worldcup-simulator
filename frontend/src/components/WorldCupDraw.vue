@@ -517,8 +517,22 @@ export default {
 
 .pots-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .pots-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pots-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .pot-card {
@@ -558,17 +572,18 @@ export default {
 .pot-teams {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .team-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 4px 8px;
   background: rgba(0, 102, 204, 0.05);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   transition: all 0.3s ease;
+  font-size: 0.9rem;
 }
 
 .team-item:hover {
@@ -581,36 +596,44 @@ export default {
 }
 
 .team-flag {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .team-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
 }
 
 .team-name {
   font-weight: var(--font-weight-semibold);
   color: var(--fifa-dark-blue);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .team-ranking {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--gray);
 }
 
 .host-badge {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
+  gap: 2px;
+  padding: 1px 4px;
   background: var(--fifa-gold);
   color: var(--fifa-dark-blue);
-  border-radius: 8px;
-  font-size: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.55rem;
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .draw-controls {
