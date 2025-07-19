@@ -241,33 +241,33 @@ class KnockoutService {
     }
   }
 
-  // Convert FIFA ranking to power (1-20 scale)
-  calculateTeamPower(fifaRanking) {
-    if (fifaRanking <= 5) return 20      // Top 5 teams
-    if (fifaRanking <= 10) return 19     // Top 10 teams  
-    if (fifaRanking <= 15) return 18     // Top 15 teams
-    if (fifaRanking <= 20) return 17     // Top 20 teams
-    if (fifaRanking <= 30) return 16     // Top 30 teams
-    if (fifaRanking <= 40) return 15     // Top 40 teams
-    if (fifaRanking <= 50) return 14     // Top 50 teams
-    if (fifaRanking <= 60) return 13     // Top 60 teams
-    if (fifaRanking <= 70) return 12     // Top 70 teams
-    if (fifaRanking <= 80) return 11     // Top 80 teams
-    if (fifaRanking <= 90) return 10     // Top 90 teams
-    if (fifaRanking <= 100) return 9     // Top 100 teams
-    if (fifaRanking <= 110) return 8     // Top 110 teams
-    if (fifaRanking <= 120) return 7     // Top 120 teams
-    if (fifaRanking <= 130) return 6     // Top 130 teams
-    if (fifaRanking <= 140) return 5     // Top 140 teams
-    if (fifaRanking <= 150) return 4     // Top 150 teams
-    if (fifaRanking <= 170) return 3     // Top 170 teams
-    if (fifaRanking <= 190) return 2     // Top 190 teams
+  // Convert world ranking to power (1-20 scale)
+  calculateTeamPower(worldRanking) {
+    if (worldRanking <= 5) return 20      // Top 5 teams
+    if (worldRanking <= 10) return 19     // Top 10 teams  
+    if (worldRanking <= 15) return 18     // Top 15 teams
+    if (worldRanking <= 20) return 17     // Top 20 teams
+    if (worldRanking <= 30) return 16     // Top 30 teams
+    if (worldRanking <= 40) return 15     // Top 40 teams
+    if (worldRanking <= 50) return 14     // Top 50 teams
+    if (worldRanking <= 60) return 13     // Top 60 teams
+    if (worldRanking <= 70) return 12     // Top 70 teams
+    if (worldRanking <= 80) return 11     // Top 80 teams
+    if (worldRanking <= 90) return 10     // Top 90 teams
+    if (worldRanking <= 100) return 9     // Top 100 teams
+    if (worldRanking <= 110) return 8     // Top 110 teams
+    if (worldRanking <= 120) return 7     // Top 120 teams
+    if (worldRanking <= 130) return 6     // Top 130 teams
+    if (worldRanking <= 140) return 5     // Top 140 teams
+    if (worldRanking <= 150) return 4     // Top 150 teams
+    if (worldRanking <= 170) return 3     // Top 170 teams
+    if (worldRanking <= 190) return 2     // Top 190 teams
     return 1                             // Bottom teams
   }
 
   simulateRegularTime(homeTeam, awayTeam) {
-    const homePower = this.calculateTeamPower(homeTeam.fifaRanking)
-    const awayPower = this.calculateTeamPower(awayTeam.fifaRanking)
+    const homePower = this.calculateTeamPower(homeTeam.worldRanking)
+    const awayPower = this.calculateTeamPower(awayTeam.worldRanking)
     
     // Calculate power difference (-19 to +19)
     const powerDiff = homePower - awayPower
@@ -313,8 +313,8 @@ class KnockoutService {
   }
 
   simulateExtraTime(homeTeam, awayTeam) {
-    const homePower = this.calculateTeamPower(homeTeam.fifaRanking)
-    const awayPower = this.calculateTeamPower(awayTeam.fifaRanking)
+    const homePower = this.calculateTeamPower(homeTeam.worldRanking)
+    const awayPower = this.calculateTeamPower(awayTeam.worldRanking)
     
     // Calculate power difference for extra time
     const powerDiff = homePower - awayPower

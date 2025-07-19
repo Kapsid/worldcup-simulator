@@ -120,6 +120,12 @@
               </div>
             </div>
             
+            <!-- Match Venue -->
+            <div v-if="match.city" class="match-venue">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>{{ match.city }}</span>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -440,6 +446,23 @@ export default {
 .match-status {
   font-size: 0.7rem;
   color: var(--gray);
+}
+
+.match-venue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 102, 204, 0.1);
+  color: var(--gray);
+  font-size: 0.75rem;
+}
+
+.match-venue i {
+  color: var(--fifa-blue);
+  font-size: 0.7rem;
 }
 
 .match-teams {

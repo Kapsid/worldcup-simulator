@@ -1,13 +1,14 @@
 import Qualification from '../models/Qualification.js'
 import Tournament from '../models/Tournament.js'
 import World from '../models/World.js'
+import TournamentNewsService from './TournamentNewsService.js'
 import { confederations } from '../data/confederations.js'
 import { countries } from '../data/countries.js'
 
 // Create a ranking lookup map for faster access
 const rankingLookup = new Map()
 countries.forEach(country => {
-  rankingLookup.set(country.name, country.fifaRanking || 999)
+  rankingLookup.set(country.name, country.worldRanking || 999)
 })
 
 class QualificationService {
@@ -52,7 +53,7 @@ class QualificationService {
     console.log(`QualificationService: Generating teams for ${confederationId}: ${confederationCountries.length} countries total` + 
       (hostCountryCode ? ` (excluding host: ${hostCountryCode})` : ''))
 
-    // Sort by ranking (world rankings if available, otherwise FIFA ranking)
+    // Sort by ranking (world rankings if available, otherwise world ranking)
     confederationCountries.sort((a, b) => this.getTeamRanking(a) - this.getTeamRanking(b))
 
     return confederationCountries.map((country, index) => {
@@ -61,7 +62,7 @@ class QualificationService {
         name: country.name,
         country: country.name,
         flag: country.flag,
-        ranking: country.fifaRanking || 999,
+        ranking: country.worldRanking || 999,
         confederationRank: index + 1
       }
       
@@ -185,7 +186,7 @@ class QualificationService {
         })
       }
 
-      // Sort teams by ranking (world rankings if available, otherwise FIFA ranking)
+      // Sort teams by ranking (world rankings if available, otherwise world ranking)
       const sortedTeams = [...teams].sort((a, b) => this.getTeamRanking(a) - this.getTeamRanking(b))
       
       // Create pots based on ranking tiers (one pot per "tier" within groups)
@@ -701,33 +702,33 @@ class QualificationService {
     }
   }
 
-  // Convert FIFA ranking to power (1-20 scale)
-  calculateTeamPower(fifaRanking) {
+  // Convert world ranking to power (1-20 scale)
+  calculateTeamPower(worldRanking) {
     // Handle undefined/null rankings (fallback to worst ranking)
-    if (!fifaRanking || fifaRanking === null || fifaRanking === undefined) {
-      console.log('WARNING: calculateTeamPower called with invalid ranking:', fifaRanking)
+    if (!worldRanking || worldRanking === null || worldRanking === undefined) {
+      console.log('WARNING: calculateTeamPower called with invalid ranking:', worldRanking)
       return 1
     }
     
-    if (fifaRanking <= 5) return 20      // Top 5 teams
-    if (fifaRanking <= 10) return 19     // Top 10 teams  
-    if (fifaRanking <= 15) return 18     // Top 15 teams
-    if (fifaRanking <= 20) return 17     // Top 20 teams
-    if (fifaRanking <= 30) return 16     // Top 30 teams
-    if (fifaRanking <= 40) return 15     // Top 40 teams
-    if (fifaRanking <= 50) return 14     // Top 50 teams
-    if (fifaRanking <= 60) return 13     // Top 60 teams
-    if (fifaRanking <= 70) return 12     // Top 70 teams
-    if (fifaRanking <= 80) return 11     // Top 80 teams
-    if (fifaRanking <= 90) return 10     // Top 90 teams
-    if (fifaRanking <= 100) return 9     // Top 100 teams
-    if (fifaRanking <= 110) return 8     // Top 110 teams
-    if (fifaRanking <= 120) return 7     // Top 120 teams
-    if (fifaRanking <= 130) return 6     // Top 130 teams
-    if (fifaRanking <= 140) return 5     // Top 140 teams
-    if (fifaRanking <= 150) return 4     // Top 150 teams
-    if (fifaRanking <= 170) return 3     // Top 170 teams
-    if (fifaRanking <= 190) return 2     // Top 190 teams
+    if (worldRanking <= 5) return 20      // Top 5 teams
+    if (worldRanking <= 10) return 19     // Top 10 teams  
+    if (worldRanking <= 15) return 18     // Top 15 teams
+    if (worldRanking <= 20) return 17     // Top 20 teams
+    if (worldRanking <= 30) return 16     // Top 30 teams
+    if (worldRanking <= 40) return 15     // Top 40 teams
+    if (worldRanking <= 50) return 14     // Top 50 teams
+    if (worldRanking <= 60) return 13     // Top 60 teams
+    if (worldRanking <= 70) return 12     // Top 70 teams
+    if (worldRanking <= 80) return 11     // Top 80 teams
+    if (worldRanking <= 90) return 10     // Top 90 teams
+    if (worldRanking <= 100) return 9     // Top 100 teams
+    if (worldRanking <= 110) return 8     // Top 110 teams
+    if (worldRanking <= 120) return 7     // Top 120 teams
+    if (worldRanking <= 130) return 6     // Top 130 teams
+    if (worldRanking <= 140) return 5     // Top 140 teams
+    if (worldRanking <= 150) return 4     // Top 150 teams
+    if (worldRanking <= 170) return 3     // Top 170 teams
+    if (worldRanking <= 190) return 2     // Top 190 teams
     return 1                             // Bottom teams
   }
 
@@ -747,7 +748,7 @@ class QualificationService {
   }
 
   simulateMatch(homeTeam, awayTeam) {
-    // Get rankings using world rankings if available, otherwise FIFA rankings
+    // Get rankings using world rankings if available, otherwise world rankings
     let homeRanking = this.getTeamRanking(homeTeam)
     let awayRanking = this.getTeamRanking(awayTeam)
     
@@ -1396,11 +1397,39 @@ class QualificationService {
           this.updateGroupStandings(group, match)
         }
         
+        // Generate news for this qualification match
+        const homeTeamData = {
+          countryName: match.homeTeam.name,
+          worldRanking: this.getTeamRanking(match.homeTeam)
+        }
+        const awayTeamData = {
+          countryName: match.awayTeam.name,
+          worldRanking: this.getTeamRanking(match.awayTeam)
+        }
+        
+        await TournamentNewsService.processMatchResult(
+          tournamentId,
+          match,
+          homeTeamData,
+          awayTeamData
+        )
+        
         matchesPlayed++
       }
 
       this.updateConfederationStatus(qualification)
       await qualification.save()
+      
+      // Check if confederation completed and generate news
+      if (matchesPlayed > 0) {
+        // Check if this was the final matchday for the confederation
+        if (confederation.completed) {
+          await TournamentNewsService.notifyMilestone(tournamentId, 'qualification_complete', {
+            confederation: confederation.name,
+            qualifiedTeams: confederation.qualified ? confederation.qualified.length : 0
+          })
+        }
+      }
       
       return { 
         matchesPlayed, 
@@ -1458,6 +1487,23 @@ class QualificationService {
       this.updateConfederationStatus(qualification)
       await qualification.save()
       
+      // Generate news for this qualification match
+      const homeTeamData = {
+        countryName: targetMatch.homeTeam.name,
+        worldRanking: this.getTeamRanking(targetMatch.homeTeam)
+      }
+      const awayTeamData = {
+        countryName: targetMatch.awayTeam.name,
+        worldRanking: this.getTeamRanking(targetMatch.awayTeam)
+      }
+      
+      await TournamentNewsService.processMatchResult(
+        tournamentId,
+        targetMatch,
+        homeTeamData,
+        awayTeamData
+      )
+      
       return { match: targetMatch, updated: true }
     } catch (error) {
       console.error('Error simulating individual match:', error)
@@ -1494,6 +1540,23 @@ class QualificationService {
         if (group) {
           this.updateGroupStandings(group, match)
         }
+        
+        // Generate news for this qualification match
+        const homeTeamData = {
+          countryName: match.homeTeam.name,
+          worldRanking: this.getTeamRanking(match.homeTeam)
+        }
+        const awayTeamData = {
+          countryName: match.awayTeam.name,
+          worldRanking: this.getTeamRanking(match.awayTeam)
+        }
+        
+        await TournamentNewsService.processMatchResult(
+          tournamentId,
+          match,
+          homeTeamData,
+          awayTeamData
+        )
         
         matchesPlayed++
       }

@@ -22,7 +22,12 @@
           <tr v-for="(team, index) in sortedTeams" :key="team.teamId" :class="getPositionClass(index)">
             <td class="team-name">
               <span class="team-flag">{{ team.flag }}</span>
-              <span class="team-text">{{ team.name }}</span>
+              <router-link 
+                :to="`/tournament/${tournamentId}/qualifying-team/${team.teamId}`" 
+                class="team-text clickable-team"
+              >
+                {{ team.name }}
+              </router-link>
             </td>
             <td>{{ team.played }}</td>
             <td>{{ team.won }}</td>
@@ -47,6 +52,10 @@ export default {
   props: {
     group: {
       type: Object,
+      required: true
+    },
+    tournamentId: {
+      type: String,
       required: true
     }
   },
@@ -74,7 +83,8 @@ export default {
       if (index === 1) return 'qualified'
       if (index === this.group.teams.length - 1) return 'eliminated'
       return ''
-    }
+    },
+    
   }
 }
 </script>
@@ -142,6 +152,25 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.clickable-team {
+  color: var(--white) !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+  position: relative;
+  z-index: 10;
+  display: inline-block;
+}
+
+.clickable-team:hover {
+  color: var(--fifa-gold) !important;
+  text-decoration: underline !important;
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.05);
 }
 
 .points {

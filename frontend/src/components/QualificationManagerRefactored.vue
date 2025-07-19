@@ -47,6 +47,7 @@
                       v-for="group in getActiveConfederationData().groups" 
                       :key="group.groupId"
                       :group="group"
+                      :tournament-id="tournament._id"
                     />
                   </div>
                   <div v-else class="no-groups">
@@ -75,6 +76,7 @@
                     :matches="getMatchesForActiveMatchday()"
                     :simulating-match="simulatingMatch"
                     :read-only="readOnly"
+                    :tournament-id="tournament._id"
                     @simulate-match="simulateMatch"
                     @view-match="viewMatch"
                   />
@@ -103,7 +105,14 @@
                         <div class="playoff-teams">
                           <div class="team">
                             <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
-                            <span class="team-name">{{ match.homeTeam?.name || 'TBD' }}</span>
+                            <router-link 
+                              v-if="match.homeTeam?.teamId"
+                              :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
+                              class="team-name clickable-team-playoff"
+                            >
+                              {{ match.homeTeam.name }}
+                            </router-link>
+                            <span v-else class="team-name">TBD</span>
                           </div>
                           
                           <div class="playoff-score">
@@ -114,7 +123,14 @@
                           </div>
                           
                           <div class="team">
-                            <span class="team-name">{{ match.awayTeam?.name || 'TBD' }}</span>
+                            <router-link 
+                              v-if="match.awayTeam?.teamId"
+                              :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
+                              class="team-name clickable-team-playoff"
+                            >
+                              {{ match.awayTeam.name }}
+                            </router-link>
+                            <span v-else class="team-name">TBD</span>
                             <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
                           </div>
                         </div>
@@ -160,7 +176,12 @@
                         class="qualified-team"
                       >
                         <span class="team-flag">{{ team.flag }}</span>
-                        <span class="team-name">{{ team.name }}</span>
+                        <router-link 
+                          :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
+                          class="team-name clickable-team-qualified"
+                        >
+                          {{ team.name }}
+                        </router-link>
                         <span class="team-rank">#{{ team.ranking }}</span>
                       </div>
                     </div>
@@ -575,6 +596,39 @@ export default {
   flex: 1;
   font-weight: var(--font-weight-medium);
   color: var(--white);
+}
+
+.clickable-team-qualified {
+  color: var(--white);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+.clickable-team-qualified:hover {
+  color: var(--fifa-gold);
+  text-decoration: underline;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.clickable-team-playoff {
+  color: var(--white);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: var(--font-weight-medium);
+}
+
+.clickable-team-playoff:hover {
+  color: var(--fifa-gold);
+  text-decoration: underline;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .qualified-team .team-rank {

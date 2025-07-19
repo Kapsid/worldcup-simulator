@@ -5,7 +5,7 @@ import { getCountryByCode, getCountryByName, getBest31PlusHost } from '../data/c
 
 class TeamManagementService {
   /**
-   * Get team ranking from world rankings if available, otherwise use FIFA ranking
+   * Get team ranking from world rankings if available, otherwise use world ranking
    */
   getTeamRanking(country, world) {
     if (world && world.countryRankings) {
@@ -17,8 +17,8 @@ class TeamManagementService {
       }
     }
     
-    // Fallback to FIFA ranking
-    return country.fifaRanking || 999
+    // Fallback to world ranking
+    return country.worldRanking || 999
   }
 
   async addTeamToTournament(tournamentId, userId, countryCode) {
@@ -64,7 +64,7 @@ class TeamManagementService {
         world = await World.findById(tournament.worldId)
       }
 
-      // Use world ranking if available, otherwise FIFA ranking
+      // Use world ranking if available, otherwise world ranking
       const teamRanking = this.getTeamRanking(country, world)
 
       // Create new team
@@ -73,7 +73,7 @@ class TeamManagementService {
         countryCode: country.code,
         countryName: country.name,
         countryFlag: country.flag,
-        fifaRanking: teamRanking, // Store effective ranking (world or FIFA)
+        worldRanking: teamRanking, // Store effective ranking (world or world)
         isHost
       })
 
@@ -132,7 +132,7 @@ class TeamManagementService {
 
       const teams = await TournamentTeam
         .find({ tournament: tournamentId })
-        .sort({ fifaRanking: 1 }) // Sort by effective ranking (which is world ranking when available)
+        .sort({ worldRanking: 1 }) // Sort by effective ranking (which is world ranking when available)
 
       return teams
     } catch (error) {
@@ -186,7 +186,7 @@ class TeamManagementService {
         
         bestTeams = allCountries.slice(0, 32)
       } else {
-        // Use existing FIFA-based selection
+        // Use existing world ranking-based selection
         bestTeams = getBest31PlusHost(tournament.hostCountryCode)
       }
 
@@ -196,7 +196,7 @@ class TeamManagementService {
         countryCode: country.code,
         countryName: country.name,
         countryFlag: country.flag,
-        fifaRanking: this.getTeamRanking(country, world), // Use effective ranking
+        worldRanking: this.getTeamRanking(country, world), // Use effective ranking
         isHost: country.code === tournament.hostCountryCode
       }))
 
@@ -353,7 +353,7 @@ class TeamManagementService {
           countryCode: hostCountry.code,
           countryName: hostCountry.name,
           countryFlag: hostCountry.flag,
-          fifaRanking: this.getTeamRanking(hostCountry, world), // Use world ranking if available
+          worldRanking: this.getTeamRanking(hostCountry, world), // Use world ranking if available
           isHost: true
         })
         await hostTeam.save()
@@ -373,7 +373,7 @@ class TeamManagementService {
           let countryCode = null
           let countryName = null
           let countryFlag = null
-          let fifaRanking = 999
+          let worldRanking = 999
           
           // Extract country code from teamId (e.g., "uefa_GER" -> "GER")
           if (qualifiedTeam.teamId) {
@@ -382,7 +382,7 @@ class TeamManagementService {
             if (country) {
               countryName = country.name
               countryFlag = country.flag
-              fifaRanking = this.getTeamRanking(country, world) // Use world ranking if available
+              worldRanking = this.getTeamRanking(country, world) // Use world ranking if available
             }
           }
           
@@ -390,7 +390,7 @@ class TeamManagementService {
           if (!countryName) {
             countryName = qualifiedTeam.name || qualifiedTeam.country
             countryFlag = qualifiedTeam.flag || '🏆'
-            fifaRanking = qualifiedTeam.ranking || 999
+            worldRanking = qualifiedTeam.ranking || 999
             
             // Try to extract country code from name if not available
             if (!countryCode && countryName) {
@@ -413,7 +413,7 @@ class TeamManagementService {
             countryCode: countryCode,
             countryName: countryName,
             countryFlag: countryFlag,
-            fifaRanking: fifaRanking,
+            worldRanking: worldRanking,
             isHost: false
           })
 
@@ -428,6 +428,114 @@ class TeamManagementService {
       return teams
     } catch (error) {
       console.error('Error adding qualified teams:', error)
+      throw error
+    }
+  }
+
+  async getTeamTournamentHistory(countryCode, userId) {
+    try {
+      // Get country data to validate country exists
+      const country = getCountryByCode(countryCode)
+      if (!country) {
+        throw new Error('Country not found')
+      }
+
+      const history = {
+        country: {
+          code: countryCode,
+          name: country.name,
+          flag: country.flag
+        },
+        tournaments: [],
+        statistics: {
+          totalTournaments: 0,
+          wins: 0,
+          runnerUps: 0,
+          semifinals: 0,
+          quarterfinals: 0,
+          round16: 0,
+          groupStage: 0,
+          qualification: 0,
+          bestResult: 'Did not qualify'
+        }
+      }
+
+      // Find all tournaments where this team participated (both worlds and independent)
+      const tournaments = await Tournament.find({ 
+        createdBy: userId,
+        status: 'completed'
+      }).populate('worldId').sort({ completedAt: -1 })
+
+      for (const tournament of tournaments) {
+        // Check if team participated in this tournament
+        const tournamentTeam = await TournamentTeam.findOne({
+          tournament: tournament._id,
+          countryCode: countryCode
+        })
+
+        if (tournamentTeam) {
+          const tournamentResult = {
+            tournamentId: tournament._id,
+            year: tournament.year || new Date(tournament.completedAt).getFullYear(),
+            name: tournament.name,
+            hostCountry: tournament.hostCountry,
+            hostCountryCode: tournament.hostCountryCode,
+            isWorldTournament: !!tournament.worldId,
+            worldName: tournament.worldId?.name,
+            result: 'Group Stage',
+            position: null,
+            qualified: true
+          }
+
+          // Determine the team's result in this tournament
+          if (tournament.winner?.code === countryCode) {
+            tournamentResult.result = 'Winner'
+            tournamentResult.position = 1
+            history.statistics.wins++
+          } else if (tournament.runnerUp?.code === countryCode) {
+            tournamentResult.result = 'Runner-up'
+            tournamentResult.position = 2
+            history.statistics.runnerUps++
+          } else {
+            // Check knockout results for more specific placement
+            // This would require looking at knockout matches, but for now we'll keep it simple
+            tournamentResult.result = 'Group Stage'
+            history.statistics.groupStage++
+          }
+
+          history.tournaments.push(tournamentResult)
+          history.statistics.totalTournaments++
+        } else {
+          // Check if team was in qualification but didn't qualify
+          try {
+            // This would require checking qualification data
+            // For now, we'll skip unqualified teams
+          } catch (error) {
+            // Ignore qualification check errors
+          }
+        }
+      }
+
+      // Determine best result
+      if (history.statistics.wins > 0) {
+        history.statistics.bestResult = 'World Cup Winner'
+      } else if (history.statistics.runnerUps > 0) {
+        history.statistics.bestResult = 'World Cup Runner-up'
+      } else if (history.statistics.semifinals > 0) {
+        history.statistics.bestResult = 'Semi-finals'
+      } else if (history.statistics.quarterfinals > 0) {
+        history.statistics.bestResult = 'Quarter-finals'
+      } else if (history.statistics.round16 > 0) {
+        history.statistics.bestResult = 'Round of 16'
+      } else if (history.statistics.groupStage > 0) {
+        history.statistics.bestResult = 'Group Stage'
+      } else if (history.statistics.qualification > 0) {
+        history.statistics.bestResult = 'Qualified'
+      }
+
+      return history
+    } catch (error) {
+      console.error('Error getting team tournament history:', error)
       throw error
     }
   }

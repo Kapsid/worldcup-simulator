@@ -3,7 +3,7 @@ export const countries = [
     "name": "Argentina",
     "code": "ARG",
     "flag": "🇦🇷",
-    "fifaRanking": 1,
+    "worldRanking": 1,
     "capital": "Buenos Aires",
     "population": "45,376,763",
     "confederation": "conmebol"
@@ -12,7 +12,7 @@ export const countries = [
     "name": "France",
     "code": "FRA",
     "flag": "🇫🇷",
-    "fifaRanking": 2,
+    "worldRanking": 2,
     "capital": "Paris",
     "population": "68,084,217",
     "confederation": "uefa"
@@ -21,7 +21,7 @@ export const countries = [
     "name": "Brazil",
     "code": "BRA",
     "flag": "🇧🇷",
-    "fifaRanking": 3,
+    "worldRanking": 3,
     "capital": "Brasília",
     "population": "215,313,498",
     "confederation": "conmebol"
@@ -30,7 +30,7 @@ export const countries = [
     "name": "England",
     "code": "ENG",
     "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-    "fifaRanking": 4,
+    "worldRanking": 4,
     "capital": "London",
     "population": "56,489,800",
     "confederation": "uefa"
@@ -39,7 +39,7 @@ export const countries = [
     "name": "Belgium",
     "code": "BEL",
     "flag": "🇧🇪",
-    "fifaRanking": 5,
+    "worldRanking": 5,
     "capital": "Brussels",
     "population": "11,589,623",
     "confederation": "uefa"
@@ -48,7 +48,7 @@ export const countries = [
     "name": "Netherlands",
     "code": "NED",
     "flag": "🇳🇱",
-    "fifaRanking": 6,
+    "worldRanking": 6,
     "capital": "Amsterdam",
     "population": "17,441,139",
     "confederation": "uefa"
@@ -57,7 +57,7 @@ export const countries = [
     "name": "Croatia",
     "code": "CRO",
     "flag": "🇭🇷",
-    "fifaRanking": 7,
+    "worldRanking": 7,
     "capital": "Zagreb",
     "population": "3,888,529",
     "confederation": "uefa"
@@ -66,7 +66,7 @@ export const countries = [
     "name": "Italy",
     "code": "ITA",
     "flag": "🇮🇹",
-    "fifaRanking": 8,
+    "worldRanking": 8,
     "capital": "Rome",
     "population": "59,037,474",
     "confederation": "uefa"
@@ -75,7 +75,7 @@ export const countries = [
     "name": "Portugal",
     "code": "POR",
     "flag": "🇵🇹",
-    "fifaRanking": 9,
+    "worldRanking": 9,
     "capital": "Lisbon",
     "population": "10,467,366",
     "confederation": "uefa"
@@ -84,7 +84,7 @@ export const countries = [
     "name": "Spain",
     "code": "ESP",
     "flag": "🇪🇸",
-    "fifaRanking": 10,
+    "worldRanking": 10,
     "capital": "Madrid",
     "population": "47,558,630",
     "confederation": "uefa"
@@ -93,7 +93,7 @@ export const countries = [
     "name": "Morocco",
     "code": "MAR",
     "flag": "🇲🇦",
-    "fifaRanking": 11,
+    "worldRanking": 11,
     "capital": "Rabat",
     "population": "37,344,795",
     "confederation": "caf"
@@ -102,7 +102,7 @@ export const countries = [
     "name": "Switzerland",
     "code": "SUI",
     "flag": "🇨🇭",
-    "fifaRanking": 12,
+    "worldRanking": 12,
     "capital": "Bern",
     "population": "8,737,573",
     "confederation": "uefa"
@@ -111,7 +111,7 @@ export const countries = [
     "name": "USA",
     "code": "USA",
     "flag": "🇺🇸",
-    "fifaRanking": 13,
+    "worldRanking": 13,
     "capital": "Washington D.C.",
     "population": "331,449,281",
     "confederation": "concacaf"
@@ -120,7 +120,7 @@ export const countries = [
     "name": "Germany",
     "code": "GER",
     "flag": "🇩🇪",
-    "fifaRanking": 14,
+    "worldRanking": 14,
     "capital": "Berlin",
     "population": "83,240,525",
     "confederation": "uefa"
@@ -129,7 +129,7 @@ export const countries = [
     "name": "Mexico",
     "code": "MEX",
     "flag": "🇲🇽",
-    "fifaRanking": 15,
+    "worldRanking": 15,
     "capital": "Mexico City",
     "population": "128,932,753",
     "confederation": "concacaf"
@@ -138,7 +138,7 @@ export const countries = [
     "name": "Japan",
     "code": "JPN",
     "flag": "🇯🇵",
-    "fifaRanking": 16,
+    "worldRanking": 16,
     "capital": "Tokyo",
     "population": "125,836,021",
     "confederation": "afc"
@@ -147,7 +147,7 @@ export const countries = [
     "name": "Senegal",
     "code": "SEN",
     "flag": "🇸🇳",
-    "fifaRanking": 17,
+    "worldRanking": 17,
     "capital": "Dakar",
     "population": "17,196,301",
     "confederation": "caf"
@@ -156,7 +156,7 @@ export const countries = [
     "name": "Sweden",
     "code": "SWE",
     "flag": "🇸🇪",
-    "fifaRanking": 17,
+    "worldRanking": 17,
     "confederation": "uefa",
     "capital": "Stockholm",
     "population": "10,415,811"
@@ -165,7 +165,7 @@ export const countries = [
     "name": "Iran",
     "code": "IRN",
     "flag": "🇮🇷",
-    "fifaRanking": 18,
+    "worldRanking": 18,
     "capital": "Tehran",
     "population": "84,923,314",
     "confederation": "afc"
@@ -174,7 +174,7 @@ export const countries = [
     "name": "Denmark",
     "code": "DEN",
     "flag": "🇩🇰",
-    "fifaRanking": 19,
+    "worldRanking": 19,
     "capital": "Copenhagen",
     "population": "5,831,404",
     "confederation": "uefa"
@@ -183,7 +183,7 @@ export const countries = [
     "name": "Wales",
     "code": "WAL",
     "flag": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
-    "fifaRanking": 19,
+    "worldRanking": 19,
     "confederation": "uefa",
     "capital": "Cardiff",
     "population": "3,107,500"
@@ -192,7 +192,7 @@ export const countries = [
     "name": "Australia",
     "code": "AUS",
     "flag": "🇦🇺",
-    "fifaRanking": 20,
+    "worldRanking": 20,
     "capital": "Canberra",
     "population": "25,687,041",
     "confederation": "afc"
@@ -201,7 +201,7 @@ export const countries = [
     "name": "Uruguay",
     "code": "URU",
     "flag": "🇺🇾",
-    "fifaRanking": 21,
+    "worldRanking": 21,
     "capital": "Montevideo",
     "population": "3,554,915",
     "confederation": "conmebol"
@@ -210,7 +210,7 @@ export const countries = [
     "name": "Colombia",
     "code": "COL",
     "flag": "🇨🇴",
-    "fifaRanking": 22,
+    "worldRanking": 22,
     "capital": "Bogotá",
     "population": "51,049,498",
     "confederation": "conmebol"
@@ -219,7 +219,7 @@ export const countries = [
     "name": "South Korea",
     "code": "KOR",
     "flag": "🇰🇷",
-    "fifaRanking": 23,
+    "worldRanking": 23,
     "capital": "Seoul",
     "population": "51,780,579",
     "confederation": "afc"
@@ -228,7 +228,7 @@ export const countries = [
     "name": "Nigeria",
     "code": "NGA",
     "flag": "🇳🇬",
-    "fifaRanking": 24,
+    "worldRanking": 24,
     "capital": "Abuja",
     "population": "218,541,212",
     "confederation": "caf"
@@ -237,7 +237,7 @@ export const countries = [
     "name": "Costa Rica",
     "code": "CRC",
     "flag": "🇨🇷",
-    "fifaRanking": 25,
+    "worldRanking": 25,
     "capital": "San José",
     "population": "5,123,105",
     "confederation": "concacaf"
@@ -246,7 +246,7 @@ export const countries = [
     "name": "Tunisia",
     "code": "TUN",
     "flag": "🇹🇳",
-    "fifaRanking": 26,
+    "worldRanking": 26,
     "capital": "Tunis",
     "population": "11,935,766",
     "confederation": "caf"
@@ -255,7 +255,7 @@ export const countries = [
     "name": "Poland",
     "code": "POL",
     "flag": "🇵🇱",
-    "fifaRanking": 27,
+    "worldRanking": 27,
     "capital": "Warsaw",
     "population": "38,268,000",
     "confederation": "uefa"
@@ -264,7 +264,7 @@ export const countries = [
     "name": "Ukraine",
     "code": "UKR",
     "flag": "🇺🇦",
-    "fifaRanking": 28,
+    "worldRanking": 28,
     "capital": "Kyiv",
     "population": "41,167,336",
     "confederation": "uefa"
@@ -273,7 +273,7 @@ export const countries = [
     "name": "Austria",
     "code": "AUT",
     "flag": "🇦🇹",
-    "fifaRanking": 29,
+    "worldRanking": 29,
     "capital": "Vienna",
     "population": "8,917,205",
     "confederation": "uefa"
@@ -282,7 +282,7 @@ export const countries = [
     "name": "Serbia",
     "code": "SRB",
     "flag": "🇷🇸",
-    "fifaRanking": 29,
+    "worldRanking": 29,
     "confederation": "uefa",
     "capital": "Belgrade",
     "population": "6,834,326"
@@ -291,7 +291,7 @@ export const countries = [
     "name": "Ecuador",
     "code": "ECU",
     "flag": "🇪🇨",
-    "fifaRanking": 30,
+    "worldRanking": 30,
     "capital": "Quito",
     "population": "17,888,475",
     "confederation": "conmebol"
@@ -300,7 +300,7 @@ export const countries = [
     "name": "Turkey",
     "code": "TUR",
     "flag": "🇹🇷",
-    "fifaRanking": 31,
+    "worldRanking": 31,
     "capital": "Ankara",
     "population": "84,339,067",
     "confederation": "uefa"
@@ -309,7 +309,7 @@ export const countries = [
     "name": "Qatar",
     "code": "QAT",
     "flag": "🇶🇦",
-    "fifaRanking": 32,
+    "worldRanking": 32,
     "capital": "Doha",
     "population": "2,881,053",
     "confederation": "afc"
@@ -318,7 +318,7 @@ export const countries = [
     "name": "Algeria",
     "code": "ALG",
     "flag": "🇩🇿",
-    "fifaRanking": 33,
+    "worldRanking": 33,
     "capital": "Algiers",
     "population": "44,700,000",
     "confederation": "caf"
@@ -327,7 +327,7 @@ export const countries = [
     "name": "Chile",
     "code": "CHI",
     "flag": "🇨🇱",
-    "fifaRanking": 34,
+    "worldRanking": 34,
     "confederation": "conmebol",
     "capital": "Santiago",
     "population": "19,458,310"
@@ -336,7 +336,7 @@ export const countries = [
     "name": "Czech Republic",
     "code": "CZE",
     "flag": "🇨🇿",
-    "fifaRanking": 36,
+    "worldRanking": 36,
     "confederation": "uefa",
     "capital": "Prague",
     "population": "10,524,167"
@@ -345,7 +345,7 @@ export const countries = [
     "name": "Hungary",
     "code": "HUN",
     "flag": "🇭🇺",
-    "fifaRanking": 37,
+    "worldRanking": 37,
     "confederation": "uefa",
     "capital": "Budapest",
     "population": "9,660,351"
@@ -354,7 +354,7 @@ export const countries = [
     "name": "Egypt",
     "code": "EGY",
     "flag": "🇪🇬",
-    "fifaRanking": 38,
+    "worldRanking": 38,
     "confederation": "caf",
     "capital": "Cairo",
     "population": "104,258,327"
@@ -363,7 +363,7 @@ export const countries = [
     "name": "Ivory Coast",
     "code": "CIV",
     "flag": "🇨🇮",
-    "fifaRanking": 39,
+    "worldRanking": 39,
     "confederation": "caf",
     "capital": "Yamoussoukro",
     "population": "27,053,629"
@@ -372,7 +372,7 @@ export const countries = [
     "name": "Peru",
     "code": "PER",
     "flag": "🇵🇪",
-    "fifaRanking": 40,
+    "worldRanking": 40,
     "confederation": "conmebol",
     "capital": "Lima",
     "population": "33,105,273"
@@ -381,7 +381,7 @@ export const countries = [
     "name": "Canada",
     "code": "CAN",
     "flag": "🇨🇦",
-    "fifaRanking": 41,
+    "worldRanking": 41,
     "confederation": "concacaf",
     "capital": "Ottawa",
     "population": "38,654,738"
@@ -390,7 +390,7 @@ export const countries = [
     "name": "Romania",
     "code": "ROU",
     "flag": "🇷🇴",
-    "fifaRanking": 42,
+    "worldRanking": 42,
     "confederation": "uefa",
     "capital": "Bucharest",
     "population": "19,053,815"
@@ -399,7 +399,7 @@ export const countries = [
     "name": "Cameroon",
     "code": "CMR",
     "flag": "🇨🇲",
-    "fifaRanking": 43,
+    "worldRanking": 43,
     "confederation": "caf",
     "capital": "Yaoundé",
     "population": "27,914,536"
@@ -408,7 +408,7 @@ export const countries = [
     "name": "Scotland",
     "code": "SCO",
     "flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-    "fifaRanking": 44,
+    "worldRanking": 44,
     "confederation": "uefa",
     "capital": "Edinburgh",
     "population": "5,466,000"
@@ -417,7 +417,7 @@ export const countries = [
     "name": "Venezuela",
     "code": "VEN",
     "flag": "🇻🇪",
-    "fifaRanking": 46,
+    "worldRanking": 46,
     "confederation": "conmebol",
     "capital": "Caracas",
     "population": "28,704,954"
@@ -426,7 +426,7 @@ export const countries = [
     "name": "Greece",
     "code": "GRE",
     "flag": "🇬🇷",
-    "fifaRanking": 48,
+    "worldRanking": 48,
     "confederation": "uefa",
     "capital": "Athens",
     "population": "10,678,632"
@@ -435,7 +435,7 @@ export const countries = [
     "name": "Norway",
     "code": "NOR",
     "flag": "🇳🇴",
-    "fifaRanking": 49,
+    "worldRanking": 49,
     "confederation": "uefa",
     "capital": "Oslo",
     "population": "5,421,241"
@@ -444,7 +444,7 @@ export const countries = [
     "name": "Slovakia",
     "code": "SVK",
     "flag": "🇸🇰",
-    "fifaRanking": 50,
+    "worldRanking": 50,
     "confederation": "uefa",
     "capital": "Bratislava",
     "population": "5,460,185"
@@ -453,14 +453,14 @@ export const countries = [
     "name": "Mali",
     "code": "MLI",
     "flag": "🇲🇱",
-    "fifaRanking": 52,
+    "worldRanking": 52,
     "confederation": "caf"
   },
   {
     "name": "Jamaica",
     "code": "JAM",
     "flag": "🇯🇲",
-    "fifaRanking": 53,
+    "worldRanking": 53,
     "confederation": "concacaf",
     "capital": "Kingston",
     "population": "2,961,167"
@@ -469,14 +469,14 @@ export const countries = [
     "name": "Panama",
     "code": "PAN",
     "flag": "🇵🇦",
-    "fifaRanking": 54,
+    "worldRanking": 54,
     "confederation": "concacaf"
   },
   {
     "name": "Saudi Arabia",
     "code": "KSA",
     "flag": "🇸🇦",
-    "fifaRanking": 55,
+    "worldRanking": 55,
     "confederation": "afc",
     "capital": "Riyadh",
     "population": "35,013,414"
@@ -485,7 +485,7 @@ export const countries = [
     "name": "Iraq",
     "code": "IRQ",
     "flag": "🇮🇶",
-    "fifaRanking": 56,
+    "worldRanking": 56,
     "confederation": "afc",
     "capital": "Baghdad",
     "population": "41,179,350"
@@ -494,7 +494,7 @@ export const countries = [
     "name": "Slovenia",
     "code": "SVN",
     "flag": "🇸🇮",
-    "fifaRanking": 57,
+    "worldRanking": 57,
     "confederation": "uefa",
     "capital": "Ljubljana",
     "population": "2,108,977"
@@ -503,7 +503,7 @@ export const countries = [
     "name": "South Africa",
     "code": "RSA",
     "flag": "🇿🇦",
-    "fifaRanking": 58,
+    "worldRanking": 58,
     "confederation": "caf",
     "capital": "Cape Town",
     "population": "60,418,740"
@@ -512,7 +512,7 @@ export const countries = [
     "name": "Finland",
     "code": "FIN",
     "flag": "🇫🇮",
-    "fifaRanking": 59,
+    "worldRanking": 59,
     "confederation": "uefa",
     "capital": "Helsinki",
     "population": "5,548,360"
@@ -521,7 +521,7 @@ export const countries = [
     "name": "Ireland",
     "code": "IRL",
     "flag": "🇮🇪",
-    "fifaRanking": 60,
+    "worldRanking": 60,
     "confederation": "uefa",
     "capital": "Dublin",
     "population": "5,023,109"
@@ -530,21 +530,21 @@ export const countries = [
     "name": "Burkina Faso",
     "code": "BFA",
     "flag": "🇧🇫",
-    "fifaRanking": 61,
+    "worldRanking": 61,
     "confederation": "caf"
   },
   {
     "name": "Bosnia and Herzegovina",
     "code": "BIH",
     "flag": "🇧🇦",
-    "fifaRanking": 62,
+    "worldRanking": 62,
     "confederation": "uefa"
   },
   {
     "name": "Paraguay",
     "code": "PAR",
     "flag": "🇵🇾",
-    "fifaRanking": 63,
+    "worldRanking": 63,
     "confederation": "conmebol",
     "capital": "Asunción",
     "population": "7,132,538"
@@ -553,7 +553,7 @@ export const countries = [
     "name": "Ghana",
     "code": "GHA",
     "flag": "🇬🇭",
-    "fifaRanking": 64,
+    "worldRanking": 64,
     "confederation": "caf",
     "capital": "Accra",
     "population": "32,833,031"
@@ -562,14 +562,14 @@ export const countries = [
     "name": "North Macedonia",
     "code": "MKD",
     "flag": "🇲🇰",
-    "fifaRanking": 65,
+    "worldRanking": 65,
     "confederation": "uefa"
   },
   {
     "name": "Albania",
     "code": "ALB",
     "flag": "🇦🇱",
-    "fifaRanking": 66,
+    "worldRanking": 66,
     "capital": "Tirana",
     "population": "2,793,592",
     "confederation": "uefa"
@@ -578,28 +578,28 @@ export const countries = [
     "name": "Congo DR",
     "code": "COD",
     "flag": "🇨🇩",
-    "fifaRanking": 67,
+    "worldRanking": 67,
     "confederation": "caf"
   },
   {
     "name": "Montenegro",
     "code": "MNE",
     "flag": "🇲🇪",
-    "fifaRanking": 68,
+    "worldRanking": 68,
     "confederation": "uefa"
   },
   {
     "name": "El Salvador",
     "code": "SLV",
     "flag": "🇸🇻",
-    "fifaRanking": 69,
+    "worldRanking": 69,
     "confederation": "concacaf"
   },
   {
     "name": "Iceland",
     "code": "ISL",
     "flag": "🇮🇸",
-    "fifaRanking": 70,
+    "worldRanking": 70,
     "confederation": "uefa",
     "capital": "Reykjavik",
     "population": "376,248"
@@ -608,63 +608,63 @@ export const countries = [
     "name": "Northern Ireland",
     "code": "NIR",
     "flag": "🏴󠁧󠁢󠁮󠁩󠁲󠁿",
-    "fifaRanking": 71,
+    "worldRanking": 71,
     "confederation": "uefa"
   },
   {
     "name": "Bulgaria",
     "code": "BUL",
     "flag": "🇧🇬",
-    "fifaRanking": 72,
+    "worldRanking": 72,
     "confederation": "uefa"
   },
   {
     "name": "Cape Verde",
     "code": "CPV",
     "flag": "🇨🇻",
-    "fifaRanking": 73,
+    "worldRanking": 73,
     "confederation": "caf"
   },
   {
     "name": "Georgia",
     "code": "GEO",
     "flag": "🇬🇪",
-    "fifaRanking": 74,
+    "worldRanking": 74,
     "confederation": "uefa"
   },
   {
     "name": "United Arab Emirates",
     "code": "UAE",
     "flag": "🇦🇪",
-    "fifaRanking": 75,
+    "worldRanking": 75,
     "confederation": "afc"
   },
   {
     "name": "Guinea",
     "code": "GUI",
     "flag": "🇬🇳",
-    "fifaRanking": 76,
+    "worldRanking": 76,
     "confederation": "caf"
   },
   {
     "name": "Oman",
     "code": "OMA",
     "flag": "🇴🇲",
-    "fifaRanking": 77,
+    "worldRanking": 77,
     "confederation": "afc"
   },
   {
     "name": "Honduras",
     "code": "HON",
     "flag": "🇭🇳",
-    "fifaRanking": 78,
+    "worldRanking": 78,
     "confederation": "concacaf"
   },
   {
     "name": "China",
     "code": "CHN",
     "flag": "🇨🇳",
-    "fifaRanking": 79,
+    "worldRanking": 79,
     "confederation": "afc",
     "capital": "Beijing",
     "population": "1,412,175,000"
@@ -673,21 +673,21 @@ export const countries = [
     "name": "Curaçao",
     "code": "CUW",
     "flag": "🇨🇼",
-    "fifaRanking": 80,
+    "worldRanking": 80,
     "confederation": "concacaf"
   },
   {
     "name": "Zambia",
     "code": "ZAM",
     "flag": "🇿🇲",
-    "fifaRanking": 80,
+    "worldRanking": 80,
     "confederation": "caf"
   },
   {
     "name": "Israel",
     "code": "ISR",
     "flag": "🇮🇱",
-    "fifaRanking": 81,
+    "worldRanking": 81,
     "confederation": "uefa",
     "capital": "Jerusalem",
     "population": "9,449,000"
@@ -696,175 +696,175 @@ export const countries = [
     "name": "Uzbekistan",
     "code": "UZB",
     "flag": "🇺🇿",
-    "fifaRanking": 82,
+    "worldRanking": 82,
     "confederation": "afc"
   },
   {
     "name": "Haiti",
     "code": "HAI",
     "flag": "🇭🇹",
-    "fifaRanking": 83,
+    "worldRanking": 83,
     "confederation": "concacaf"
   },
   {
     "name": "Gabon",
     "code": "GAB",
     "flag": "🇬🇦",
-    "fifaRanking": 84,
+    "worldRanking": 84,
     "confederation": "caf"
   },
   {
     "name": "Bolivia",
     "code": "BOL",
     "flag": "🇧🇴",
-    "fifaRanking": 85,
+    "worldRanking": 85,
     "confederation": "conmebol"
   },
   {
     "name": "Bahrain",
     "code": "BHR",
     "flag": "🇧🇭",
-    "fifaRanking": 86,
+    "worldRanking": 86,
     "confederation": "afc"
   },
   {
     "name": "Jordan",
     "code": "JOR",
     "flag": "🇯🇴",
-    "fifaRanking": 87,
+    "worldRanking": 87,
     "confederation": "afc"
   },
   {
     "name": "Equatorial Guinea",
     "code": "EQG",
     "flag": "🇬🇶",
-    "fifaRanking": 88,
+    "worldRanking": 88,
     "confederation": "caf"
   },
   {
     "name": "Uganda",
     "code": "UGA",
     "flag": "🇺🇬",
-    "fifaRanking": 89,
+    "worldRanking": 89,
     "confederation": "caf"
   },
   {
     "name": "Syria",
     "code": "SYR",
     "flag": "🇸🇾",
-    "fifaRanking": 90,
+    "worldRanking": 90,
     "confederation": "afc"
   },
   {
     "name": "Luxembourg",
     "code": "LUX",
     "flag": "🇱🇺",
-    "fifaRanking": 91,
+    "worldRanking": 91,
     "confederation": "uefa"
   },
   {
     "name": "Armenia",
     "code": "ARM",
     "flag": "🇦🇲",
-    "fifaRanking": 92,
+    "worldRanking": 92,
     "confederation": "uefa"
   },
   {
     "name": "Cyprus",
     "code": "CYP",
     "flag": "🇨🇾",
-    "fifaRanking": 93,
+    "worldRanking": 93,
     "confederation": "uefa"
   },
   {
     "name": "New Zealand",
     "code": "NZL",
     "flag": "🇳🇿",
-    "fifaRanking": 94,
+    "worldRanking": 94,
     "confederation": "ofc"
   },
   {
     "name": "Palestine",
     "code": "PLE",
     "flag": "🇵🇸",
-    "fifaRanking": 95,
+    "worldRanking": 95,
     "confederation": "afc"
   },
   {
     "name": "Kyrgyzstan",
     "code": "KGZ",
     "flag": "🇰🇬",
-    "fifaRanking": 96,
+    "worldRanking": 96,
     "confederation": "afc"
   },
   {
     "name": "Thailand",
     "code": "THA",
     "flag": "🇹🇭",
-    "fifaRanking": 97,
+    "worldRanking": 97,
     "confederation": "afc"
   },
   {
     "name": "Tajikistan",
     "code": "TJK",
     "flag": "🇹🇯",
-    "fifaRanking": 98,
+    "worldRanking": 98,
     "confederation": "afc"
   },
   {
     "name": "Guatemala",
     "code": "GUA",
     "flag": "🇬🇹",
-    "fifaRanking": 101,
+    "worldRanking": 101,
     "confederation": "concacaf"
   },
   {
     "name": "Trinidad and Tobago",
     "code": "TRI",
     "flag": "🇹🇹",
-    "fifaRanking": 102,
+    "worldRanking": 102,
     "confederation": "concacaf"
   },
   {
     "name": "Mauritania",
     "code": "MTN",
     "flag": "🇲🇷",
-    "fifaRanking": 103,
+    "worldRanking": 103,
     "confederation": "caf"
   },
   {
     "name": "Madagascar",
     "code": "MAD",
     "flag": "🇲🇬",
-    "fifaRanking": 104,
+    "worldRanking": 104,
     "confederation": "caf"
   },
   {
     "name": "Kazakhstan",
     "code": "KAZ",
     "flag": "🇰🇿",
-    "fifaRanking": 105,
+    "worldRanking": 105,
     "confederation": "uefa"
   },
   {
     "name": "Lebanon",
     "code": "LBN",
     "flag": "🇱🇧",
-    "fifaRanking": 105,
+    "worldRanking": 105,
     "confederation": "afc"
   },
   {
     "name": "Guinea-Bissau",
     "code": "GNB",
     "flag": "🇬🇼",
-    "fifaRanking": 106,
+    "worldRanking": 106,
     "confederation": "caf"
   },
   {
     "name": "India",
     "code": "IND",
     "flag": "🇮🇳",
-    "fifaRanking": 106,
+    "worldRanking": 106,
     "confederation": "afc",
     "capital": "New Delhi",
     "population": "1,380,004,385"
@@ -873,49 +873,49 @@ export const countries = [
     "name": "Lebanon",
     "code": "LIB",
     "flag": "🇱🇧",
-    "fifaRanking": 107,
+    "worldRanking": 107,
     "confederation": "afc"
   },
   {
     "name": "Benin",
     "code": "BEN",
     "flag": "🇧🇯",
-    "fifaRanking": 109,
+    "worldRanking": 109,
     "confederation": "caf"
   },
   {
     "name": "Kenya",
     "code": "KEN",
     "flag": "🇰🇪",
-    "fifaRanking": 110,
+    "worldRanking": 110,
     "confederation": "caf"
   },
   {
     "name": "Libya",
     "code": "LBY",
     "flag": "🇱🇾",
-    "fifaRanking": 111,
+    "worldRanking": 111,
     "confederation": "caf"
   },
   {
     "name": "North Korea",
     "code": "PRK",
     "flag": "🇰🇵",
-    "fifaRanking": 112,
+    "worldRanking": 112,
     "confederation": "afc"
   },
   {
     "name": "Mozambique",
     "code": "MOZ",
     "flag": "🇲🇿",
-    "fifaRanking": 113,
+    "worldRanking": 113,
     "confederation": "caf"
   },
   {
     "name": "Vietnam",
     "code": "VIE",
     "flag": "🇻🇳",
-    "fifaRanking": 114,
+    "worldRanking": 114,
     "confederation": "afc",
     "capital": "Hanoi",
     "population": "97,468,029"
@@ -924,154 +924,154 @@ export const countries = [
     "name": "Congo",
     "code": "CGO",
     "flag": "🇨🇬",
-    "fifaRanking": 115,
+    "worldRanking": 115,
     "confederation": "caf"
   },
   {
     "name": "Faroe Islands",
     "code": "FRO",
     "flag": "🇫🇴",
-    "fifaRanking": 116,
+    "worldRanking": 116,
     "confederation": "uefa"
   },
   {
     "name": "Sierra Leone",
     "code": "SLE",
     "flag": "🇸🇱",
-    "fifaRanking": 116,
+    "worldRanking": 116,
     "confederation": "caf"
   },
   {
     "name": "Azerbaijan",
     "code": "AZE",
     "flag": "🇦🇿",
-    "fifaRanking": 117,
+    "worldRanking": 117,
     "confederation": "uefa"
   },
   {
     "name": "Estonia",
     "code": "EST",
     "flag": "🇪🇪",
-    "fifaRanking": 118,
+    "worldRanking": 118,
     "confederation": "uefa"
   },
   {
     "name": "Tanzania",
     "code": "TAN",
     "flag": "🇹🇿",
-    "fifaRanking": 119,
+    "worldRanking": 119,
     "confederation": "caf"
   },
   {
     "name": "Angola",
     "code": "ANG",
     "flag": "🇦🇴",
-    "fifaRanking": 120,
+    "worldRanking": 120,
     "confederation": "caf"
   },
   {
     "name": "Niger",
     "code": "NIG",
     "flag": "🇳🇪",
-    "fifaRanking": 121,
+    "worldRanking": 121,
     "confederation": "caf"
   },
   {
     "name": "Namibia",
     "code": "NAM",
     "flag": "🇳🇦",
-    "fifaRanking": 122,
+    "worldRanking": 122,
     "confederation": "caf"
   },
   {
     "name": "Togo",
     "code": "TOG",
     "flag": "🇹🇬",
-    "fifaRanking": 123,
+    "worldRanking": 123,
     "confederation": "caf"
   },
   {
     "name": "Central African Republic",
     "code": "CTA",
     "flag": "🇨🇫",
-    "fifaRanking": 124,
+    "worldRanking": 124,
     "confederation": "caf"
   },
   {
     "name": "Zimbabwe",
     "code": "ZWE",
     "flag": "🇿🇼",
-    "fifaRanking": 124,
+    "worldRanking": 124,
     "confederation": "caf"
   },
   {
     "name": "Chad",
     "code": "CHA",
     "flag": "🇹🇩",
-    "fifaRanking": 125,
+    "worldRanking": 125,
     "confederation": "caf"
   },
   {
     "name": "Rwanda",
     "code": "RWA",
     "flag": "🇷🇼",
-    "fifaRanking": 126,
+    "worldRanking": 126,
     "confederation": "caf"
   },
   {
     "name": "Sudan",
     "code": "SDN",
     "flag": "🇸🇩",
-    "fifaRanking": 127,
+    "worldRanking": 127,
     "confederation": "caf"
   },
   {
     "name": "Gambia",
     "code": "GAM",
     "flag": "🇬🇲",
-    "fifaRanking": 128,
+    "worldRanking": 128,
     "confederation": "caf"
   },
   {
     "name": "Malawi",
     "code": "MWI",
     "flag": "🇲🇼",
-    "fifaRanking": 129,
+    "worldRanking": 129,
     "confederation": "caf"
   },
   {
     "name": "Antigua and Barbuda",
     "code": "ATG",
     "flag": "🇦🇬",
-    "fifaRanking": 130,
+    "worldRanking": 130,
     "confederation": "concacaf"
   },
   {
     "name": "Malaysia",
     "code": "MAS",
     "flag": "🇲🇾",
-    "fifaRanking": 131,
+    "worldRanking": 131,
     "confederation": "afc"
   },
   {
     "name": "Comoros",
     "code": "COM",
     "flag": "🇰🇲",
-    "fifaRanking": 132,
+    "worldRanking": 132,
     "confederation": "caf"
   },
   {
     "name": "Philippines",
     "code": "PHI",
     "flag": "🇵🇭",
-    "fifaRanking": 133,
+    "worldRanking": 133,
     "confederation": "afc"
   },
   {
     "name": "Indonesia",
     "code": "IDN",
     "flag": "🇮🇩",
-    "fifaRanking": 134,
+    "worldRanking": 134,
     "confederation": "afc",
     "capital": "Jakarta",
     "population": "273,523,615"
@@ -1080,98 +1080,98 @@ export const countries = [
     "name": "Kuwait",
     "code": "KUW",
     "flag": "🇰🇼",
-    "fifaRanking": 135,
+    "worldRanking": 135,
     "confederation": "afc"
   },
   {
     "name": "Turkmenistan",
     "code": "TKM",
     "flag": "🇹🇲",
-    "fifaRanking": 136,
+    "worldRanking": 136,
     "confederation": "afc"
   },
   {
     "name": "Ethiopia",
     "code": "ETH",
     "flag": "🇪🇹",
-    "fifaRanking": 137,
+    "worldRanking": 137,
     "confederation": "caf"
   },
   {
     "name": "Suriname",
     "code": "SUR",
     "flag": "🇸🇷",
-    "fifaRanking": 138,
+    "worldRanking": 138,
     "confederation": "concacaf"
   },
   {
     "name": "Lithuania",
     "code": "LTU",
     "flag": "🇱🇹",
-    "fifaRanking": 139,
+    "worldRanking": 139,
     "confederation": "uefa"
   },
   {
     "name": "Burundi",
     "code": "BDI",
     "flag": "🇧🇮",
-    "fifaRanking": 140,
+    "worldRanking": 140,
     "confederation": "caf"
   },
   {
     "name": "Tahiti",
     "code": "TAH",
     "flag": "🇵🇫",
-    "fifaRanking": 141,
+    "worldRanking": 141,
     "confederation": "ofc"
   },
   {
     "name": "Liberia",
     "code": "LBR",
     "flag": "🇱🇷",
-    "fifaRanking": 142,
+    "worldRanking": 142,
     "confederation": "caf"
   },
   {
     "name": "Solomon Islands",
     "code": "SOL",
     "flag": "🇸🇧",
-    "fifaRanking": 143,
+    "worldRanking": 143,
     "confederation": "ofc"
   },
   {
     "name": "Hong Kong",
     "code": "HKG",
     "flag": "🇭🇰",
-    "fifaRanking": 145,
+    "worldRanking": 145,
     "confederation": "afc"
   },
   {
     "name": "Botswana",
     "code": "BOT",
     "flag": "🇧🇼",
-    "fifaRanking": 147,
+    "worldRanking": 147,
     "confederation": "caf"
   },
   {
     "name": "Eswatini",
     "code": "SWZ",
     "flag": "🇸🇿",
-    "fifaRanking": 148,
+    "worldRanking": 148,
     "confederation": "caf"
   },
   {
     "name": "Nicaragua",
     "code": "NCA",
     "flag": "🇳🇮",
-    "fifaRanking": 149,
+    "worldRanking": 149,
     "confederation": "concacaf"
   },
   {
     "name": "Afghanistan",
     "code": "AFG",
     "flag": "🇦🇫",
-    "fifaRanking": 150,
+    "worldRanking": 150,
     "capital": "Kabul",
     "population": "40,218,234",
     "confederation": "afc"
@@ -1180,350 +1180,350 @@ export const countries = [
     "name": "Yemen",
     "code": "YEM",
     "flag": "🇾🇪",
-    "fifaRanking": 150,
+    "worldRanking": 150,
     "confederation": "afc"
   },
   {
     "name": "Andorra",
     "code": "AND",
     "flag": "🇦🇩",
-    "fifaRanking": 151,
+    "worldRanking": 151,
     "confederation": "uefa"
   },
   {
     "name": "Latvia",
     "code": "LVA",
     "flag": "🇱🇻",
-    "fifaRanking": 152,
+    "worldRanking": 152,
     "confederation": "uefa"
   },
   {
     "name": "Lesotho",
     "code": "LES",
     "flag": "🇱🇸",
-    "fifaRanking": 153,
+    "worldRanking": 153,
     "confederation": "caf"
   },
   {
     "name": "Maldives",
     "code": "MDV",
     "flag": "🇲🇻",
-    "fifaRanking": 154,
+    "worldRanking": 154,
     "confederation": "afc"
   },
   {
     "name": "Chinese Taipei",
     "code": "TPE",
     "flag": "🇹🇼",
-    "fifaRanking": 155,
+    "worldRanking": 155,
     "confederation": "afc"
   },
   {
     "name": "Myanmar",
     "code": "MYA",
     "flag": "🇲🇲",
-    "fifaRanking": 156,
+    "worldRanking": 156,
     "confederation": "afc"
   },
   {
     "name": "Singapore",
     "code": "SIN",
     "flag": "🇸🇬",
-    "fifaRanking": 157,
+    "worldRanking": 157,
     "confederation": "afc"
   },
   {
     "name": "Dominican Republic",
     "code": "DOM",
     "flag": "🇩🇴",
-    "fifaRanking": 158,
+    "worldRanking": 158,
     "confederation": "concacaf"
   },
   {
     "name": "Fiji",
     "code": "FIJ",
     "flag": "🇫🇯",
-    "fifaRanking": 160,
+    "worldRanking": 160,
     "confederation": "ofc"
   },
   {
     "name": "Saint Kitts and Nevis",
     "code": "SKN",
     "flag": "🇰🇳",
-    "fifaRanking": 161,
+    "worldRanking": 161,
     "confederation": "concacaf"
   },
   {
     "name": "New Caledonia",
     "code": "NCL",
     "flag": "🇳🇨",
-    "fifaRanking": 162,
+    "worldRanking": 162,
     "confederation": "ofc"
   },
   {
     "name": "Saint Lucia",
     "code": "LCA",
     "flag": "🇱🇨",
-    "fifaRanking": 163,
+    "worldRanking": 163,
     "confederation": "concacaf"
   },
   {
     "name": "Saint Vincent and the Grenadines",
     "code": "VIN",
     "flag": "🇻🇨",
-    "fifaRanking": 164,
+    "worldRanking": 164,
     "confederation": "concacaf"
   },
   {
     "name": "Papua New Guinea",
     "code": "PNG",
     "flag": "🇵🇬",
-    "fifaRanking": 165,
+    "worldRanking": 165,
     "confederation": "ofc"
   },
   {
     "name": "Vanuatu",
     "code": "VAN",
     "flag": "🇻🇺",
-    "fifaRanking": 166,
+    "worldRanking": 166,
     "confederation": "ofc"
   },
   {
     "name": "Grenada",
     "code": "GRN",
     "flag": "🇬🇩",
-    "fifaRanking": 168,
+    "worldRanking": 168,
     "confederation": "concacaf"
   },
   {
     "name": "Barbados",
     "code": "BRB",
     "flag": "🇧🇧",
-    "fifaRanking": 169,
+    "worldRanking": 169,
     "confederation": "concacaf"
   },
   {
     "name": "Belize",
     "code": "BLZ",
     "flag": "🇧🇿",
-    "fifaRanking": 170,
+    "worldRanking": 170,
     "confederation": "concacaf"
   },
   {
     "name": "South Sudan",
     "code": "SSD",
     "flag": "🇸🇸",
-    "fifaRanking": 170,
+    "worldRanking": 170,
     "confederation": "caf"
   },
   {
     "name": "Cambodia",
     "code": "CAM",
     "flag": "🇰🇭",
-    "fifaRanking": 171,
+    "worldRanking": 171,
     "confederation": "afc"
   },
   {
     "name": "Cuba",
     "code": "CUB",
     "flag": "🇨🇺",
-    "fifaRanking": 172,
+    "worldRanking": 172,
     "confederation": "concacaf"
   },
   {
     "name": "Nepal",
     "code": "NEP",
     "flag": "🇳🇵",
-    "fifaRanking": 173,
+    "worldRanking": 173,
     "confederation": "afc"
   },
   {
     "name": "Moldova",
     "code": "MDA",
     "flag": "🇲🇩",
-    "fifaRanking": 174,
+    "worldRanking": 174,
     "confederation": "uefa"
   },
   {
     "name": "Guyana",
     "code": "GUY",
     "flag": "🇬🇾",
-    "fifaRanking": 175,
+    "worldRanking": 175,
     "confederation": "concacaf"
   },
   {
     "name": "Malta",
     "code": "MLT",
     "flag": "🇲🇹",
-    "fifaRanking": 176,
+    "worldRanking": 176,
     "confederation": "uefa"
   },
   {
     "name": "Samoa",
     "code": "SAM",
     "flag": "🇼🇸",
-    "fifaRanking": 177,
+    "worldRanking": 177,
     "confederation": "ofc"
   },
   {
     "name": "Mauritius",
     "code": "MRI",
     "flag": "🇲🇺",
-    "fifaRanking": 178,
+    "worldRanking": 178,
     "confederation": "caf"
   },
   {
     "name": "Somalia",
     "code": "SOM",
     "flag": "🇸🇴",
-    "fifaRanking": 179,
+    "worldRanking": 179,
     "confederation": "caf"
   },
   {
     "name": "Djibouti",
     "code": "DJI",
     "flag": "🇩🇯",
-    "fifaRanking": 180,
+    "worldRanking": 180,
     "confederation": "caf"
   },
   {
     "name": "Macao",
     "code": "MAC",
     "flag": "🇲🇴",
-    "fifaRanking": 182,
+    "worldRanking": 182,
     "confederation": "afc"
   },
   {
     "name": "Bhutan",
     "code": "BTN",
     "flag": "🇧🇹",
-    "fifaRanking": 183,
+    "worldRanking": 183,
     "confederation": "afc"
   },
   {
     "name": "Bangladesh",
     "code": "BAN",
     "flag": "🇧🇩",
-    "fifaRanking": 184,
+    "worldRanking": 184,
     "confederation": "afc"
   },
   {
     "name": "Dominica",
     "code": "DMA",
     "flag": "🇩🇲",
-    "fifaRanking": 185,
+    "worldRanking": 185,
     "confederation": "concacaf"
   },
   {
     "name": "São Tomé and Príncipe",
     "code": "STP",
     "flag": "🇸🇹",
-    "fifaRanking": 186,
+    "worldRanking": 186,
     "confederation": "caf"
   },
   {
     "name": "Laos",
     "code": "LAO",
     "flag": "🇱🇦",
-    "fifaRanking": 187,
+    "worldRanking": 187,
     "confederation": "afc"
   },
   {
     "name": "Seychelles",
     "code": "SEY",
     "flag": "🇸🇨",
-    "fifaRanking": 188,
+    "worldRanking": 188,
     "confederation": "caf"
   },
   {
     "name": "Mongolia",
     "code": "MNG",
     "flag": "🇲🇳",
-    "fifaRanking": 189,
+    "worldRanking": 189,
     "confederation": "afc"
   },
   {
     "name": "Liechtenstein",
     "code": "LIE",
     "flag": "🇱🇮",
-    "fifaRanking": 190,
+    "worldRanking": 190,
     "confederation": "uefa"
   },
   {
     "name": "Turks and Caicos Islands",
     "code": "TCA",
     "flag": "🇹🇨",
-    "fifaRanking": 192,
+    "worldRanking": 192,
     "confederation": "concacaf"
   },
   {
     "name": "Pakistan",
     "code": "PAK",
     "flag": "🇵🇰",
-    "fifaRanking": 195,
+    "worldRanking": 195,
     "confederation": "afc"
   },
   {
     "name": "East Timor",
     "code": "TLS",
     "flag": "🇹🇱",
-    "fifaRanking": 199,
+    "worldRanking": 199,
     "confederation": "afc"
   },
   {
     "name": "Cook Islands",
     "code": "COK",
     "flag": "🇨🇰",
-    "fifaRanking": 200,
+    "worldRanking": 200,
     "confederation": "ofc"
   },
   {
     "name": "Tonga",
     "code": "TGA",
     "flag": "🇹🇴",
-    "fifaRanking": 201,
+    "worldRanking": 201,
     "confederation": "ofc"
   },
   {
     "name": "Eritrea",
     "code": "ERI",
     "flag": "🇪🇷",
-    "fifaRanking": 202,
+    "worldRanking": 202,
     "confederation": "caf"
   },
   {
     "name": "Gibraltar",
     "code": "GIB",
     "flag": "🇬🇮",
-    "fifaRanking": 203,
+    "worldRanking": 203,
     "confederation": "uefa"
   },
   {
     "name": "Sri Lanka",
     "code": "SRI",
     "flag": "🇱🇰",
-    "fifaRanking": 206,
+    "worldRanking": 206,
     "confederation": "afc"
   },
   {
     "name": "Montserrat",
     "code": "MSR",
     "flag": "🇲🇸",
-    "fifaRanking": 208,
+    "worldRanking": 208,
     "confederation": "concacaf"
   },
   {
     "name": "San Marino",
     "code": "SMR",
     "flag": "🇸🇲",
-    "fifaRanking": 210,
+    "worldRanking": 210,
     "confederation": "uefa"
   },
   {
     "name": "Tuvalu",
     "code": "TUV",
     "flag": "🇹🇻",
-    "fifaRanking": 211,
+    "worldRanking": 211,
     "confederation": "ofc"
   }
 ]
@@ -1537,8 +1537,8 @@ export function getCountryByName(name) {
 }
 
 export function getBest31PlusHost(hostCountryCode) {
-  // Get the best 31 teams by FIFA ranking
-  const sortedCountries = [...countries].sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))
+  // Get the best 31 teams by world ranking
+  const sortedCountries = [...countries].sort((a, b) => (a.worldRanking || 999) - (b.worldRanking || 999))
   const best31 = sortedCountries.slice(0, 31)
   
   // Add host country if it's not already in the best 31

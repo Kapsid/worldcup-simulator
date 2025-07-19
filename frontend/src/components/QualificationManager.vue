@@ -102,7 +102,12 @@
                             <tr v-for="(team, index) in group.teams" :key="team.teamId" :class="getTeamQualificationClass(team, index, group)">
                               <td class="team-cell">
                                 <span class="team-flag">{{ team.flag }}</span>
-                                <span class="team-name">{{ team.name }}</span>
+                                <router-link 
+                                  :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
+                                  class="team-name clickable-team"
+                                >
+                                  {{ team.name }}
+                                </router-link>
                               </td>
                               <td>{{ team.played }}</td>
                               <td>{{ team.won }}</td>
@@ -156,14 +161,24 @@
                           <div class="match-teams">
                             <div class="team home-team">
                               <span class="team-flag">{{ match.homeTeam.flag }}</span>
-                              <span class="team-name">{{ match.homeTeam.name }}</span>
+                              <router-link 
+                                :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
+                                class="team-name clickable-team"
+                              >
+                                {{ match.homeTeam.name }}
+                              </router-link>
                             </div>
                             <div class="match-score">
                               <span v-if="match.played" class="score">{{ match.homeScore }} - {{ match.awayScore }}</span>
                               <span v-else class="vs">vs</span>
                             </div>
                             <div class="team away-team">
-                              <span class="team-name">{{ match.awayTeam.name }}</span>
+                              <router-link 
+                                :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
+                                class="team-name clickable-team"
+                              >
+                                {{ match.awayTeam.name }}
+                              </router-link>
                               <span class="team-flag">{{ match.awayTeam.flag }}</span>
                             </div>
                           </div>
@@ -177,7 +192,13 @@
                               <i v-if="simulatingMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
                               <i v-else class="fas fa-play"></i>
                             </button>
-                            <span v-else class="match-status played">Played</span>
+                            <button 
+                              @click="showMatchDetail(match)"
+                              class="btn-small detail-btn"
+                            >
+                              <i class="fas fa-eye"></i>
+                            </button>
+                            <span v-if="match.played" class="match-status played">Played</span>
                           </div>
                         </div>
                       </div>
@@ -207,14 +228,28 @@
                           <div class="match-teams">
                             <div class="team home-team">
                               <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
-                              <span class="team-name">{{ match.homeTeam?.name || 'TBD' }}</span>
+                              <router-link 
+                                v-if="match.homeTeam?.teamId"
+                                :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
+                                class="team-name clickable-team"
+                              >
+                                {{ match.homeTeam.name }}
+                              </router-link>
+                              <span v-else class="team-name">TBD</span>
                             </div>
                             <div class="match-score">
                               <span v-if="match.played" class="score">{{ match.homeScore }} - {{ match.awayScore }}</span>
                               <span v-else class="vs">vs</span>
                             </div>
                             <div class="team away-team">
-                              <span class="team-name">{{ match.awayTeam?.name || 'TBD' }}</span>
+                              <router-link 
+                                v-if="match.awayTeam?.teamId"
+                                :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
+                                class="team-name clickable-team"
+                              >
+                                {{ match.awayTeam.name }}
+                              </router-link>
+                              <span v-else class="team-name">TBD</span>
                               <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
                             </div>
                           </div>
@@ -229,7 +264,13 @@
                               <i v-else class="fas fa-play"></i>
                               Simulate
                             </button>
-                            <span v-else class="match-completed">
+                            <button 
+                              @click="showMatchDetail(match)"
+                              class="btn-small detail-btn"
+                            >
+                              <i class="fas fa-eye"></i>
+                            </button>
+                            <span v-if="match.played" class="match-completed">
                               <i class="fas fa-check"></i>
                               Completed
                             </span>
@@ -266,7 +307,12 @@
                       <div v-for="team in getQualifiedFromConfederation(activeConfederation)" :key="team.teamId" class="qualified-team-card">
                         <div class="team-info">
                           <span class="team-flag">{{ team.flag }}</span>
-                          <span class="team-name">{{ team.name }}</span>
+                          <router-link 
+                            :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
+                            class="team-name clickable-team"
+                          >
+                            {{ team.name }}
+                          </router-link>
                         </div>
                         <div class="qualification-method">
                           <span :class="getQualificationMethodClass(team.qualificationMethod)">
@@ -295,7 +341,14 @@
         <div class="final-qualified-teams">
           <div v-for="team in allQualifiedTeams" :key="team.teamId || team.name" class="final-team-card">
             <span class="team-flag">{{ team.flag }}</span>
-            <span class="team-name">{{ team.name || team.country }}</span>
+            <router-link 
+              v-if="team.teamId"
+              :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
+              class="team-name clickable-team"
+            >
+              {{ team.name || team.country }}
+            </router-link>
+            <span v-else class="team-name">{{ team.name || team.country }}</span>
             <span class="team-confederation">{{ team.confederationName || getConfederationName(team.confederation) }}</span>
           </div>
         </div>
@@ -1020,6 +1073,11 @@ export default {
       } finally {
         this.simulatingPlayoffMatch = null
       }
+    },
+
+    showMatchDetail(match) {
+      // Navigate to match detail page for qualification matches
+      this.$router.push(`/tournament/${this.tournament._id}/match/${match.matchId}`)
     }
   }
 }
@@ -1393,6 +1451,22 @@ export default {
   font-weight: var(--font-weight-semibold);
 }
 
+.clickable-team {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.clickable-team:hover {
+  color: var(--fifa-blue) !important;
+  text-decoration: underline;
+  background-color: rgba(0, 102, 204, 0.1);
+}
+
 .points {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-blue);
@@ -1661,6 +1735,28 @@ export default {
 .simulate-match-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-small.detail-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+  min-width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+}
+
+.btn-small.detail-btn:hover {
+  background: #00aa44;
+  transform: translateY(-2px);
 }
 
 .match-status {

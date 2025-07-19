@@ -1,7 +1,9 @@
 import Tournament from '../models/Tournament.js'
 import World from '../models/World.js'
 import WorldRankingService from './WorldRankingService.js'
+import MascotService from './MascotService.js'
 import { getCountryByCode } from '../data/countries.js'
+import { getCountryCities } from '../data/cities.js'
 
 class TournamentService {
   async createTournament(userId, tournamentData) {
@@ -22,6 +24,13 @@ class TournamentService {
         }
       }
 
+      // Generate mascot for the tournament
+      const mascot = MascotService.generateMascot(hostCountryCode, year || new Date().getFullYear())
+      
+      // Generate host cities (randomly select 6-8 cities)
+      const numCities = Math.floor(Math.random() * 3) + 6; // 6-8 cities
+      const cityData = getCountryCities(hostCountryCode, numCities)
+
       const tournament = new Tournament({
         name,
         hostCountry,
@@ -30,6 +39,8 @@ class TournamentService {
         createdBy: userId,
         worldId: worldId || undefined,
         year: year || undefined,
+        mascot,
+        hostCities: cityData.cities,
         lastOpenedAt: new Date()
       })
 

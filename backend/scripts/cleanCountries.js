@@ -20,15 +20,15 @@ countries.forEach(country => {
       capital: country.capital || existing.capital,
       population: country.population || existing.population,
       confederation: country.confederation || existing.confederation,
-      fifaRanking: country.fifaRanking || existing.fifaRanking
+      worldRanking: country.worldRanking || existing.worldRanking
     }
     uniqueCountriesMap.set(country.code, merged)
   }
 })
 
-// Convert map to array and sort by FIFA ranking
+// Convert map to array and sort by world ranking
 const uniqueCountries = Array.from(uniqueCountriesMap.values())
-  .sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))
+  .sort((a, b) => (a.worldRanking || 999) - (b.worldRanking || 999))
 
 // Generate the new countries.js content
 const fileContent = `export const countries = ${JSON.stringify(uniqueCountries, null, 2)}
@@ -44,7 +44,7 @@ export const getCountryByName = (name) => {
 export const getTopRankedTeams = (count = 32, excludeHost = null) => {
   let topTeams = countries
     .filter(country => !excludeHost || country.code !== excludeHost)
-    .sort((a, b) => a.fifaRanking - b.fifaRanking)
+    .sort((a, b) => a.worldRanking - b.worldRanking)
     .slice(0, count)
   
   return topTeams

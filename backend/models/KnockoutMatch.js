@@ -85,6 +85,10 @@ const knockoutMatchSchema = new mongoose.Schema({
   nextMatchPosition: {
     type: Number,
     default: null
+  },
+  city: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true

@@ -1,4 +1,4 @@
-// FIFA Confederations and World Cup 2022 Qualification Structure
+// Continental Qualification Structure
 // Based on real qualification slots and formats
 
 export const confederations = [

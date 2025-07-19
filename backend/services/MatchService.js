@@ -1,13 +1,21 @@
 import Match from '../models/Match.js'
 import Standing from '../models/Standing.js'
+import Tournament from '../models/Tournament.js'
 import TournamentGroup from '../models/TournamentGroup.js'
 import TournamentTeam from '../models/TournamentTeam.js'
+import TournamentNewsService from './TournamentNewsService.js'
 
 class MatchService {
   async generateGroupMatches(tournamentId) {
     try {
       const groups = await TournamentGroup.find({ tournament: tournamentId })
         .populate('teams')
+      
+      // Get tournament cities for city assignment
+      const tournament = await Tournament.findById(tournamentId).select('hostCities')
+      if (!tournament || !tournament.hostCities || tournament.hostCities.length === 0) {
+        throw new Error('Tournament cities not found')
+      }
       
       const matches = []
       
@@ -17,7 +25,7 @@ class MatchService {
         }
         
         const teams = group.teams
-        const groupMatches = this.generateMatchesForGroup(group, teams)
+        const groupMatches = this.generateMatchesForGroup(group, teams, tournament.hostCities)
         matches.push(...groupMatches)
       }
       
@@ -30,8 +38,14 @@ class MatchService {
     }
   }
 
-  generateMatchesForGroup(group, teams) {
+  generateMatchesForGroup(group, teams, hostCities) {
     const matches = []
+    
+    // Helper function to assign cities
+    const assignCity = (matchIndex) => {
+      // Distribute matches across cities evenly
+      return hostCities[matchIndex % hostCities.length].name
+    }
     
     const matchPairs = [
       [0, 1], [2, 3],
@@ -50,7 +64,8 @@ class MatchService {
         matchday,
         homeTeam: homeTeam._id,
         awayTeam: awayTeam._id,
-        status: 'scheduled'
+        status: 'scheduled',
+        city: assignCity(index)
       })
     })
     
@@ -93,35 +108,35 @@ class MatchService {
     }
   }
 
-  // Convert FIFA ranking to power (1-20 scale)
-  calculateTeamPower(fifaRanking) {
-    // FIFA rankings: 1 = best, 211 = worst
+  // Convert world ranking to power (1-20 scale)
+  calculateTeamPower(worldRanking) {
+    // World rankings: 1 = best, 211 = worst
     // Convert to power: 20 = best, 1 = worst
-    if (fifaRanking <= 5) return 20      // Top 5 teams
-    if (fifaRanking <= 10) return 19     // Top 10 teams  
-    if (fifaRanking <= 15) return 18     // Top 15 teams
-    if (fifaRanking <= 20) return 17     // Top 20 teams
-    if (fifaRanking <= 30) return 16     // Top 30 teams
-    if (fifaRanking <= 40) return 15     // Top 40 teams
-    if (fifaRanking <= 50) return 14     // Top 50 teams
-    if (fifaRanking <= 60) return 13     // Top 60 teams
-    if (fifaRanking <= 70) return 12     // Top 70 teams
-    if (fifaRanking <= 80) return 11     // Top 80 teams
-    if (fifaRanking <= 90) return 10     // Top 90 teams
-    if (fifaRanking <= 100) return 9     // Top 100 teams
-    if (fifaRanking <= 110) return 8     // Top 110 teams
-    if (fifaRanking <= 120) return 7     // Top 120 teams
-    if (fifaRanking <= 130) return 6     // Top 130 teams
-    if (fifaRanking <= 140) return 5     // Top 140 teams
-    if (fifaRanking <= 150) return 4     // Top 150 teams
-    if (fifaRanking <= 170) return 3     // Top 170 teams
-    if (fifaRanking <= 190) return 2     // Top 190 teams
+    if (worldRanking <= 5) return 20      // Top 5 teams
+    if (worldRanking <= 10) return 19     // Top 10 teams  
+    if (worldRanking <= 15) return 18     // Top 15 teams
+    if (worldRanking <= 20) return 17     // Top 20 teams
+    if (worldRanking <= 30) return 16     // Top 30 teams
+    if (worldRanking <= 40) return 15     // Top 40 teams
+    if (worldRanking <= 50) return 14     // Top 50 teams
+    if (worldRanking <= 60) return 13     // Top 60 teams
+    if (worldRanking <= 70) return 12     // Top 70 teams
+    if (worldRanking <= 80) return 11     // Top 80 teams
+    if (worldRanking <= 90) return 10     // Top 90 teams
+    if (worldRanking <= 100) return 9     // Top 100 teams
+    if (worldRanking <= 110) return 8     // Top 110 teams
+    if (worldRanking <= 120) return 7     // Top 120 teams
+    if (worldRanking <= 130) return 6     // Top 130 teams
+    if (worldRanking <= 140) return 5     // Top 140 teams
+    if (worldRanking <= 150) return 4     // Top 150 teams
+    if (worldRanking <= 170) return 3     // Top 170 teams
+    if (worldRanking <= 190) return 2     // Top 190 teams
     return 1                             // Bottom teams
   }
 
   simulateRealisticScore(homeTeam, awayTeam) {
-    const homePower = this.calculateTeamPower(homeTeam.fifaRanking)
-    const awayPower = this.calculateTeamPower(awayTeam.fifaRanking)
+    const homePower = this.calculateTeamPower(homeTeam.worldRanking)
+    const awayPower = this.calculateTeamPower(awayTeam.worldRanking)
     
     // Calculate power difference (-19 to +19)
     const powerDiff = homePower - awayPower
@@ -287,6 +302,14 @@ class MatchService {
       await this.updateStandings(match)
       await this.checkGroupStageCompletion(match.tournament)
       
+      // Generate news for this match
+      await TournamentNewsService.processMatchResult(
+        match.tournament,
+        match,
+        match.homeTeam,
+        match.awayTeam
+      )
+      
       return match
     } catch (error) {
       throw new Error(`Failed to simulate match: ${error.message}`)
@@ -306,6 +329,16 @@ class MatchService {
       for (const match of matches) {
         const simulatedMatch = await this.simulateMatch(match._id)
         simulatedMatches.push(simulatedMatch)
+      }
+      
+      // Generate news for matchday completion
+      if (simulatedMatches.length > 0) {
+        await TournamentNewsService.notifyRoundCompleted(
+          tournamentId,
+          'group',
+          matchday,
+          simulatedMatches.length
+        )
       }
       
       await this.checkGroupStageCompletion(tournamentId)

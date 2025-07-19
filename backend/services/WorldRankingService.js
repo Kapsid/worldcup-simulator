@@ -3,7 +3,7 @@ import { countries } from '../data/countries.js'
 
 class WorldRankingService {
   
-  // Initialize world rankings with base FIFA rankings
+  // Initialize world rankings with base world rankings
   async initializeWorldRankings(worldId) {
     try {
       const world = await World.findById(worldId)
@@ -16,10 +16,10 @@ class WorldRankingService {
         return world.countryRankings
       }
 
-      // Initialize with FIFA rankings but convert to world-specific points
+      // Initialize with world rankings but convert to world-specific points
       const initialRankings = countries.map(country => {
-        // Convert FIFA ranking to points (1st = 2000, 50th = 1500, 100th = 1000, etc.)
-        const basePoints = Math.max(800, 2200 - (country.fifaRanking * 8))
+        // Convert world ranking to points (1st = 2000, 50th = 1500, 100th = 1000, etc.)
+        const basePoints = Math.max(800, 2200 - (country.worldRanking * 8))
         
         return {
           code: country.code,
@@ -27,8 +27,8 @@ class WorldRankingService {
           flag: country.flag,
           points: basePoints,
           previousPoints: basePoints,
-          rank: country.fifaRanking,
-          previousRank: country.fifaRanking,
+          rank: country.worldRanking,
+          previousRank: country.worldRanking,
           rankChange: 0,
           confederation: country.confederation,
           tournamentHistory: []

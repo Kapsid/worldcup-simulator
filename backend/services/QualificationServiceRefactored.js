@@ -551,7 +551,7 @@ class QualificationService {
           name: hostCountry.name,
           country: hostCountry.name,
           flag: hostCountry.flag,
-          ranking: hostCountry.fifaRanking || 999,
+          ranking: hostCountry.worldRanking || 999,
           isHost: true
         })
       }

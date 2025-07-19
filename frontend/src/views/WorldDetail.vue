@@ -124,11 +124,11 @@
             </button>
           </div>
 
-          <!-- Tournaments Tab -->
-          <div v-if="activeTab === 'tournaments'" class="tab-content">
+          <!-- Current Tournament Tab -->
+          <div v-if="activeTab === 'current'" class="tab-content">
             <div class="tournaments-section">
               <div class="section-header">
-                <h3>World Cup Tournaments</h3>
+                <h3>Current Tournament</h3>
                 <button 
                   @click="generateNewTournament" 
                   :disabled="hasActiveTournament || generatingTournament"
@@ -146,13 +146,66 @@
                 <span>Complete the current tournament to generate the next World Cup</span>
               </div>
               
-              <div v-if="tournaments.length === 0" class="empty-section">
+              <div v-if="!currentTournament" class="empty-section">
+                <i class="fas fa-play-circle"></i>
+                <p>No tournament in progress</p>
+                <small>Generate a new tournament to get started</small>
+              </div>
+              
+              <div v-else>
+                <div class="tournament-item glass-white current-tournament">
+                  <div class="tournament-header">
+                    <div class="tournament-title">
+                      <h4>{{ currentTournament.name }}</h4>
+                      <span class="host-country">{{ currentTournament.hostCountry.flag }} {{ currentTournament.hostCountry.name }}</span>
+                    </div>
+                    <div class="tournament-status">
+                      <span :class="`status-badge status-${currentTournament.status}`">
+                        {{ formatStatus(currentTournament.status) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="tournament-info">
+                    <span class="tournament-year">{{ currentTournament.year }}</span>
+                    <span class="tournament-teams">{{ currentTournament.teams || 32 }} teams</span>
+                  </div>
+                  <div class="tournament-actions">
+                    <button @click="openTournament(currentTournament)" class="action-btn primary">
+                      <i class="fas fa-play"></i>
+                      Continue
+                    </button>
+                    <button 
+                      @click="simulateCompletion(currentTournament)" 
+                      class="action-btn secondary"
+                      title="Simulate tournament completion (demo)"
+                    >
+                      <i class="fas fa-fast-forward"></i>
+                      Complete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Past Tournaments Tab -->
+          <div v-if="activeTab === 'past'" class="tab-content">
+            <div class="tournaments-section">
+              <div class="section-header">
+                <h3>Past Tournaments</h3>
+                <div class="history-stats">
+                  <span>{{ pastTournaments.length }} tournaments completed</span>
+                </div>
+              </div>
+              
+              <div v-if="pastTournaments.length === 0" class="empty-section">
                 <i class="fas fa-trophy"></i>
-                <p>No tournaments generated yet</p>
+                <p>No completed tournaments yet</p>
+                <small>Complete your first tournament to see it here</small>
               </div>
               
               <div v-else class="tournaments-list">
-                <div v-for="tournament in tournaments" :key="tournament.id" class="tournament-item glass-white">
+                <div v-for="tournament in pastTournaments" :key="tournament.id" class="tournament-item glass-white">
                   <div class="tournament-header">
                     <div class="tournament-title">
                       <h4>{{ tournament.name }}</h4>
@@ -170,17 +223,8 @@
                   </div>
                   <div class="tournament-actions">
                     <button @click="openTournament(tournament)" class="action-btn primary">
-                      <i class="fas fa-play"></i>
-                      {{ tournament.status === 'completed' ? 'View' : 'Continue' }}
-                    </button>
-                    <button 
-                      v-if="tournament.status !== 'completed'" 
-                      @click="simulateCompletion(tournament)" 
-                      class="action-btn secondary"
-                      title="Simulate tournament completion (demo)"
-                    >
-                      <i class="fas fa-fast-forward"></i>
-                      Complete
+                      <i class="fas fa-eye"></i>
+                      View Details
                     </button>
                   </div>
                 </div>
@@ -376,9 +420,10 @@ export default {
       selectedHost: null,
       
       // Tournament Management
-      activeTab: 'tournaments',
+      activeTab: 'current',
       tabs: [
-        { id: 'tournaments', name: 'Tournaments', icon: 'fas fa-trophy' },
+        { id: 'current', name: 'Current Tournament', icon: 'fas fa-play-circle' },
+        { id: 'past', name: 'Past Tournaments', icon: 'fas fa-trophy' },
         { id: 'history', name: 'History', icon: 'fas fa-history' },
         { id: 'hall-of-fame', name: 'Hall of Fame', icon: 'fas fa-crown' },
         { id: 'rankings', name: 'Rankings', icon: 'fas fa-list-ol' }
@@ -394,6 +439,16 @@ export default {
       return this.tournaments.some(tournament => 
         tournament.status !== 'completed'
       )
+    },
+    currentTournament() {
+      return this.tournaments.find(tournament => 
+        tournament.status !== 'completed'
+      )
+    },
+    pastTournaments() {
+      return this.tournaments
+        .filter(tournament => tournament.status === 'completed')
+        .sort((a, b) => b.year - a.year) // Sort from newest to oldest
     },
     nextTournamentYear() {
       if (this.tournaments.length === 0) {
@@ -483,6 +538,11 @@ export default {
     await this.loadWorld()
     await this.loadUserProfile()
     await this.loadCountryRankings()
+    
+    // Start on past tournaments tab if no current tournament
+    if (!this.currentTournament && this.pastTournaments.length > 0) {
+      this.activeTab = 'past'
+    }
   },
   methods: {
     async loadWorld() {
@@ -1208,6 +1268,11 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.current-tournament {
+  border: 2px solid var(--fifa-gold);
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.2);
 }
 
 .tournament-item {

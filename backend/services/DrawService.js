@@ -6,12 +6,12 @@ import World from '../models/World.js'
 
 class DrawService {
   /**
-   * Get the ranking for a team based on world-specific rankings or FIFA rankings as fallback
+   * Get the ranking for a team based on world-specific rankings or world rankings as fallback
    */
   async getTeamRanking(team, world) {
     if (!world || !world.countryRankings) {
-      // Fallback to FIFA ranking if no world or no rankings
-      return team.fifaRanking || 999
+      // Fallback to world ranking if no world or no rankings
+      return team.worldRanking || 999
     }
     
     // Find team in world rankings
@@ -23,8 +23,8 @@ class DrawService {
       return worldRanking.rank || 999
     }
     
-    // Fallback to FIFA ranking if team not found in world rankings
-    return team.fifaRanking || 999
+    // Fallback to world ranking if team not found in world rankings
+    return team.worldRanking || 999
   }
 
   async generatePots(tournamentId, userId) {
@@ -53,7 +53,7 @@ class DrawService {
       const hostTeam = teams.find(team => team.isHost)
       const nonHostTeams = teams.filter(team => !team.isHost)
       
-      // Sort teams using world rankings if available, otherwise FIFA rankings
+      // Sort teams using world rankings if available, otherwise world rankings
       for (const team of nonHostTeams) {
         team._worldRanking = await this.getTeamRanking(team, world)
       }

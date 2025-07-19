@@ -165,6 +165,12 @@
                   {{ getDecidedByText(match.decidedBy) }}
                 </span>
               </div>
+              
+              <!-- Match Venue -->
+              <div v-if="match.city" class="match-venue">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ match.city }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -867,6 +873,23 @@ export default {
 .result-text {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-green);
+}
+
+.match-venue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 102, 204, 0.1);
+  color: var(--gray);
+  font-size: 0.8rem;
+}
+
+.match-venue i {
+  color: var(--fifa-blue);
+  font-size: 0.75rem;
 }
 
 .decided-by {

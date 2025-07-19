@@ -46,6 +46,30 @@ const tournamentSchema = new mongoose.Schema({
     enum: ['manual', 'qualification'],
     required: true
   },
+  mascot: {
+    name: {
+      type: String,
+      required: false
+    },
+    imageUrl: {
+      type: String,
+      required: false
+    },
+    description: {
+      type: String,
+      required: false
+    }
+  },
+  hostCities: [{
+    name: {
+      type: String,
+      required: true
+    },
+    isCapital: {
+      type: Boolean,
+      default: false
+    }
+  }],
   lastOpenedAt: {
     type: Date,
     default: Date.now

@@ -4,7 +4,7 @@ import { countries } from '../../data/countries.js'
 // Create a ranking lookup map for faster access
 const rankingLookup = new Map()
 countries.forEach(country => {
-  rankingLookup.set(country.name, country.fifaRanking || 999)
+  rankingLookup.set(country.name, country.worldRanking || 999)
 })
 
 class TeamGenerationService {
@@ -28,8 +28,8 @@ class TeamGenerationService {
     console.log(`Generating teams for ${confederationId}: ${confederationCountries.length} countries total` + 
       (hostCountryCode ? ` (excluding host: ${hostCountryCode})` : ''))
 
-    // Sort by FIFA ranking (best teams first)
-    confederationCountries.sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))
+    // Sort by world ranking (best teams first)
+    confederationCountries.sort((a, b) => (a.worldRanking || 999) - (b.worldRanking || 999))
 
     return confederationCountries.map((country, index) => {
       const team = {
@@ -37,7 +37,7 @@ class TeamGenerationService {
         name: country.name,
         country: country.name,
         flag: country.flag,
-        ranking: country.fifaRanking || 999,
+        ranking: country.worldRanking || 999,
         confederationRank: index + 1
       }
       

@@ -2,7 +2,7 @@ import TeamGenerationService from './TeamGenerationService.js'
 
 class MatchSimulationService {
   /**
-   * Get team ranking from world rankings if available, otherwise use FIFA ranking
+   * Get team ranking from world rankings if available, otherwise use world ranking
    */
   getTeamRanking(team, world) {
     if (world && world.countryRankings) {
@@ -55,7 +55,7 @@ class MatchSimulationService {
     }
   }
 
-  // Calculate team power based on FIFA ranking
+  // Calculate team power based on world ranking
   calculateTeamPower(ranking) {
     // Convert ranking to power (1-20 scale, higher is better)
     if (ranking <= 5) return 20

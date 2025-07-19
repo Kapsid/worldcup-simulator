@@ -186,4 +186,21 @@ router.get('/:tournamentId/:teamId', authenticateToken, async (req, res) => {
   }
 })
 
+// Get team tournament history across all worlds and independent tournaments
+router.get('/history/:countryCode', authenticateToken, async (req, res) => {
+  try {
+    const history = await TeamManagementService.getTeamTournamentHistory(
+      req.params.countryCode,
+      req.user.userId
+    )
+    res.json(history)
+  } catch (error) {
+    console.error('Error getting team history:', error)
+    if (error.message === 'Country not found') {
+      return res.status(404).json({ error: error.message })
+    }
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 export default router

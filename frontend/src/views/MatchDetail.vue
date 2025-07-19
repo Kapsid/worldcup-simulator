@@ -59,13 +59,22 @@
           <div class="match-info-section">
             <div class="info-item">
               <strong>Competition:</strong>
-              <span v-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
+              <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
+              <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
               <span v-else-if="match.round">{{ match.round }}</span>
               <span v-else>Tournament Match</span>
+            </div>
+            <div class="info-item" v-if="match.isQualification && match.groupId">
+              <strong>Group:</strong>
+              <span>{{ getGroupName(match.groupId) }}</span>
             </div>
             <div class="info-item" v-if="match.matchday">
               <strong>Matchday:</strong>
               <span>{{ match.matchday }}</span>
+            </div>
+            <div class="info-item" v-if="match.round && match.isQualification">
+              <strong>Round:</strong>
+              <span>{{ match.round }}</span>
             </div>
             <div class="info-item" v-if="match.date">
               <strong>Date:</strong>
@@ -74,6 +83,10 @@
             <div class="info-item" v-if="match.decidedBy">
               <strong>Decided By:</strong>
               <span>{{ getDecidedByText(match.decidedBy) }}</span>
+            </div>
+            <div class="info-item" v-if="match.city">
+              <strong>City:</strong>
+              <span>{{ match.city }}</span>
             </div>
           </div>
 
@@ -139,8 +152,59 @@ export default {
         const { tournamentId, matchId } = this.$route.params
         const token = localStorage.getItem('token')
         
-        // Try to load from group stage matches first
-        let response = await fetch(`http://localhost:3001/api/matches/${tournamentId}/matches`, {
+        // Try to load from qualification matches first
+        let response = await fetch(`http://localhost:3001/api/qualification/${tournamentId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const qualificationData = await response.json()
+          let qualMatch = null
+          let confederation = null
+          
+          // Search through all confederations for the match
+          if (qualificationData && qualificationData.confederations) {
+            for (const confed of qualificationData.confederations) {
+              if (confed.matches) {
+                qualMatch = confed.matches.find(m => m.matchId === matchId)
+                if (qualMatch) {
+                  confederation = confed
+                  break
+                }
+              }
+            }
+          }
+          
+          if (qualMatch) {
+            this.match = {
+              _id: qualMatch.matchId,
+              homeTeam: {
+                name: qualMatch.homeTeam.name,
+                flag: qualMatch.homeTeam.flag
+              },
+              awayTeam: {
+                name: qualMatch.awayTeam.name,
+                flag: qualMatch.awayTeam.flag
+              },
+              homeScore: qualMatch.homeScore,
+              awayScore: qualMatch.awayScore,
+              played: qualMatch.played,
+              date: qualMatch.date,
+              matchday: qualMatch.matchday,
+              round: qualMatch.round,
+              groupId: qualMatch.groupId,
+              confederation: confederation.name,
+              isQualification: true
+            }
+            this.loading = false
+            return
+          }
+        }
+        
+        // Try to load from group stage matches
+        response = await fetch(`http://localhost:3001/api/matches/${tournamentId}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

@@ -10,12 +10,19 @@
         v-for="match in matches" 
         :key="match._id"
         class="match-card"
-        :class="{ 'completed': match.played }"
+        :class="{ 'completed': match.played, 'clickable': match.played }"
+        @click="handleMatchClick(match)"
       >
         <div class="match-teams">
           <div class="team home-team">
             <span class="team-flag">{{ match.homeTeam.flag }}</span>
-            <span class="team-name">{{ match.homeTeam.name }}</span>
+            <router-link 
+              :to="`/tournament/${tournamentId}/qualifying-team/${match.homeTeam.teamId}`" 
+              class="team-name clickable-team"
+              @click.stop
+            >
+              {{ match.homeTeam.name }}
+            </router-link>
           </div>
           
           <div class="match-score">
@@ -26,7 +33,13 @@
           </div>
           
           <div class="team away-team">
-            <span class="team-name">{{ match.awayTeam.name }}</span>
+            <router-link 
+              :to="`/tournament/${tournamentId}/qualifying-team/${match.awayTeam.teamId}`" 
+              class="team-name clickable-team"
+              @click.stop
+            >
+              {{ match.awayTeam.name }}
+            </router-link>
             <span class="team-flag">{{ match.awayTeam.flag }}</span>
           </div>
         </div>
@@ -71,9 +84,21 @@ export default {
     readOnly: {
       type: Boolean,
       default: false
+    },
+    tournamentId: {
+      type: String,
+      required: true
     }
   },
-  emits: ['simulate-match', 'view-match']
+  emits: ['simulate-match', 'view-match'],
+  methods: {
+    handleMatchClick(match) {
+      if (match.played) {
+        this.$router.push(`/tournament/${this.tournamentId}/match/${match.matchId}`)
+      }
+    },
+    
+  }
 }
 </script>
 
@@ -118,6 +143,16 @@ export default {
   border-color: rgba(34, 197, 94, 0.2);
 }
 
+.match-card.clickable {
+  cursor: pointer;
+}
+
+.match-card.clickable:hover {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  transform: translateY(-2px);
+}
+
 .match-teams {
   display: flex;
   align-items: center;
@@ -150,6 +185,25 @@ export default {
   font-weight: var(--font-weight-medium);
   color: var(--white);
   font-size: 0.9rem;
+}
+
+.clickable-team {
+  color: var(--white) !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+  position: relative;
+  z-index: 10;
+  display: inline-block;
+}
+
+.clickable-team:hover {
+  color: var(--fifa-gold) !important;
+  text-decoration: underline !important;
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.05);
 }
 
 .match-score {

@@ -1,4 +1,5 @@
 import KnockoutMatch from '../../models/KnockoutMatch.js'
+import TournamentNewsService from '../TournamentNewsService.js'
 
 class KnockoutMatchSimulationService {
   // Simulate a knockout match
@@ -38,6 +39,14 @@ class KnockoutMatchSimulationService {
       }
       
       await match.save()
+      
+      // Generate news for this knockout match
+      await TournamentNewsService.processMatchResult(
+        match.tournament,
+        match,
+        match.team1,
+        match.team2
+      )
       
       return match
     } catch (error) {
@@ -103,7 +112,7 @@ class KnockoutMatchSimulationService {
     return result
   }
 
-  // Calculate team power based on FIFA ranking
+  // Calculate team power based on world ranking
   calculateTeamPower(ranking) {
     // Convert ranking to power (1-20 scale, higher is better)
     if (ranking <= 5) return 20
@@ -210,6 +219,29 @@ class KnockoutMatchSimulationService {
         if (match.team1 && match.team2) {
           const result = await this.simulateKnockoutMatch(match._id)
           results.push(result)
+        }
+      }
+      
+      // Generate news for round completion
+      if (results.length > 0) {
+        await TournamentNewsService.notifyRoundCompleted(
+          tournamentId,
+          'knockout',
+          round,
+          results.length
+        )
+        
+        // Check for specific milestones
+        if (round === 'quarterfinal' && results.length === 4) {
+          // All quarterfinals completed - semifinals are set
+          await TournamentNewsService.notifyMilestone(tournamentId, 'semifinals_reached', {
+            teams: results.length * 2
+          })
+        } else if (round === 'semifinal' && results.length === 2) {
+          // Both semifinals completed - final is set
+          await TournamentNewsService.notifyMilestone(tournamentId, 'final_reached', {
+            teams: results.length * 2
+          })
         }
       }
       

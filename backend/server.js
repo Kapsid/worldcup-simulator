@@ -10,6 +10,7 @@ import knockoutRoutes from './routes/knockout.js'
 import profileRoutes from './routes/profile.js'
 import qualificationRoutes from './routes/qualification.js'
 import worldsRoutes from './routes/worlds.js'
+import newsRoutes from './routes/news.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -34,6 +35,7 @@ app.use('/api/matches', matchesRoutes)
 app.use('/api/knockout', knockoutRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/qualification', qualificationRoutes)
+app.use('/api/news', newsRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

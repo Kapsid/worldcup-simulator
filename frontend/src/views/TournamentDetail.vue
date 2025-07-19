@@ -36,13 +36,27 @@
             </div>
             
             <div class="tournament-info">
-              <div class="host-section">
-                <div class="country-display">
-                  <span class="country-flag">{{ getCountryFlag(tournament.hostCountryCode) }}</span>
-                  <div class="country-info">
-                    <h1>{{ tournament.name }}</h1>
-                    <p class="host-label">Hosted by {{ tournament.hostCountry }}</p>
-                    <p class="tournament-type">{{ formatTournamentType(tournament.type) }}</p>
+              <!-- Tournament Title Row -->
+              <div class="tournament-title-row">
+                <div class="title-and-host">
+                  <h1>{{ tournament.name }}</h1>
+                  <div class="host-info">
+                    <span class="country-flag">{{ getCountryFlag(tournament.hostCountryCode) }}</span>
+                    <div class="host-details">
+                      <p class="host-label">Hosted by {{ tournament.hostCountry }}</p>
+                      <p class="tournament-type">{{ formatTournamentType(tournament.type) }}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Mascot Section - Prominent -->
+                <div v-if="tournament.mascot" class="tournament-mascot">
+                  <div class="mascot-image-large">
+                    <img :src="tournament.mascot.imageUrl" :alt="tournament.mascot.name" />
+                  </div>
+                  <div class="mascot-info-header">
+                    <h3>{{ tournament.mascot.name }}</h3>
+                    <p class="mascot-title">Official Mascot</p>
                   </div>
                 </div>
                 
@@ -55,6 +69,11 @@
                     {{ editMode ? 'Cancel' : 'Edit' }}
                   </button>
                 </div>
+              </div>
+              
+              <!-- Mascot Description -->
+              <div v-if="tournament.mascot" class="mascot-description-section">
+                <p class="mascot-description">{{ tournament.mascot.description }}</p>
               </div>
               
               <!-- Edit Form -->
@@ -180,6 +199,16 @@
                       <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
                       <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
                     </button>
+                    
+                    <!-- Tournament News -->
+                    <button @click="toggleNews" class="action-card news-action-card" :class="{ 'action-selected': showNews }" :disabled="tournament.status === 'cancelled'">
+                      <div class="news-icon-container">
+                        <i class="fas fa-newspaper"></i>
+                        <div v-if="unreadNewsCount > 0" class="unread-news-badge">{{ unreadNewsCount }}</div>
+                      </div>
+                      <span>Tournament News</span>
+                      <small style="display: block; font-size: 0.7rem; color: #666;">Live Updates</small>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -215,6 +244,9 @@
                     :read-only="tournament.status === 'completed'"
                     @qualification-started="handleQualificationStarted"
                     @matchday-simulated="handleMatchdaySimulated"
+                    @match-simulated="handleQualificationMatchSimulated"
+                    @confederation-matchday-simulated="handleMatchdaySimulated"
+                    @playoff-match-simulated="handleQualificationMatchSimulated"
                     @qualification-completed="handleQualificationCompleted"
                   />
                 </div>
@@ -292,6 +324,19 @@
                 </div>
               </div>
 
+              <!-- Tournament News -->
+              <div v-if="showNews" id="news" class="content-card glass-white full-width">
+                <div class="card-header">
+                  <h3>Tournament News</h3>
+                  <button @click="toggleNews" class="close-section-btn">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="card-content">
+                  <TournamentNews :tournament="tournament" />
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -308,6 +353,7 @@ import WorldCupDraw from '../components/WorldCupDraw.vue'
 import GroupMatches from '../components/GroupMatches.vue'
 import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
+import TournamentNews from '../components/TournamentNews.vue'
 
 export default {
   name: 'TournamentDetail',
@@ -318,7 +364,8 @@ export default {
     WorldCupDraw,
     GroupMatches,
     GroupStandings,
-    KnockoutBracket
+    KnockoutBracket,
+    TournamentNews
   },
   data() {
     return {
@@ -342,13 +389,15 @@ export default {
       showMatches: false,
       showStandings: false,
       showKnockout: false,
+      showNews: false,
+      unreadNewsCount: 0,
       allGroupMatchesCompleted: false,
       anyGroupMatchPlayed: false
     }
   },
   computed: {
     isWorldTournament() {
-      return !!this.worldId
+      return !!(this.worldId || this.tournament?.worldId)
     },
     backButtonText() {
       return this.isWorldTournament ? 'Back to World' : 'Back to Tournaments'
@@ -374,12 +423,14 @@ export default {
     // Only check group matches if tournament was loaded successfully
     if (this.tournament) {
       this.checkGroupMatchesCompletion()
+      this.loadUnreadNewsCount()
     }
   },
   methods: {
     goBack() {
       if (this.isWorldTournament) {
-        this.$router.push(`/worlds/${this.worldId}`)
+        const worldId = this.worldId || this.tournament?.worldId
+        this.$router.push(`/worlds/${worldId}`)
       } else {
         this.$router.push('/tournaments')
       }
@@ -397,6 +448,10 @@ export default {
         
         if (response.ok) {
           this.tournament = await response.json()
+          // Set worldId from tournament data if not already set from query params
+          if (!this.worldId && this.tournament.worldId) {
+            this.worldId = this.tournament.worldId
+          }
         } else if (response.status === 404) {
           this.tournament = null
         } else {
@@ -520,6 +575,7 @@ export default {
         this.showMatches = false
         this.showStandings = false
         this.showKnockout = false
+        this.showNews = false
         this.scrollToSection('team-management')
       }
     },
@@ -532,6 +588,7 @@ export default {
         this.showMatches = false
         this.showStandings = false
         this.showKnockout = false
+        this.showNews = false
         this.scrollToSection('qualifying')
       }
     },
@@ -544,6 +601,7 @@ export default {
         this.showMatches = false
         this.showStandings = false
         this.showKnockout = false
+        this.showNews = false
         this.scrollToSection('draw')
       }
     },
@@ -584,6 +642,7 @@ export default {
         this.showDraw = false
         this.showStandings = false
         this.showKnockout = false
+        this.showNews = false
         this.scrollToSection('matches')
       }
     },
@@ -596,6 +655,7 @@ export default {
         this.showDraw = false
         this.showMatches = false
         this.showKnockout = false
+        this.showNews = false
         this.scrollToSection('standings')
       }
     },
@@ -608,7 +668,21 @@ export default {
         this.showDraw = false
         this.showMatches = false
         this.showStandings = false
+        this.showNews = false
         this.scrollToSection('knockout')
+      }
+    },
+
+    toggleNews() {
+      this.showNews = !this.showNews
+      if (this.showNews) {
+        this.showTeamManagement = false
+        this.showQualifying = false
+        this.showDraw = false
+        this.showMatches = false
+        this.showStandings = false
+        this.showKnockout = false
+        this.scrollToSection('news')
       }
     },
 
@@ -626,6 +700,8 @@ export default {
       }
       // Re-check match status after simulation
       this.checkGroupMatchesCompletion()
+      // Refresh news count after match simulation
+      this.loadUnreadNewsCount()
     },
 
     handleMatchdaySimulated() {
@@ -634,6 +710,8 @@ export default {
       }
       // Re-check match status after matchday simulation
       this.checkGroupMatchesCompletion()
+      // Refresh news count after matchday simulation
+      this.loadUnreadNewsCount()
     },
 
     handleBracketGenerated() {
@@ -648,6 +726,11 @@ export default {
     handleKnockoutRoundSimulated() {
       // Reload tournament data to check for completion
       this.loadTournament()
+    },
+
+    handleQualificationMatchSimulated() {
+      // Refresh news count after qualification match simulation
+      this.loadUnreadNewsCount()
     },
 
     async activateTournament() {
@@ -735,6 +818,24 @@ export default {
       } catch (error) {
         console.error('Error checking group matches completion:', error)
       }
+    },
+
+    async loadUnreadNewsCount() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/news/${this.tournament._id}/unread-count`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          this.unreadNewsCount = data.count
+        }
+      } catch (error) {
+        console.error('Error loading unread news count:', error)
+      }
     }
   }
 }
@@ -808,30 +909,41 @@ export default {
 .tournament-info {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-.host-section {
+.tournament-title-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 24px;
 }
 
-.country-display {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.title-and-host {
+  flex: 1;
 }
 
-.country-flag {
-  font-size: 3rem;
-}
-
-.country-info h1 {
+.title-and-host h1 {
   font-size: 2.5rem;
   font-weight: var(--font-weight-bold);
   color: var(--fifa-dark-blue);
-  margin: 0 0 8px 0;
+  margin: 0 0 16px 0;
+}
+
+.host-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.country-flag {
+  font-size: 2.5rem;
+}
+
+.host-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .host-label {
@@ -844,7 +956,68 @@ export default {
   color: var(--fifa-blue);
   font-size: 0.9rem;
   font-weight: var(--font-weight-semibold);
-  margin: 4px 0 0 0;
+  margin: 0;
+}
+
+.tournament-mascot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(0, 102, 204, 0.1));
+  border-radius: var(--radius-lg);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.2);
+}
+
+.mascot-image-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 3px solid var(--fifa-gold);
+}
+
+.mascot-image-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mascot-info-header h3 {
+  color: var(--fifa-dark-blue);
+  font-size: 1.3rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 4px 0;
+}
+
+.mascot-title {
+  color: var(--fifa-gold);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.mascot-description-section {
+  background: rgba(0, 102, 204, 0.05);
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--fifa-gold);
+}
+
+.mascot-description {
+  color: var(--gray);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  font-style: italic;
 }
 
 .status-section {
@@ -1075,22 +1248,22 @@ export default {
 
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
 }
 
 .action-grid-full {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
 }
 
 .action-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 20px;
+  gap: 4px;
+  padding: 12px 8px;
   background: rgba(0, 102, 204, 0.05);
   border: 1px solid rgba(0, 102, 204, 0.1);
   border-radius: var(--radius-lg);
@@ -1098,6 +1271,7 @@ export default {
   transition: all 0.3s ease;
   color: var(--fifa-blue);
   font-weight: var(--font-weight-semibold);
+  font-size: 0.85rem;
 }
 
 .action-card:not(:disabled):hover {
@@ -1171,7 +1345,31 @@ export default {
 }
 
 .action-card i {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+}
+
+.news-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unread-news-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--fifa-red);
+  color: var(--white);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
 }
 
 .progress-info p {

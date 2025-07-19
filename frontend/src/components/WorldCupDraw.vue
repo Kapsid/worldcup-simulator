@@ -82,7 +82,7 @@
           <div class="draw-buttons">
             <button 
               @click="drawAllTeams" 
-              :disabled="loading"
+              :disabled="loading || animatedDrawInProgress"
               class="btn-primary draw-all-btn"
             >
               <i v-if="loading" class="fas fa-spinner fa-spin"></i>
@@ -90,8 +90,17 @@
               Draw All Teams
             </button>
             <button 
+              @click="startAnimatedDraw" 
+              :disabled="loading || animatedDrawInProgress"
+              class="btn-secondary animated-draw-btn"
+            >
+              <i v-if="animatedDrawInProgress" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-magic"></i>
+              Animated Draw
+            </button>
+            <button 
               @click="clearDraw" 
-              :disabled="loading"
+              :disabled="loading || animatedDrawInProgress"
               class="btn-danger clear-draw-btn"
             >
               <i class="fas fa-trash"></i>
@@ -118,8 +127,84 @@
 
       </div>
 
-      <div class="groups-preview">
-        <h4>Groups Preview</h4>
+      <!-- Animated Draw Interface -->
+      <div v-if="animatedDrawInProgress" class="animated-draw-container">
+        <div class="draw-ceremony">
+          <div class="ceremony-header">
+            <h4>🏆 FIFA World Cup Draw Ceremony</h4>
+            <p>{{ drawStatusText }}</p>
+          </div>
+          
+          <div class="draw-stage">
+            <!-- Ball Opening Animation -->
+            <div v-if="showBallAnimation" class="ball-container">
+              <div class="draw-ball" :class="{ 'opening': ballOpening, 'opened': ballOpened }">
+                <div class="ball-sphere">
+                  <div class="ball-top"></div>
+                  <div class="ball-bottom"></div>
+                </div>
+                <div v-if="ballOpened" class="team-reveal">
+                  <div class="team-flag">{{ currentDrawnTeam?.countryFlag }}</div>
+                  <div class="team-name">{{ currentDrawnTeam?.countryName }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group Assignment Animation -->
+            <div v-if="showGroupAssignment" class="group-assignment">
+              <div class="assignment-text">
+                <span class="team-info">
+                  {{ currentDrawnTeam?.countryFlag }} {{ currentDrawnTeam?.countryName }}
+                </span>
+                <span class="arrow">→</span>
+                <span class="group-info">Group {{ currentTargetGroup }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ceremony-controls">
+            <div class="control-buttons">
+              <button 
+                @click="togglePause" 
+                class="btn-secondary control-btn"
+                :disabled="!animatedDrawInProgress"
+              >
+                <i :class="animatedDrawPaused ? 'fas fa-play' : 'fas fa-pause'"></i>
+                {{ animatedDrawPaused ? 'Resume' : 'Pause' }}
+              </button>
+              <button 
+                @click="finishAnimationManually" 
+                class="btn-primary control-btn"
+                :disabled="!animatedDrawInProgress"
+              >
+                <i class="fas fa-forward"></i>
+                Finish Now
+              </button>
+              <button 
+                @click="adjustSpeed" 
+                class="btn-secondary control-btn"
+                :disabled="!animatedDrawInProgress"
+              >
+                <i class="fas fa-tachometer-alt"></i>
+                Speed: {{ getSpeedText() }}
+              </button>
+            </div>
+          </div>
+
+          <div class="ceremony-progress">
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                :style="{ width: `${animationProgress}%` }"
+              ></div>
+            </div>
+            <p>{{ currentPotName }} - Team {{ currentTeamIndex + 1 }} of {{ totalTeamsInCurrentPot }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="groups-preview" v-show="!animatedDrawInProgress || groups.some(g => g.teams.length > 0)">
+        <h4>{{ animatedDrawInProgress ? 'Live Draw Results' : 'Groups Preview' }}</h4>
         <div class="groups-grid">
           <div 
             v-for="group in groups" 
@@ -229,7 +314,23 @@ export default {
       pots: [],
       groups: [],
       loading: false,
-      error: ''
+      error: '',
+      // Animated draw properties
+      animatedDrawInProgress: false,
+      animatedDrawPaused: false,
+      showBallAnimation: false,
+      showGroupAssignment: false,
+      ballOpening: false,
+      ballOpened: false,
+      currentDrawnTeam: null,
+      currentTargetGroup: '',
+      currentPotName: '',
+      currentTeamIndex: 0,
+      totalTeamsInCurrentPot: 0,
+      animationProgress: 0,
+      drawStatusText: '',
+      animatedDrawData: null,
+      animationSpeed: 1 // 1 = normal, 2 = fast, 3 = very fast
     }
   },
   computed: {
@@ -411,6 +512,239 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+
+    async startAnimatedDraw() {
+      try {
+        // First, get the draw data from the API (same as drawAllTeams but don't update UI yet)
+        this.loading = true
+        this.error = ''
+
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/all`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          this.animatedDrawData = data.groups
+          this.loading = false
+          this.startDrawAnimation()
+        } else {
+          this.error = data.error || 'Failed to start animated draw'
+          this.loading = false
+        }
+      } catch (error) {
+        this.error = 'Network error. Please try again.'
+        this.loading = false
+      }
+    },
+
+    async startDrawAnimation() {
+      this.animatedDrawInProgress = true
+      this.animationProgress = 0
+      this.drawStatusText = 'Preparing the draw ceremony...'
+      
+      // Clear current groups to show empty state
+      this.groups = this.groups.map(group => ({
+        ...group,
+        teams: []
+      }))
+
+      // Get draw order from pots
+      const drawOrder = []
+      for (let potNum = 1; potNum <= 4; potNum++) {
+        const pot = this.pots.find(p => p.potNumber === potNum)
+        if (pot) {
+          // Get the final assignments for this pot from the draw data
+          const potAssignments = this.extractPotAssignments(pot, potNum)
+          drawOrder.push({
+            potNumber: potNum,
+            potName: `Pot ${potNum}`,
+            assignments: potAssignments
+          })
+        }
+      }
+
+      // Animate each pot
+      for (let potIndex = 0; potIndex < drawOrder.length; potIndex++) {
+        const pot = drawOrder[potIndex]
+        this.currentPotName = pot.potName
+        this.totalTeamsInCurrentPot = pot.assignments.length
+
+        for (let teamIndex = 0; teamIndex < pot.assignments.length; teamIndex++) {
+          this.currentTeamIndex = teamIndex
+          const assignment = pot.assignments[teamIndex]
+          
+          await this.animateTeamDraw(assignment)
+          
+          // Update progress
+          this.animationProgress = ((potIndex * 8 + teamIndex + 1) / 32) * 100
+        }
+      }
+
+      // Finish ceremony
+      this.drawStatusText = '🎉 Draw complete! Welcome to the World Cup!'
+      await this.sleep(2000)
+      
+      this.animatedDrawInProgress = false
+      this.resetAnimationState()
+    },
+
+    extractPotAssignments(pot, potNumber) {
+      const assignments = []
+      
+      // Find where each team from this pot ended up in the final draw
+      for (const team of pot.teams) {
+        for (const group of this.animatedDrawData) {
+          const foundTeam = group.teams.find(t => t._id === team._id)
+          if (foundTeam) {
+            assignments.push({
+              team: team,
+              targetGroup: group.groupLetter
+            })
+            break
+          }
+        }
+      }
+      
+      // Shuffle assignments to simulate random draw order
+      return this.shuffleArray(assignments)
+    },
+
+    async animateTeamDraw(assignment) {
+      this.currentDrawnTeam = assignment.team
+      this.currentTargetGroup = assignment.targetGroup
+      this.drawStatusText = `Drawing from ${this.currentPotName}...`
+
+      // Show ball animation
+      this.showBallAnimation = true
+      this.showGroupAssignment = false
+      this.ballOpening = false
+      this.ballOpened = false
+
+      await this.sleepWithPause(300)
+
+      // Start ball opening
+      this.ballOpening = true
+      this.drawStatusText = 'Opening the ball...'
+      
+      await this.sleepWithPause(500)
+
+      // Ball opened, reveal team
+      this.ballOpened = true
+      this.drawStatusText = `${assignment.team.countryName} has been drawn!`
+      
+      await this.sleepWithPause(800)
+
+      // Hide ball, show group assignment
+      this.showBallAnimation = false
+      this.showGroupAssignment = true
+      this.drawStatusText = `Assigning ${assignment.team.countryName} to Group ${assignment.targetGroup}...`
+      
+      await this.sleepWithPause(600)
+
+      // Add team to the group in UI
+      const targetGroup = this.groups.find(g => g.groupLetter === assignment.targetGroup)
+      if (targetGroup) {
+        targetGroup.teams.push(assignment.team)
+      }
+
+      this.drawStatusText = `${assignment.team.countryName} assigned to Group ${assignment.targetGroup}!`
+      
+      await this.sleepWithPause(400)
+
+      // Hide group assignment
+      this.showGroupAssignment = false
+    },
+
+    resetAnimationState() {
+      this.showBallAnimation = false
+      this.showGroupAssignment = false
+      this.ballOpening = false
+      this.ballOpened = false
+      this.currentDrawnTeam = null
+      this.currentTargetGroup = ''
+      this.currentPotName = ''
+      this.currentTeamIndex = 0
+      this.totalTeamsInCurrentPot = 0
+      this.animationProgress = 0
+      this.drawStatusText = ''
+      this.animatedDrawData = null
+      this.animatedDrawPaused = false
+      this.animationSpeed = 1
+    },
+
+    shuffleArray(array) {
+      const shuffled = [...array]
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      }
+      return shuffled
+    },
+
+    sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms))
+    },
+
+    async sleepWithPause(baseMs) {
+      // Adjust timing based on speed setting
+      const ms = baseMs / this.animationSpeed
+      
+      return new Promise((resolve) => {
+        const checkPause = () => {
+          if (!this.animatedDrawPaused && this.animatedDrawInProgress) {
+            setTimeout(resolve, ms)
+          } else if (!this.animatedDrawInProgress) {
+            resolve() // If animation was stopped, resolve immediately
+          } else {
+            // If paused, check again in 100ms
+            setTimeout(checkPause, 100)
+          }
+        }
+        checkPause()
+      })
+    },
+
+    togglePause() {
+      this.animatedDrawPaused = !this.animatedDrawPaused
+      if (this.animatedDrawPaused) {
+        this.drawStatusText = '⏸️ Draw paused - Click Resume to continue'
+      }
+    },
+
+    adjustSpeed() {
+      this.animationSpeed = this.animationSpeed >= 3 ? 1 : this.animationSpeed + 1
+    },
+
+    getSpeedText() {
+      switch (this.animationSpeed) {
+        case 1: return 'Normal'
+        case 2: return 'Fast'
+        case 3: return 'Very Fast'
+        default: return 'Normal'
+      }
+    },
+
+    async finishAnimationManually() {
+      if (!this.animatedDrawInProgress) return
+      
+      // Set final groups data
+      this.groups = this.animatedDrawData
+      
+      // End animation
+      this.animatedDrawInProgress = false
+      this.resetAnimationState()
+      this.drawStatusText = '✅ Draw completed manually!'
+      
+      // Brief message then clear
+      await this.sleep(1500)
+      this.drawStatusText = ''
     },
 
     getTeamPot(team) {
@@ -838,5 +1172,324 @@ export default {
     justify-content: center;
   }
 
+}
+
+/* Animated Draw Styles */
+.animated-draw-container {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.1), rgba(0, 102, 204, 0.05));
+  border-radius: var(--radius-xl);
+  border: 2px solid rgba(0, 102, 204, 0.2);
+}
+
+.draw-ceremony {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.ceremony-header h4 {
+  font-size: 1.8rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  margin: 0 0 0.5rem 0;
+}
+
+.ceremony-header p {
+  font-size: 1.1rem;
+  color: var(--fifa-blue);
+  margin: 0 0 2rem 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.draw-stage {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.ball-container {
+  perspective: 1000px;
+}
+
+.draw-ball {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  transition: all 0.8s ease;
+}
+
+.ball-sphere {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #ff6b35, #ff8e53);
+  box-shadow: 
+    0 0 20px rgba(255, 107, 53, 0.4),
+    inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+  transform-style: preserve-3d;
+  animation: ballFloat 2s ease-in-out infinite;
+}
+
+.ball-top, .ball-bottom {
+  position: absolute;
+  width: 100%;
+  height: 50%;
+  border-radius: 100px 100px 0 0;
+  transition: all 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.ball-top {
+  top: 0;
+  background: linear-gradient(180deg, #ff6b35, #ff8e53);
+  transform-origin: bottom center;
+}
+
+.ball-bottom {
+  bottom: 0;
+  background: linear-gradient(0deg, #ff6b35, #ff8e53);
+  border-radius: 0 0 100px 100px;
+  transform-origin: top center;
+}
+
+.draw-ball.opening .ball-top {
+  transform: rotateX(-90deg);
+}
+
+.draw-ball.opening .ball-bottom {
+  transform: rotateX(90deg);
+}
+
+.draw-ball.opened .ball-top {
+  transform: rotateX(-120deg);
+}
+
+.draw-ball.opened .ball-bottom {
+  transform: rotateX(120deg);
+}
+
+.team-reveal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: teamReveal 0.8s ease 0.5s forwards;
+  z-index: 10;
+}
+
+.team-reveal .team-flag {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.team-reveal .team-name {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-assignment {
+  animation: groupAssignmentSlide 0.8s ease;
+}
+
+.assignment-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.team-info {
+  color: var(--fifa-blue);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.arrow {
+  color: var(--fifa-gold);
+  font-size: 2rem;
+  animation: arrowPulse 1s ease infinite;
+}
+
+.group-info {
+  color: var(--fifa-dark-blue);
+  background: var(--fifa-gold);
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.ceremony-controls {
+  margin: 1.5rem 0;
+}
+
+.control-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.control-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ceremony-progress {
+  margin-top: 2rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 102, 204, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--fifa-blue), var(--fifa-gold));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.ceremony-progress p {
+  color: var(--fifa-blue);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.animated-draw-btn {
+  background: linear-gradient(135deg, var(--fifa-gold), #FFE55C) !important;
+  color: var(--fifa-dark-blue) !important;
+  border: none !important;
+  font-weight: var(--font-weight-bold) !important;
+}
+
+.animated-draw-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FFE55C, var(--fifa-gold)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3) !important;
+}
+
+/* Animations */
+@keyframes ballFloat {
+  0%, 100% { transform: translateY(0px) rotateY(0deg); }
+  50% { transform: translateY(-10px) rotateY(180deg); }
+}
+
+@keyframes teamReveal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes groupAssignmentSlide {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes arrowPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Live draw group updates */
+.group-team {
+  animation: teamSlideIn 0.5s ease;
+}
+
+@keyframes teamSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+    background-color: rgba(255, 215, 0, 0.3);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    background-color: transparent;
+  }
+}
+
+@media (max-width: 768px) {
+  .animated-draw-container {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .draw-ball {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .team-reveal .team-flag {
+    font-size: 2rem;
+  }
+  
+  .team-reveal .team-name {
+    font-size: 1rem;
+  }
+  
+  .assignment-text {
+    flex-direction: column;
+    gap: 1rem;
+    font-size: 1.2rem;
+  }
+  
+  .ceremony-header h4 {
+    font-size: 1.4rem;
+  }
+
+  .control-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .control-btn {
+    min-width: 160px;
+  }
 }
 </style>
