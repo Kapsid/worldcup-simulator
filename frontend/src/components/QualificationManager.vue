@@ -105,6 +105,8 @@
                                 <router-link 
                                   :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                                   class="team-name clickable-team"
+                                  @mouseenter="showTooltip($event, team.teamId)"
+                                  @mouseleave="hideTooltip"
                                 >
                                   {{ team.name }}
                                 </router-link>
@@ -151,54 +153,82 @@
                             {{ getActiveMatchdayData().matches.filter(m => m.played).length }} played
                           </span>
                         </div>
+                        <div class="matchday-actions">
+                          <button 
+                            @click="simulateMatchday(activeMatchday)"
+                            :disabled="loading || isMatchdayCompleted(activeMatchday)"
+                            class="btn-primary simulate-matchday-btn"
+                          >
+                            <i v-if="loading" class="fas fa-spinner fa-spin"></i>
+                            <i v-else class="fas fa-play"></i>
+                            {{ isMatchdayCompleted(activeMatchday) ? 'Matchday Completed' : `Simulate Matchday ${activeMatchday}` }}
+                          </button>
+                        </div>
                       </div>
 
-                      <div class="matches-list">
-                        <div v-for="match in getActiveMatchdayData().matches" :key="match.matchId" class="match-item">
-                          <div class="match-info">
-                            <span class="group">{{ getGroupName(match.groupId) }}</span>
+                      <div class="qual-matches-grid">
+                        <div 
+                          v-for="match in getActiveMatchdayData().matches" 
+                          :key="match.matchId" 
+                          class="qual-match-card"
+                          :class="{ 'match-completed': match.played }"
+                        >
+                          <div class="qual-match-header">
+                            <span class="group-label">{{ getGroupName(match.groupId) }}</span>
+                            <span class="match-status">
+                              {{ match.played ? 'Completed' : 'Scheduled' }}
+                            </span>
                           </div>
-                          <div class="match-teams">
+                          
+                          <div class="qual-match-teams">
                             <div class="team home-team">
-                              <span class="team-flag">{{ match.homeTeam.flag }}</span>
+                              <div class="team-flag">{{ match.homeTeam.flag }}</div>
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                                 class="team-name clickable-team"
+                                @mouseenter="showTooltip($event, match.homeTeam.teamId)"
+                                @mouseleave="hideTooltip"
                               >
                                 {{ match.homeTeam.name }}
                               </router-link>
                             </div>
-                            <div class="match-score">
-                              <span v-if="match.played" class="score">{{ match.homeScore }} - {{ match.awayScore }}</span>
-                              <span v-else class="vs">vs</span>
+                            
+                            <div class="qual-match-score">
+                              <div class="score-display">
+                                <span class="home-score">{{ match.played ? match.homeScore : '-' }}</span>
+                                <span class="score-separator">:</span>
+                                <span class="away-score">{{ match.played ? match.awayScore : '-' }}</span>
+                              </div>
+                              <div class="match-actions">
+                                <button 
+                                  v-if="!match.played"
+                                  @click="simulateIndividualMatch(match)"
+                                  :disabled="simulatingMatch === match.matchId"
+                                  class="btn-small simulate-btn"
+                                >
+                                  <i v-if="simulatingMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
+                                  <i v-else class="fas fa-play"></i>
+                                </button>
+                                <button 
+                                  @click="showMatchDetail(match)"
+                                  class="btn-small detail-btn"
+                                >
+                                  <i class="fas fa-eye"></i>
+                                </button>
+                              </div>
                             </div>
+                            
                             <div class="team away-team">
+                              <div class="team-flag">{{ match.awayTeam.flag }}</div>
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                                 class="team-name clickable-team"
+                                @mouseenter="showTooltip($event, match.awayTeam.teamId)"
+                                @mouseleave="hideTooltip"
                               >
                                 {{ match.awayTeam.name }}
                               </router-link>
-                              <span class="team-flag">{{ match.awayTeam.flag }}</span>
                             </div>
-                          </div>
-                          <div class="match-actions">
-                            <button 
-                              v-if="!match.played"
-                              @click="simulateIndividualMatch(match)"
-                              :disabled="simulatingMatch === match.matchId"
-                              class="simulate-match-btn"
-                            >
-                              <i v-if="simulatingMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
-                              <i v-else class="fas fa-play"></i>
-                            </button>
-                            <button 
-                              @click="showMatchDetail(match)"
-                              class="btn-small detail-btn"
-                            >
-                              <i class="fas fa-eye"></i>
-                            </button>
-                            <span v-if="match.played" class="match-status played">Played</span>
                           </div>
                         </div>
                       </div>
@@ -379,6 +409,8 @@
                           <router-link 
                             :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                             class="team-name clickable-team"
+                            @mouseenter="showTooltip($event, team.teamId)"
+                            @mouseleave="hideTooltip"
                           >
                             {{ team.name }}
                           </router-link>
@@ -414,6 +446,8 @@
               v-if="team.teamId"
               :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
               class="team-name clickable-team"
+              @mouseenter="showTooltip($event, team.teamId)"
+              @mouseleave="hideTooltip"
             >
               {{ team.name || team.country }}
             </router-link>
@@ -447,16 +481,7 @@
           {{ starting ? 'Starting...' : 'Start Qualification' }}
         </button>
         
-        <button 
-          v-if="qualificationStarted && activeConfederation && !getActiveConfederationData()?.completed && hasUnplayedMatches()"
-          @click="simulateNextConfederationMatchday"
-          :disabled="simulating"
-          class="btn-primary action-btn"
-        >
-          <i v-if="simulating" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-forward"></i>
-          {{ simulating ? 'Simulating...' : `Simulate Next ${activeConfederationData?.name} Matchday` }}
-        </button>
+        <!-- Simulate Next Matchday button removed - using matchday-specific simulation instead -->
 
         <button 
           v-if="qualificationStarted && activeConfederation && !getActiveConfederationData()?.completed && hasUnplayedMatches()"
@@ -498,12 +523,27 @@
         {{ error }}
       </div>
     </div>
+    
+    <!-- Standings Tooltip - teleported to body to avoid container positioning issues -->
+    <Teleport to="body">
+      <StandingsTooltip
+        :visible="tooltip.visible"
+        :standings="tooltip.standings"
+        :highlighted-team-id="tooltip.teamId"
+        :position="tooltip.position"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script>
+import StandingsTooltip from './StandingsTooltip.vue'
+
 export default {
   name: 'QualificationManager',
+  components: {
+    StandingsTooltip
+  },
   props: {
     tournament: {
       type: Object,
@@ -534,7 +574,14 @@ export default {
       completedMatchdays: 0,
       totalSlots: 32,
       activeMatchday: 1,
-      activeSubTab: 'groups' // groups, matches, standings
+      activeSubTab: 'groups', // groups, matches, standings
+      // Tooltip data
+      tooltip: {
+        visible: false,
+        teamId: null,
+        position: { x: 0, y: 0 },
+        standings: []
+      }
     }
   },
   watch: {
@@ -1066,6 +1113,49 @@ export default {
       return unfinishedMatchday ? unfinishedMatchday.matchday : matchdays[0].matchday
     },
 
+    // Check if a specific matchday is completed
+    isMatchdayCompleted(matchday) {
+      const matchdayData = this.getActiveMatchdayData()
+      if (!matchdayData || matchdayData.matchday !== matchday) {
+        const matchdays = this.getGroupedMatchdays()
+        const targetMatchday = matchdays.find(md => md.matchday === matchday)
+        if (!targetMatchday) return false
+        return targetMatchday.matches.every(match => match.played)
+      }
+      return matchdayData.matches.every(match => match.played)
+    },
+
+    // Simulate an entire matchday
+    async simulateMatchday(matchday) {
+      this.loading = true
+      this.error = ''
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-matchday/${this.activeConfederation}/${matchday}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          await this.loadQualificationData()
+          this.$emit('matchday-simulated', {
+            confederationId: this.activeConfederation,
+            matchday: matchday
+          })
+        } else {
+          const data = await response.json()
+          this.error = data.error || 'Failed to simulate matchday'
+        }
+      } catch (error) {
+        this.error = 'Network error. Please try again.'
+      } finally {
+        this.loading = false
+      }
+    },
+
     // Get playoff matches for active confederation
     getPlayoffMatches() {
       if (!this.qualificationData || !this.qualificationData.confederations) {
@@ -1191,6 +1281,60 @@ export default {
     showMatchDetail(match) {
       // Navigate to match detail page for qualification matches
       this.$router.push(`/tournament/${this.tournament._id}/match/${match.matchId}`)
+    },
+
+    // Tooltip methods
+    showTooltip(event, teamId) {
+      if (!teamId) return
+      
+      // Get standings for the team's group
+      const standings = this.getStandingsForTeam(teamId)
+      if (!standings || standings.length === 0) return
+      
+      // Position near where you hover
+      this.tooltip = {
+        visible: true,
+        teamId: teamId,
+        position: {
+          x: event.clientX + 15,  // 15px to the right of mouse
+          y: event.clientY - 40   // 40px above mouse
+        },
+        standings: standings
+      }
+    },
+    
+    hideTooltip() {
+      this.tooltip.visible = false
+      this.tooltip.teamId = null
+    },
+    
+    getStandingsForTeam(teamId) {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        return []
+      }
+      
+      const confederation = this.qualificationData.confederations.find(
+        conf => conf.confederationId === this.activeConfederation
+      )
+      
+      if (!confederation || !confederation.groups) {
+        return []
+      }
+      
+      // Find the group that contains this team
+      for (const group of confederation.groups) {
+        const teamInGroup = group.teams?.find(team => team.teamId === teamId)
+        if (teamInGroup) {
+          // Return sorted standings for this group
+          return [...group.teams].sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points
+            if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+            return b.goalsFor - a.goalsFor
+          })
+        }
+      }
+      
+      return []
     }
   }
 }
@@ -2625,5 +2769,210 @@ export default {
   color: var(--fifa-blue);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* New Qualification Match Cards Design */
+.matchday-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.simulate-matchday-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.simulate-matchday-btn:hover:not(:disabled) {
+  background: #00aa44;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 170, 68, 0.3);
+}
+
+.simulate-matchday-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.qual-matches-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.qual-match-card {
+  background: var(--white);
+  border: 1px solid rgba(0, 102, 204, 0.1);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.qual-match-card:hover {
+  border-color: rgba(0, 102, 204, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.qual-match-card.match-completed {
+  border-color: var(--fifa-green);
+  background: rgba(0, 170, 68, 0.05);
+}
+
+.qual-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.group-label {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-blue);
+  background: rgba(0, 102, 204, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.qual-match-header .match-status {
+  font-size: 0.7rem;
+  color: var(--gray);
+}
+
+.qual-match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.qual-match-teams .team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.qual-match-teams .team-flag {
+  font-size: 1.5rem;
+}
+
+.qual-match-teams .team-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-dark-blue);
+  text-align: center;
+  font-size: 0.75rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: block;
+}
+
+.qual-match-teams .team-name:hover {
+  color: var(--fifa-blue);
+  text-decoration: underline;
+  background-color: rgba(0, 102, 204, 0.1);
+  transform: translateY(-1px);
+}
+
+.qual-match-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 12px;
+}
+
+.qual-match-score .score-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+}
+
+.qual-match-score .score-separator {
+  color: var(--gray);
+}
+
+.qual-match-score .match-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.qual-match-score .btn-small {
+  padding: 4px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.3s ease;
+}
+
+.qual-match-score .simulate-btn {
+  background: var(--fifa-blue);
+  color: var(--white);
+}
+
+.qual-match-score .simulate-btn:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.qual-match-score .simulate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qual-match-score .detail-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+}
+
+.qual-match-score .detail-btn:hover {
+  background: #00aa44;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .qual-matches-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .qual-match-card {
+    padding: 10px;
+  }
+
+  .qual-match-teams .team-flag {
+    font-size: 1.2rem;
+  }
+
+  .qual-match-teams .team-name {
+    font-size: 0.7rem;
+  }
+
+  .qual-match-score .score-display {
+    font-size: 1rem;
+  }
+
+  .qual-match-score {
+    margin: 0 8px;
+  }
 }
 </style>

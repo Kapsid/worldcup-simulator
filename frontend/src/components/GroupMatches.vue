@@ -80,6 +80,8 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
                   class="team-name clickable-team"
+                  @mouseenter="showTooltip($event, match.homeTeam._id)"
+                  @mouseleave="hideTooltip"
                 >
                   {{ match.homeTeam.countryName }}
                 </router-link>
@@ -114,6 +116,8 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
                   class="team-name clickable-team"
+                  @mouseenter="showTooltip($event, match.awayTeam._id)"
+                  @mouseleave="hideTooltip"
                 >
                   {{ match.awayTeam.countryName }}
                 </router-link>
@@ -132,14 +136,28 @@
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
+    
+    <!-- Standings Tooltip - teleported to body to avoid container positioning issues -->
+    <Teleport to="body">
+      <StandingsTooltip
+        :visible="tooltip.visible"
+        :standings="tooltip.standings"
+        :highlighted-team-id="tooltip.teamId"
+        :position="tooltip.position"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script>
 
+import StandingsTooltip from './StandingsTooltip.vue'
+
 export default {
   name: 'GroupMatches',
-  components: {},
+  components: {
+    StandingsTooltip
+  },
 
   props: {
     tournament: {
@@ -156,7 +174,14 @@ export default {
       matches: [],
       activeMatchday: 1,
       loading: false,
-      error: ''
+      error: '',
+      // Tooltip data
+      tooltip: {
+        visible: false,
+        teamId: null,
+        position: { x: 0, y: 0 },
+        standings: []
+      }
     }
   },
   computed: {
@@ -309,6 +334,64 @@ export default {
       const matchdayMatches = this.getMatchesByMatchday(matchday)
       return matchdayMatches.length > 0 && matchdayMatches.every(match => match.status === 'completed')
     },
+
+    // Tooltip methods
+    showTooltip(event, teamId) {
+      if (!teamId) return
+      
+      // Get standings for the team's group
+      const standings = this.getStandingsForTeam(teamId)
+      if (!standings || standings.length === 0) return
+      
+      // Position near where you hover
+      this.tooltip = {
+        visible: true,
+        teamId: teamId,
+        position: {
+          x: event.clientX + 15,  // 15px to the right of mouse
+          y: event.clientY - 40   // 40px above mouse
+        },
+        standings: standings
+      }
+    },
+    
+    hideTooltip() {
+      this.tooltip.visible = false
+      this.tooltip.teamId = null
+    },
+    
+    async getStandingsForTeam(teamId) {
+      if (!teamId || !this.tournament._id) return []
+      
+      try {
+        // Find the team in current matches to get the group
+        const teamMatch = this.matches.find(match => 
+          match.homeTeam._id === teamId || match.awayTeam._id === teamId
+        )
+        
+        if (!teamMatch) return []
+        
+        const groupId = teamMatch.group._id
+        
+        // Fetch group standings from API
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/groups/${groupId}/standings`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const standings = await response.json()
+          return standings || []
+        }
+        
+        return []
+      } catch (error) {
+        console.error('Error fetching group standings:', error)
+        return []
+      }
+    }
 
   }
 }

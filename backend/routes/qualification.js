@@ -2,6 +2,7 @@ import express from 'express'
 import { authenticateToken } from '../middleware/auth.js'
 import { confederations } from '../data/confederations.js'
 import QualificationService from '../services/QualificationService.js'
+import Qualification from '../models/Qualification.js'
 
 const router = express.Router()
 
@@ -113,6 +114,29 @@ router.post('/:tournamentId/simulate-confederation-matchday/:confederationId', a
     })
   } catch (error) {
     console.error('Error simulating confederation matchday:', error)
+    res.status(500).json({ error: error.message || 'Internal server error' })
+  }
+})
+
+// Simulate specific matchday for a specific confederation
+router.post('/:tournamentId/simulate-matchday/:confederationId/:matchday', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId, confederationId, matchday } = req.params
+    
+    console.log(`Simulating matchday ${matchday} for confederation ${confederationId} in tournament ${tournamentId}`)
+    
+    const result = await QualificationService.simulateSpecificMatchday(tournamentId, confederationId, parseInt(matchday))
+    
+    res.json({
+      success: true,
+      message: `Matchday ${matchday} simulated successfully for ${result.confederationName}`,
+      matchesPlayed: result.matchesPlayed,
+      confederationId: result.confederationId,
+      confederationName: result.confederationName,
+      matchday: result.matchday
+    })
+  } catch (error) {
+    console.error('Error simulating specific matchday:', error)
     res.status(500).json({ error: error.message || 'Internal server error' })
   }
 })

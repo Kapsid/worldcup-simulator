@@ -11,7 +11,7 @@ export const confederations = [
     flag: '🇪🇺',
     qualificationSlots: 14, // Direct qualification slots
     format: 'groups_direct',
-    description: 'European qualification with group stage',
+    description: 'Group stage with home-away matches',
     structure: {
       groups: 10,
       teamsPerGroup: 5, // 52 teams / 10 groups (some groups have 6)

@@ -598,7 +598,7 @@ class QualificationService {
             available: false,
             completed: false,
             matches: [],
-            winners: confederation.id === 'ofc' ? null : [] // OFC has 1 winner, CAF/AFC have 4 winners
+            winners: confederation.id === 'ofc' ? null : [] // OFC has 1 winner, others have multiple winners
           }
         }
 
@@ -1547,6 +1547,78 @@ class QualificationService {
       }
     } catch (error) {
       console.error('Error simulating confederation matchday:', error)
+      throw error
+    }
+  }
+
+  // Simulate specific matchday for a specific confederation
+  async simulateSpecificMatchday(tournamentId, confederationId, matchday) {
+    try {
+      // Load world context for ranking lookups
+      await this.loadWorldContext(tournamentId)
+      
+      const qualification = await Qualification.findOne({ tournament: tournamentId })
+      if (!qualification || !qualification.started) {
+        throw new Error('Qualification not started')
+      }
+
+      const confederation = qualification.confederations.find(conf => conf.confederationId === confederationId)
+      if (!confederation) {
+        throw new Error('Confederation not found')
+      }
+
+      // Get all matches for this specific matchday that haven't been played yet
+      const matchesToPlay = confederation.matches.filter(
+        match => match.matchday === matchday && !match.played
+      )
+
+      if (matchesToPlay.length === 0) {
+        throw new Error(`No unplayed matches for matchday ${matchday}`)
+      }
+
+      let matchesPlayed = 0
+      for (const match of matchesToPlay) {
+        const result = this.simulateMatch(match.homeTeam, match.awayTeam)
+        match.homeScore = result.homeScore
+        match.awayScore = result.awayScore
+        match.played = true
+        
+        const group = confederation.groups.find(g => g.groupId === match.groupId)
+        if (group) {
+          this.updateGroupStandings(group, match)
+        }
+        
+        // Generate news for this qualification match
+        const homeTeamData = {
+          countryName: match.homeTeam.name,
+          worldRanking: this.getTeamRanking(match.homeTeam)
+        }
+        const awayTeamData = {
+          countryName: match.awayTeam.name,
+          worldRanking: this.getTeamRanking(match.awayTeam)
+        }
+        
+        await TournamentNewsService.processMatchResult(
+          tournamentId,
+          match,
+          homeTeamData,
+          awayTeamData
+        )
+        
+        matchesPlayed++
+      }
+
+      this.updateConfederationStatus(qualification)
+      await qualification.save()
+      
+      return { 
+        matchesPlayed, 
+        confederationId, 
+        confederationName: confederation.name,
+        matchday
+      }
+    } catch (error) {
+      console.error('Error simulating specific matchday:', error)
       throw error
     }
   }
