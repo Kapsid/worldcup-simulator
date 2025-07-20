@@ -65,9 +65,9 @@ export const confederations = [
     description: 'Group stage qualification',
     structure: {
       groups: 8,
-      teamsPerGroup: 6, // Approximately 46 teams / 8 groups
-      qualifiersPerGroup: 0, // Variable - total 4 qualifiers
-      totalQualifiers: 4
+      teamsPerGroup: 6, // 46 teams / 8 groups = ~6 teams per group
+      qualifiersPerGroup: 1, // 1 winner per group advances to playoffs
+      totalQualifiers: 4 // 4 teams qualify from playoffs
     }
   },
   {
@@ -81,10 +81,10 @@ export const confederations = [
     format: 'groups_direct',
     description: 'Group stage qualification',
     structure: {
-      groups: 10,
-      teamsPerGroup: 5, // Approximately 54 teams / 10 groups
-      qualifiersPerGroup: 0, // Variable - total 4 qualifiers
-      totalQualifiers: 4
+      groups: 8,
+      teamsPerGroup: 7, // 54 teams / 8 groups = ~7 teams per group
+      qualifiersPerGroup: 1, // 1 winner per group advances to playoffs
+      totalQualifiers: 4 // 4 teams qualify from playoffs
     }
   },
   {

@@ -305,8 +305,8 @@ function getConfederationTotalRounds(confederationId) {
   }
 }
 
-// Simulate OFC playoff match
-router.post('/:tournamentId/simulate-ofc-playoff', authenticateToken, async (req, res) => {
+// Simulate playoff match (OFC, CAF, AFC)
+router.post('/:tournamentId/simulate-playoff', authenticateToken, async (req, res) => {
   try {
     const { tournamentId } = req.params
     const { matchId } = req.body
@@ -315,20 +315,26 @@ router.post('/:tournamentId/simulate-ofc-playoff', authenticateToken, async (req
       return res.status(400).json({ error: 'Match ID is required' })
     }
     
-    console.log(`Simulating OFC playoff match ${matchId} for tournament ${tournamentId}`)
+    console.log(`Simulating playoff match ${matchId} for tournament ${tournamentId}`)
     
-    const result = await QualificationService.simulateOFCPlayoffMatch(tournamentId, matchId)
+    const result = await QualificationService.simulatePlayoffMatch(tournamentId, matchId)
     
     res.json({
       success: true,
-      message: 'OFC playoff match simulated successfully',
+      message: 'Playoff match simulated successfully',
       match: result.match,
       updated: result.updated
     })
   } catch (error) {
-    console.error('Error simulating OFC playoff match:', error)
+    console.error('Error simulating playoff match:', error)
     res.status(500).json({ error: error.message || 'Internal server error' })
   }
+})
+
+// Legacy OFC playoff route for backward compatibility
+router.post('/:tournamentId/simulate-ofc-playoff', authenticateToken, async (req, res) => {
+  // Redirect to generic playoff endpoint
+  return res.redirect(307, `/${req.params.tournamentId}/simulate-playoff`)
 })
 
 export default router

@@ -33,7 +33,7 @@
               <!-- Sub-navigation tabs -->
               <QualificationSubTabs 
                 :active-tab="activeSubTab"
-                :show-playoff-tab="activeConfederation === 'ofc'"
+                :show-playoff-tab="['ofc', 'caf', 'afc'].includes(activeConfederation)"
                 :qualified-count="getQualifiedFromConfederation(activeConfederation).length"
                 @tab-change="handleSubTabChange"
               />
@@ -82,10 +82,10 @@
                   />
                 </div>
 
-                <!-- Playoff Tab (OFC only) -->
-                <div v-if="activeSubTab === 'playoff' && activeConfederation === 'ofc'" class="playoff-tab">
+                <!-- Playoff Tab (OFC, CAF, AFC) -->
+                <div v-if="activeSubTab === 'playoff' && ['ofc', 'caf', 'afc'].includes(activeConfederation)" class="playoff-tab">
                   <div class="playoff-matches">
-                    <div v-if="getOFCPlayoffMatches().length === 0" class="no-playoff">
+                    <div v-if="getPlayoffMatches().length === 0" class="no-playoff">
                       <i class="fas fa-clock"></i>
                       <h4>Playoff matches not ready</h4>
                       <p>Complete all group matches to see playoff teams</p>
@@ -93,8 +93,8 @@
                     
                     <div v-else class="playoff-grid">
                       <div 
-                        v-for="match in getOFCPlayoffMatches()" 
-                        :key="match._id"
+                        v-for="match in getPlayoffMatches()" 
+                        :key="match.matchId"
                         class="playoff-match"
                       >
                         <div class="playoff-header">
@@ -138,17 +138,17 @@
                         <div class="playoff-actions">
                           <button 
                             v-if="!match.played && !readOnly && match.homeTeam && match.awayTeam"
-                            @click="simulatePlayoffMatch(match._id)"
-                            :disabled="simulatingPlayoffMatch === match._id"
+                            @click="simulatePlayoffMatch(match.matchId)"
+                            :disabled="simulatingPlayoffMatch === match.matchId"
                             class="btn-simulate"
                           >
-                            <i v-if="simulatingPlayoffMatch === match._id" class="fas fa-spinner fa-spin"></i>
+                            <i v-if="simulatingPlayoffMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
                             <i v-else class="fas fa-play"></i>
                             Simulate
                           </button>
                           
                           <button 
-                            @click="viewMatch(match._id)"
+                            @click="viewMatch(match.matchId)"
                             class="btn-view"
                           >
                             <i class="fas fa-eye"></i>
@@ -305,9 +305,10 @@ export default {
       return confederation.matches.filter(match => match.matchday === this.activeMatchday)
     },
     
-    getOFCPlayoffMatches() {
+    getPlayoffMatches() {
       const confederation = this.getActiveConfederationData()
-      return confederation?.playoffs || []
+      if (!confederation || !confederation.playoffs || !confederation.playoffs.matches) return []
+      return confederation.playoffs.matches
     },
     
     canGenerateMatchday() {
@@ -416,7 +417,7 @@ export default {
       this.simulatingPlayoffMatch = matchId
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff-match`, {
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

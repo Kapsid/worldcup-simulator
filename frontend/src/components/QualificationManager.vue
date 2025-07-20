@@ -58,7 +58,7 @@
                   Matches
                 </button>
                 <button 
-                  v-if="activeConfederation === 'ofc'"
+                  v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)"
                   @click="activeSubTab = 'playoff'"
                   :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
                 >
@@ -218,66 +218,135 @@
                     
                     <div class="playoff-content">
                       <div v-if="getPlayoffMatches().length > 0" class="playoff-matches">
-                        <div v-for="match in getPlayoffMatches()" :key="match.matchId" class="playoff-match">
-                          <div class="match-info">
-                            <div class="match-leg">
-                              <i class="fas fa-medal"></i>
-                              <span>{{ match.description }}</span>
+                        <div v-for="match in getPlayoffMatches()" :key="match.tie ? `tie-${match.tieNumber}` : match.matchId" class="playoff-match">
+                          <!-- CAF/AFC: Two-leg tie display -->
+                          <template v-if="match.tie">
+                            <div class="playoff-header">
+                              <div class="playoff-title">
+                                <h5>Playoff {{ match.tieNumber }}</h5>
+                                <span class="match-type">Two-leg tie</span>
+                              </div>
+                              <div v-if="match.firstLeg.played && match.secondLeg.played" class="aggregate-result">
+                                <span class="agg-label">Aggregate</span>
+                                <span class="agg-score">{{ match.firstLeg.homeScore + match.secondLeg.awayScore }} - {{ match.firstLeg.awayScore + match.secondLeg.homeScore }}</span>
+                              </div>
                             </div>
-                          </div>
-                          <div class="match-teams">
-                            <div class="team home-team">
-                              <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
-                              <router-link 
-                                v-if="match.homeTeam?.teamId"
-                                :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
-                                class="team-name clickable-team"
-                              >
-                                {{ match.homeTeam.name }}
-                              </router-link>
-                              <span v-else class="team-name">TBD</span>
+                            
+                            <!-- Main team vs team display -->
+                            <div class="playoff-teams-main">
+                              <div class="team-info">
+                                <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                                <router-link 
+                                  v-if="match.homeTeam?.teamId"
+                                  :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
+                                  class="team-name"
+                                >
+                                  {{ match.homeTeam.name }}
+                                </router-link>
+                                <span v-else class="team-name">TBD</span>
+                              </div>
+                              
+                              <div class="vs-display">
+                                <span class="vs-text">vs</span>
+                              </div>
+                              
+                              <div class="team-info">
+                                <router-link 
+                                  v-if="match.awayTeam?.teamId"
+                                  :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
+                                  class="team-name"
+                                >
+                                  {{ match.awayTeam.name }}
+                                </router-link>
+                                <span v-else class="team-name">TBD</span>
+                                <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                              </div>
                             </div>
-                            <div class="match-score">
-                              <span v-if="match.played" class="score">{{ match.homeScore }} - {{ match.awayScore }}</span>
-                              <span v-else class="vs">vs</span>
+                            
+                            <!-- Legs results with team flags and clear scores -->
+                            <div class="legs-container">
+                              <div class="leg-result">
+                                <div class="leg-header">
+                                  <span class="leg-number">1st Leg</span>
+                                  <span class="leg-venue">(at {{ match.homeTeam?.name || 'TBD' }})</span>
+                                </div>
+                                <div class="leg-match-display">
+                                  <div class="leg-team home">
+                                    <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                                    <span class="team-short">{{ match.homeTeam?.name || 'TBD' }}</span>
+                                  </div>
+                                  <div class="leg-score">
+                                    <span v-if="match.firstLeg.played" class="score-nums">
+                                      {{ match.firstLeg.homeScore }} - {{ match.firstLeg.awayScore }}
+                                    </span>
+                                    <button 
+                                      v-else-if="!match.firstLeg.played && match.homeTeam && match.awayTeam"
+                                      @click="simulatePlayoffMatch(match.firstLeg)"
+                                      :disabled="simulatingPlayoffMatch === match.firstLeg.matchId"
+                                      class="btn-simulate-inline"
+                                    >
+                                      <i v-if="simulatingPlayoffMatch === match.firstLeg.matchId" class="fas fa-spinner fa-spin"></i>
+                                      <i v-else class="fas fa-play"></i>
+                                      Simulate
+                                    </button>
+                                    <span v-else class="not-played">-</span>
+                                  </div>
+                                  <div class="leg-team away">
+                                    <span class="team-short">{{ match.awayTeam?.name || 'TBD' }}</span>
+                                    <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div class="leg-result">
+                                <div class="leg-header">
+                                  <span class="leg-number">2nd Leg</span>
+                                  <span class="leg-venue">(at {{ match.awayTeam?.name || 'TBD' }})</span>
+                                </div>
+                                <div class="leg-match-display">
+                                  <div class="leg-team home">
+                                    <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                                    <span class="team-short">{{ match.awayTeam?.name || 'TBD' }}</span>
+                                  </div>
+                                  <div class="leg-score">
+                                    <span v-if="match.secondLeg.played" class="score-nums">
+                                      {{ match.secondLeg.homeScore }} - {{ match.secondLeg.awayScore }}
+                                    </span>
+                                    <button 
+                                      v-else-if="match.firstLeg.played && !match.secondLeg.played && match.homeTeam && match.awayTeam"
+                                      @click="simulatePlayoffMatch(match.secondLeg)"
+                                      :disabled="simulatingPlayoffMatch === match.secondLeg.matchId"
+                                      class="btn-simulate-inline"
+                                    >
+                                      <i v-if="simulatingPlayoffMatch === match.secondLeg.matchId" class="fas fa-spinner fa-spin"></i>
+                                      <i v-else class="fas fa-play"></i>
+                                      Simulate
+                                    </button>
+                                    <span v-else class="not-played">-</span>
+                                  </div>
+                                  <div class="leg-team away">
+                                    <span class="team-short">{{ match.homeTeam?.name || 'TBD' }}</span>
+                                    <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div class="team away-team">
-                              <router-link 
-                                v-if="match.awayTeam?.teamId"
-                                :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
-                                class="team-name clickable-team"
-                              >
-                                {{ match.awayTeam.name }}
-                              </router-link>
-                              <span v-else class="team-name">TBD</span>
-                              <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                            
+                            <!-- Winner highlight -->
+                            <div v-if="match.firstLeg.played && match.secondLeg.played" class="playoff-winner-highlight">
+                              <i class="fas fa-trophy"></i>
+                              <span class="winner-text">
+                                <strong>{{ getPlayoffWinner(match) }}</strong> advances to World Cup!
+                              </span>
                             </div>
-                          </div>
+                          </template>
+                          
                           <div class="match-actions">
-                            <button 
-                              v-if="!match.played"
-                              @click="simulatePlayoffMatch(match)"
-                              :disabled="simulatingPlayoffMatch === match.matchId"
-                              class="simulate-match-btn"
-                            >
-                              <i v-if="simulatingPlayoffMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
-                              <i v-else class="fas fa-play"></i>
-                              Simulate
-                            </button>
-                            <button 
-                              @click="showMatchDetail(match)"
-                              class="btn-small detail-btn"
-                            >
-                              <i class="fas fa-eye"></i>
-                            </button>
-                            <span v-if="match.played" class="match-completed">
-                              <i class="fas fa-check"></i>
-                              Completed
-                            </span>
+                            <!-- Actions moved inline with the leg display -->
                           </div>
                         </div>
                         
-                        <div v-if="getPlayoffWinner()" class="playoff-winner">
+                        <div v-if="getConfederationPlayoffWinner()" class="playoff-winner">
                           <div class="winner-header">
                             <h5>
                               <i class="fas fa-trophy"></i>
@@ -285,8 +354,8 @@
                             </h5>
                           </div>
                           <div class="winner-team">
-                            <span class="team-flag">{{ getPlayoffWinner().flag }}</span>
-                            <span class="team-name">{{ getPlayoffWinner().name }}</span>
+                            <span class="team-flag">{{ getConfederationPlayoffWinner().flag }}</span>
+                            <span class="team-name">{{ getConfederationPlayoffWinner().name }}</span>
                             <span class="qualification-badge">World Cup Qualified</span>
                           </div>
                         </div>
@@ -472,12 +541,8 @@ export default {
     // Auto-select first unfinished matchday when confederation changes
     activeConfederation() {
       this.activeMatchday = this.defaultActiveMatchday()
-      // Reset to groups tab when switching confederations (unless it's a special tab like playoff)
-      if (this.activeSubTab !== 'playoff' || this.activeConfederation !== 'ofc') {
-        this.activeSubTab = 'groups'
-      }
-      // Reset playoff tab if switching away from OFC
-      if (this.activeSubTab === 'playoff' && this.activeConfederation !== 'ofc') {
+      // Reset playoff tab if switching to a confederation that doesn't have playoffs
+      if (this.activeSubTab === 'playoff' && !['ofc', 'caf', 'afc'].includes(this.activeConfederation)) {
         this.activeSubTab = 'groups'
       }
     },
@@ -1015,11 +1080,59 @@ export default {
         return []
       }
       
-      return confederation.playoffs.matches || []
+      const matches = confederation.playoffs.matches || []
+      
+      // For all confederations with playoffs (OFC, CAF, AFC), group matches by tie (every 2 matches)
+      const groupedMatches = []
+      for (let i = 0; i < matches.length; i += 2) {
+        if (matches[i] && matches[i + 1]) {
+          groupedMatches.push({
+            tie: true,
+            firstLeg: matches[i],
+            secondLeg: matches[i + 1],
+            homeTeam: matches[i].homeTeam,
+            awayTeam: matches[i].awayTeam,
+            tieNumber: Math.floor(i / 2) + 1
+          })
+        }
+      }
+      
+      return groupedMatches
     },
 
     // Get playoff winner
-    getPlayoffWinner() {
+    getPlayoffWinner(match) {
+      // For a specific match, calculate the winner based on aggregate score
+      if (!match || !match.firstLeg.played || !match.secondLeg.played) {
+        return null
+      }
+      
+      const team1Goals = match.firstLeg.homeScore + match.secondLeg.awayScore
+      const team2Goals = match.firstLeg.awayScore + match.secondLeg.homeScore
+      
+      if (team1Goals > team2Goals) {
+        return match.homeTeam.name
+      } else if (team2Goals > team1Goals) {
+        return match.awayTeam.name
+      } else {
+        // Check away goals
+        const team1AwayGoals = match.secondLeg.awayScore
+        const team2AwayGoals = match.firstLeg.awayScore
+        
+        if (team1AwayGoals > team2AwayGoals) {
+          return match.homeTeam.name
+        } else if (team2AwayGoals > team1AwayGoals) {
+          return match.awayTeam.name
+        } else {
+          // Would go to extra time/penalties - for display just show the winner from backend
+          // The backend will have determined the actual winner
+          return match.homeTeam.name + " (after ET/Pens)"
+        }
+      }
+    },
+    
+    // Get general playoff winner for confederation
+    getConfederationPlayoffWinner() {
       if (!this.qualificationData || !this.qualificationData.confederations) {
         return null
       }
@@ -1043,7 +1156,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-ofc-playoff`, {
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2170,5 +2283,347 @@ export default {
 
 .no-qualified-teams p {
   margin: 0.5rem 0;
+}
+
+/* Playoff tie styles */
+.playoff-tie-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.playoff-tie-header h5 {
+  margin: 0;
+  color: var(--fifa-dark-blue);
+  font-weight: 600;
+}
+
+.playoff-tie-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--light-bg);
+  border-radius: var(--radius-sm);
+}
+
+.tie-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.tie-vs {
+  font-weight: bold;
+  color: var(--fifa-blue);
+  padding: 0 1rem;
+}
+
+.playoff-tie-legs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: var(--radius-sm);
+}
+
+.leg-match {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.leg-label {
+  font-weight: 600;
+  color: var(--fifa-dark-blue);
+}
+
+.leg-score {
+  font-weight: bold;
+  color: var(--fifa-blue);
+}
+
+.leg-pending {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.aggregate-score {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--fifa-blue);
+  color: white;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* Improved Playoff styles */
+.playoff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--light-bg);
+}
+
+.playoff-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.playoff-title h5 {
+  margin: 0;
+  color: var(--fifa-dark-blue);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.match-type {
+  font-size: 0.85rem;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aggregate-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.agg-label {
+  font-size: 0.8rem;
+  color: var(--gray);
+  text-transform: uppercase;
+}
+
+.agg-score {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--fifa-blue);
+}
+
+.playoff-teams-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid #dee2e6;
+}
+
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.team-info:last-child {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.team-info .team-name {
+  font-weight: 600;
+  color: var(--fifa-dark-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.team-info .team-name:hover {
+  color: var(--fifa-blue);
+}
+
+.vs-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+}
+
+.vs-text {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--fifa-blue);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.legs-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+}
+
+.leg-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: var(--radius-sm);
+  border: 1px solid #dee2e6;
+}
+
+.leg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leg-number {
+  font-weight: 600;
+  color: var(--fifa-dark-blue);
+  font-size: 0.9rem;
+}
+
+.leg-venue {
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.leg-score-section {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.score-display {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--fifa-blue);
+}
+
+.score-pending {
+  font-size: 1.1rem;
+  color: #adb5bd;
+  font-weight: 300;
+}
+
+/* Enhanced leg display styles */
+.leg-match-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.leg-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.leg-team.home {
+  justify-content: flex-end;
+}
+
+.leg-team.away {
+  justify-content: flex-start;
+}
+
+.leg-team .team-flag {
+  font-size: 1.2rem;
+}
+
+.leg-team .team-short {
+  font-weight: 500;
+  color: var(--fifa-dark-blue);
+  font-size: 0.9rem;
+}
+
+.leg-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.score-nums {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--fifa-blue);
+  padding: 0.25rem 0.75rem;
+  background: white;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--fifa-blue);
+}
+
+.not-played {
+  font-size: 1rem;
+  color: #adb5bd;
+}
+
+.btn-simulate-inline {
+  padding: 0.4rem 0.8rem;
+  background: var(--fifa-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-simulate-inline:hover:not(:disabled) {
+  background: var(--fifa-dark-blue);
+  transform: translateY(-1px);
+}
+
+.btn-simulate-inline:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Winner highlight section */
+.playoff-winner-highlight {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 2px solid #ffc107;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.playoff-winner-highlight i {
+  font-size: 1.5rem;
+  color: #d4af37;
+}
+
+.winner-text {
+  font-size: 1.1rem;
+  color: var(--fifa-dark-blue);
+  font-weight: 500;
+}
+
+.winner-text strong {
+  font-weight: 700;
+  color: var(--fifa-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 </style>
