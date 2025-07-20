@@ -19,35 +19,12 @@
             <span class="item-badge">Tournament Venues</span>
           </div>
           <div class="cities-display">
-            <div class="cities-header">
-              <div class="host-country-info">
-                <span class="country-flag-small">{{ tournament.hostCountry?.flag || getCountryFlag(tournament.hostCountryCode) }}</span>
-                <h3 class="host-country-name">{{ tournament.hostCountry?.name || tournament.hostCountry }}</h3>
-              </div>
-              <p class="cities-description">The {{ tournament.name }} will be hosted across {{ tournament.hostCities?.length || 0 }} cities in {{ tournament.hostCountry?.name || tournament.hostCountry }}:</p>
-            </div>
-            <div class="cities-grid">
-              <div v-for="city in tournament.hostCities" :key="city.name" class="city-item">
-                <div class="city-header">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <h4 class="city-name">{{ city.name }}</h4>
-                </div>
-                <div class="city-details">
-                  <div class="city-stadium" v-if="city.stadium">
-                    <i class="fas fa-futbol"></i>
-                    <span><strong>Stadium:</strong> {{ city.stadium }}</span>
-                  </div>
-                  <div class="city-capacity" v-if="city.capacity">
-                    <i class="fas fa-users"></i>
-                    <span><strong>Capacity:</strong> {{ city.capacity?.toLocaleString() }}</span>
-                  </div>
-                  <div class="city-population" v-if="city.population">
-                    <i class="fas fa-city"></i>
-                    <span><strong>Population:</strong> {{ city.population }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- Interactive Map -->
+            <TournamentCitiesMap 
+              :cities="tournament.hostCities" 
+              :host-country="tournament.hostCountry?.name || tournament.hostCountry"
+            />
+            
           </div>
         </div>
 
@@ -228,8 +205,13 @@
 </template>
 
 <script>
+import TournamentCitiesMap from './TournamentCitiesMap.vue'
+
 export default {
   name: 'TournamentBranding',
+  components: {
+    TournamentCitiesMap
+  },
   props: {
     tournament: {
       type: Object,

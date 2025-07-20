@@ -86,7 +86,10 @@
             >
               <div class="match-header">
                 <span class="match-label">{{ getMatchLabel(match) }}</span>
-                <span class="match-status">{{ match.status }}</span>
+                <span class="match-city" v-if="match.city">
+                  <i class="fas fa-map-marker-alt"></i>
+                  {{ match.city }}
+                </span>
               </div>
               
               <div class="match-teams">
@@ -231,21 +234,6 @@
             </div>
           </div>
         </div>
-        
-        <div class="fourth-place">
-          <div class="team-card">
-            <div class="team-flag">{{ finalResults.fourthPlace?.countryFlag }}</div>
-            <router-link 
-              v-if="finalResults.fourthPlace"
-              :to="`/tournament/${tournament._id}/team/${finalResults.fourthPlace._id}`"
-              class="team-name clickable-team"
-            >
-              {{ finalResults.fourthPlace.countryName }}
-            </router-link>
-            <span v-else class="team-name">TBD</span>
-            <div class="position-text">4th Place</div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -308,9 +296,13 @@ export default {
           this.bracket = await response.json()
           this.activeRound = this.getFirstIncompleteRound()
           
+          console.log('Tournament status:', this.tournament.status)
           if (this.tournament.status === 'completed') {
             this.tournamentCompleted = true
+            console.log('Tournament completed, loading final results...')
             await this.loadFinalResults()
+            console.log('Final results loaded:', this.finalResults)
+            console.log('tournamentCompleted flag:', this.tournamentCompleted)
           }
         }
       } catch (error) {
@@ -380,7 +372,6 @@ export default {
 
         if (response.ok) {
           await this.loadBracket()
-          this.$emit('match-simulated')
           
           if (this.tournament.status === 'completed') {
             this.tournamentCompleted = true
@@ -718,13 +709,17 @@ export default {
   font-size: 0.9rem;
 }
 
-.match-status {
+.match-city {
   font-size: 0.7rem;
-  color: var(--gray);
-  text-transform: uppercase;
-  padding: 2px 6px;
-  background: rgba(0, 102, 204, 0.1);
-  border-radius: 4px;
+  color: var(--fifa-blue);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.match-city i {
+  font-size: 0.6rem;
 }
 
 .match-teams {
@@ -997,20 +992,6 @@ export default {
   font-size: 1.5rem;
 }
 
-.fourth-place {
-  display: flex;
-  justify-content: center;
-}
-
-.fourth-place .team-card {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.position-text {
-  font-size: 0.9rem;
-  color: var(--gray);
-  font-weight: var(--font-weight-semibold);
-}
 
 @keyframes bounce {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }

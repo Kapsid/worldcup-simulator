@@ -181,7 +181,8 @@ export default {
         teamId: null,
         position: { x: 0, y: 0 },
         standings: []
-      }
+      },
+      tooltipTimeout: null
     }
   },
   computed: {
@@ -336,11 +337,17 @@ export default {
     },
 
     // Tooltip methods
-    showTooltip(event, teamId) {
+    async showTooltip(event, teamId) {
       if (!teamId) return
       
+      // Clear any existing timeout
+      if (this.tooltipTimeout) {
+        clearTimeout(this.tooltipTimeout)
+        this.tooltipTimeout = null
+      }
+      
       // Get standings for the team's group
-      const standings = this.getStandingsForTeam(teamId)
+      const standings = await this.getStandingsForTeam(teamId)
       if (!standings || standings.length === 0) return
       
       // Position near where you hover
@@ -353,9 +360,20 @@ export default {
         },
         standings: standings
       }
+      
+      // Auto-hide after 5 seconds
+      this.tooltipTimeout = setTimeout(() => {
+        this.hideTooltip()
+      }, 5000)
     },
     
     hideTooltip() {
+      // Clear any existing timeout
+      if (this.tooltipTimeout) {
+        clearTimeout(this.tooltipTimeout)
+        this.tooltipTimeout = null
+      }
+      
       this.tooltip.visible = false
       this.tooltip.teamId = null
     },
@@ -375,15 +393,26 @@ export default {
         
         // Fetch group standings from API
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/groups/${groupId}/standings`, {
+        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/standings`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
         
         if (response.ok) {
-          const standings = await response.json()
-          return standings || []
+          const allStandings = await response.json()
+          // Filter standings for the specific group and transform data
+          const groupStandings = allStandings
+            .filter(standing => standing.group._id === groupId)
+            .map(standing => ({
+              teamId: standing.team._id,
+              name: standing.team.countryName,
+              flag: standing.team.countryFlag,
+              played: standing.played || 0,
+              points: standing.points || 0
+            }))
+          
+          return groupStandings
         }
         
         return []
@@ -393,6 +422,13 @@ export default {
       }
     }
 
+  },
+  beforeUnmount() {
+    // Clean up any pending tooltip timeout
+    if (this.tooltipTimeout) {
+      clearTimeout(this.tooltipTimeout)
+      this.tooltipTimeout = null
+    }
   }
 }
 </script>

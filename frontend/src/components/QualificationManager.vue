@@ -105,8 +105,6 @@
                                 <router-link 
                                   :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                                   class="team-name clickable-team"
-                                  @mouseenter="showTooltip($event, team.teamId)"
-                                  @mouseleave="hideTooltip"
                                 >
                                   {{ team.name }}
                                 </router-link>
@@ -124,6 +122,53 @@
                         </table>
                       </div>
                     </div>
+                  </div>
+                </div>
+                
+                <!-- UEFA Runners-up Table -->
+                <div v-if="activeSubTab === 'groups' && activeConfederation === 'uefa' && getActiveConfederationData().groups && getActiveConfederationData().groups.length > 0" class="runners-up-section">
+                  <div class="runners-up-header">
+                    <h4>Runners-up Rankings</h4>
+                    <p class="runners-up-description">Ordered by average points per match (to balance groups of different sizes)</p>
+                  </div>
+                  <div class="runners-up-table">
+                    <table class="standings-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Team</th>
+                          <th>P</th>
+                          <th>Pts</th>
+                          <th>Avg</th>
+                          <th>GD</th>
+                          <th>GF</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(team, index) in getUEFARunnersUp()" :key="team.teamId" :class="{ 'qualified': index < 5 }">
+                          <td>{{ index + 1 }}</td>
+                          <td class="team-cell">
+                            <span class="team-flag">{{ team.flag }}</span>
+                            <router-link 
+                              :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
+                              class="team-name clickable-team"
+                            >
+                              {{ team.name }}
+                            </router-link>
+                          </td>
+                          <td>{{ team.played }}</td>
+                          <td>{{ team.points }}</td>
+                          <td class="avg-points">{{ team.avgPoints }}</td>
+                          <td>{{ team.goalDifference }}</td>
+                          <td>{{ team.goalsFor }}</td>
+                          <td>
+                            <span v-if="index < 4" class="qualified-badge">Qualified</span>
+                            <span v-else class="eliminated-badge">Eliminated</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
@@ -409,8 +454,6 @@
                           <router-link 
                             :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                             class="team-name clickable-team"
-                            @mouseenter="showTooltip($event, team.teamId)"
-                            @mouseleave="hideTooltip"
                           >
                             {{ team.name }}
                           </router-link>
@@ -446,8 +489,6 @@
               v-if="team.teamId"
               :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
               class="team-name clickable-team"
-              @mouseenter="showTooltip($event, team.teamId)"
-              @mouseleave="hideTooltip"
             >
               {{ team.name || team.country }}
             </router-link>
@@ -1335,6 +1376,50 @@ export default {
       }
       
       return []
+    },
+
+    // Get UEFA runners-up sorted by average points per match
+    getUEFARunnersUp() {
+      if (!this.qualificationData || !this.qualificationData.confederations || this.activeConfederation !== 'uefa') {
+        return []
+      }
+      
+      const confederation = this.qualificationData.confederations.find(
+        conf => conf.confederationId === 'uefa'
+      )
+      
+      if (!confederation || !confederation.groups) {
+        return []
+      }
+      
+      // Get all runners-up (2nd place teams) from each group
+      const runnersUp = []
+      
+      for (const group of confederation.groups) {
+        if (group.teams && group.teams.length >= 2) {
+          // Teams are already sorted by points, goal difference, etc.
+          const runnerUp = group.teams[1] // 2nd place team
+          
+          // Calculate average points per match
+          const avgPoints = runnerUp.played > 0 ? (runnerUp.points / runnerUp.played) : 0
+          
+          runnersUp.push({
+            ...runnerUp,
+            avgPoints: avgPoints.toFixed(2),
+            groupName: group.name
+          })
+        }
+      }
+      
+      // Sort by average points per match (descending), then by goal difference, then by goals for
+      return runnersUp.sort((a, b) => {
+        const avgA = parseFloat(a.avgPoints)
+        const avgB = parseFloat(b.avgPoints)
+        
+        if (avgA !== avgB) return avgB - avgA  // Higher average points first
+        if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference
+        return b.goalsFor - a.goalsFor
+      })
     }
   }
 }
@@ -2029,6 +2114,69 @@ export default {
 .upcoming {
   color: var(--gray);
   font-size: 0.8rem;
+}
+
+/* UEFA Runners-up Table */
+.runners-up-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid rgba(0, 102, 204, 0.2);
+}
+
+.runners-up-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.runners-up-header h4 {
+  color: var(--fifa-blue);
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.runners-up-description {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin: 0;
+  font-style: italic;
+}
+
+.runners-up-table {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.avg-points {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-blue);
+}
+
+.qualified-badge {
+  background: var(--fifa-green);
+  color: var(--white);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+}
+
+.eliminated-badge {
+  background: var(--gray);
+  color: var(--white);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+}
+
+.runners-up-table .qualified {
+  background: rgba(0, 170, 68, 0.1);
+  border-left: 4px solid var(--fifa-green);
 }
 
 @media (max-width: 768px) {
@@ -2928,10 +3076,16 @@ export default {
 .qual-match-score .simulate-btn {
   background: var(--fifa-blue);
   color: var(--white);
+  min-width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .qual-match-score .simulate-btn:hover:not(:disabled) {
   background: #0056b3;
+  transform: translateY(-2px);
 }
 
 .qual-match-score .simulate-btn:disabled {
@@ -2942,10 +3096,16 @@ export default {
 .qual-match-score .detail-btn {
   background: var(--fifa-green);
   color: var(--white);
+  min-width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .qual-match-score .detail-btn:hover {
   background: #00aa44;
+  transform: translateY(-2px);
 }
 
 /* Responsive Design */

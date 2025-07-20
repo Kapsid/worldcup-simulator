@@ -41,22 +41,72 @@ class MatchService {
   generateMatchesForGroup(group, teams, hostCities) {
     const matches = []
     
-    // Helper function to assign cities
-    const assignCity = (matchIndex) => {
-      // Distribute matches across cities evenly
-      return hostCities[matchIndex % hostCities.length].name
+    // Create realistic city assignment system
+    const assignCitiesForGroup = (groupLetter, hostCities) => {
+      // Ensure we have enough cities
+      if (hostCities.length < 3) {
+        // If less than 3 cities, repeat cities but ensure different cities per matchday
+        const cityNames = hostCities.map(city => city.name)
+        while (cityNames.length < 6) {
+          cityNames.push(...hostCities.map(city => city.name))
+        }
+        
+        return {
+          matchday1: [cityNames[0], cityNames[1]],
+          matchday2: [cityNames[2], cityNames[3]],
+          matchday3: [cityNames[4], cityNames[5]]
+        }
+      }
+      
+      // For tournaments with many cities, distribute them properly
+      const cityCount = hostCities.length
+      const groupIndex = groupLetter.charCodeAt(0) - 65 // A=0, B=1, etc.
+      
+      // Create rotation pattern so each group gets different cities
+      const startOffset = (groupIndex * 2) % cityCount
+      const cities = hostCities.map(city => city.name)
+      
+      // Get 6 different cities for this group, rotating the array
+      const rotatedCities = [
+        ...cities.slice(startOffset),
+        ...cities.slice(0, startOffset)
+      ]
+      
+      // Ensure we have at least 6 cities (repeat if necessary)
+      while (rotatedCities.length < 6) {
+        rotatedCities.push(...cities)
+      }
+      
+      return {
+        matchday1: [rotatedCities[0], rotatedCities[1]],
+        matchday2: [rotatedCities[2], rotatedCities[3]],
+        matchday3: [rotatedCities[4], rotatedCities[5]]
+      }
     }
     
+    const cityAssignment = assignCitiesForGroup(group.groupLetter, hostCities)
+    
     const matchPairs = [
-      [0, 1], [2, 3],
-      [0, 2], [1, 3], 
-      [0, 3], [1, 2]
+      [0, 1], [2, 3],  // Matchday 1
+      [0, 2], [1, 3],  // Matchday 2
+      [0, 3], [1, 2]   // Matchday 3
     ]
     
     matchPairs.forEach((pair, index) => {
       const matchday = Math.floor(index / 2) + 1
+      const matchInDay = index % 2
       const homeTeam = teams[pair[0]]
       const awayTeam = teams[pair[1]]
+      
+      // Get city for this matchday and match position
+      let city
+      if (matchday === 1) {
+        city = cityAssignment.matchday1[matchInDay]
+      } else if (matchday === 2) {
+        city = cityAssignment.matchday2[matchInDay]
+      } else {
+        city = cityAssignment.matchday3[matchInDay]
+      }
       
       matches.push({
         tournament: group.tournament,
@@ -65,7 +115,7 @@ class MatchService {
         homeTeam: homeTeam._id,
         awayTeam: awayTeam._id,
         status: 'scheduled',
-        city: assignCity(index)
+        city: city
       })
     })
     

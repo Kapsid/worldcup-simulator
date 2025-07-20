@@ -1,6 +1,7 @@
 import KnockoutMatch from '../../models/KnockoutMatch.js'
 import KnockoutRound from '../../models/KnockoutRound.js'
 import Standing from '../../models/Standing.js'
+import Tournament from '../../models/Tournament.js'
 
 class BracketGenerationService {
   constructor() {
@@ -29,9 +30,15 @@ class BracketGenerationService {
         throw new Error(`Expected 16 qualified teams, got ${qualifiedTeams.length}`)
       }
 
+      // Get tournament cities for venue assignment
+      const tournament = await Tournament.findById(tournamentId).select('hostCities')
+      if (!tournament || !tournament.hostCities || tournament.hostCities.length === 0) {
+        throw new Error('Tournament cities not found')
+      }
+
       await this.createRounds(tournamentId)
-      await this.createRound16Matches(tournamentId, qualifiedTeams)
-      await this.createEmptyMatches(tournamentId)
+      await this.createRound16Matches(tournamentId, qualifiedTeams, tournament.hostCities)
+      await this.createEmptyMatches(tournamentId, tournament.hostCities)
       
       return await this.getKnockoutBracket(tournamentId)
     } catch (error) {
@@ -107,7 +114,7 @@ class BracketGenerationService {
   }
 
   // Create Round of 16 matches with proper bracket structure
-  async createRound16Matches(tournamentId, qualifiedTeams) {
+  async createRound16Matches(tournamentId, qualifiedTeams, hostCities) {
     // World Cup bracket structure (winners vs runners-up from different groups)
     const matchPairings = [
       { match: 1, team1Index: 0, team2Index: 3 },   // A1 vs B2
@@ -120,6 +127,9 @@ class BracketGenerationService {
       { match: 8, team1Index: 14, team2Index: 13 }  // H1 vs G2
     ]
 
+    // Create city assignment for Round of 16
+    const cityAssignment = this.assignKnockoutCities(hostCities, 'round16', 8)
+    
     const matches = []
     for (const pairing of matchPairings) {
       const team1 = qualifiedTeams[pairing.team1Index]
@@ -146,7 +156,8 @@ class BracketGenerationService {
         winner: null,
         played: false,
         needsPenalties: false,
-        wentToPenalties: false
+        wentToPenalties: false,
+        city: cityAssignment[pairing.match - 1] // Array is 0-indexed, match numbers are 1-indexed
       })
       
       matches.push(match)
@@ -157,8 +168,14 @@ class BracketGenerationService {
   }
 
   // Create empty matches for subsequent rounds
-  async createEmptyMatches(tournamentId) {
+  async createEmptyMatches(tournamentId, hostCities) {
     const matchesToCreate = []
+
+    // Get city assignments for each round
+    const quarterFinalCities = this.assignKnockoutCities(hostCities, 'quarterfinal', 4)
+    const semiFinalCities = this.assignKnockoutCities(hostCities, 'semifinal', 2)
+    const finalCities = this.assignKnockoutCities(hostCities, 'final', 1)
+    const thirdPlaceCities = this.assignKnockoutCities(hostCities, 'third_place', 1)
 
     // Quarter-finals (4 matches)
     for (let i = 1; i <= 4; i++) {
@@ -179,7 +196,8 @@ class BracketGenerationService {
         winner: null,
         played: false,
         needsPenalties: false,
-        wentToPenalties: false
+        wentToPenalties: false,
+        city: quarterFinalCities[i - 1]
       })
     }
 
@@ -202,7 +220,8 @@ class BracketGenerationService {
         winner: null,
         played: false,
         needsPenalties: false,
-        wentToPenalties: false
+        wentToPenalties: false,
+        city: semiFinalCities[i - 1]
       })
     }
 
@@ -224,7 +243,8 @@ class BracketGenerationService {
       winner: null,
       played: false,
       needsPenalties: false,
-      wentToPenalties: false
+      wentToPenalties: false,
+      city: finalCities[0]
     })
 
     // Third Place Play-off
@@ -245,7 +265,8 @@ class BracketGenerationService {
       winner: null,
       played: false,
       needsPenalties: false,
-      wentToPenalties: false
+      wentToPenalties: false,
+      city: thirdPlaceCities[0]
     })
 
     await KnockoutMatch.insertMany(matchesToCreate)
@@ -299,6 +320,92 @@ class BracketGenerationService {
   // Get specific round info
   getRoundInfo(roundName) {
     return this.rounds.find(r => r.round === roundName)
+  }
+
+  // Assign cities to knockout matches based on importance and prestige
+  assignKnockoutCities(hostCities, round, matchCount) {
+    const cities = hostCities.map(city => city.name)
+    
+    // Create venue hierarchy based on match importance
+    const venueHierarchy = {
+      'final': this.getPrestigiousVenues(cities, 1),
+      'third_place': this.getPrestigiousVenues(cities, 1, 1), // Different from final
+      'semifinal': this.getPrestigiousVenues(cities, 2),
+      'quarterfinal': this.getMajorVenues(cities, 4),
+      'round16': this.getWellDistributedVenues(cities, 8)
+    }
+    
+    return venueHierarchy[round] || cities.slice(0, matchCount)
+  }
+
+  // Get most prestigious venues (capitals, major cities)
+  getPrestigiousVenues(cities, count, offset = 0) {
+    // Priority order: Capital cities, major metropolitan areas, then others
+    const prestigiousOrder = [
+      // Common capital/major cities
+      'Berlin', 'Munich', 'London', 'Paris', 'Madrid', 'Rome', 'Moscow', 
+      'Tokyo', 'Seoul', 'Beijing', 'Buenos Aires', 'Brasília', 'Mexico City',
+      'Washington DC', 'New York', 'Los Angeles', 'Sydney', 'Cairo', 'Johannesburg',
+      'Doha', 'Istanbul', 'Amsterdam', 'Stockholm', 'Copenhagen'
+    ]
+    
+    const prestigiousCities = []
+    
+    // First, add cities that match prestigious order
+    for (const prestigiousCity of prestigiousOrder) {
+      const match = cities.find(city => 
+        city.toLowerCase().includes(prestigiousCity.toLowerCase()) ||
+        prestigiousCity.toLowerCase().includes(city.toLowerCase())
+      )
+      if (match && !prestigiousCities.includes(match)) {
+        prestigiousCities.push(match)
+      }
+    }
+    
+    // Then add remaining cities
+    for (const city of cities) {
+      if (!prestigiousCities.includes(city)) {
+        prestigiousCities.push(city)
+      }
+    }
+    
+    // Return requested count with offset
+    return prestigiousCities.slice(offset, offset + count)
+  }
+
+  // Get major venues for quarter-finals
+  getMajorVenues(cities, count) {
+    // For quarter-finals, use good mix of major cities
+    const majorCities = this.getPrestigiousVenues(cities, Math.min(count, cities.length))
+    
+    // If we need more cities than available, cycle through
+    while (majorCities.length < count) {
+      const additionalCities = cities.filter(city => !majorCities.includes(city))
+      if (additionalCities.length === 0) break
+      majorCities.push(...additionalCities.slice(0, count - majorCities.length))
+    }
+    
+    return majorCities.slice(0, count)
+  }
+
+  // Get well-distributed venues for Round of 16
+  getWellDistributedVenues(cities, count) {
+    // For Round of 16, ensure good geographical distribution
+    const distributedCities = []
+    
+    // If we have enough cities, use different ones
+    if (cities.length >= count) {
+      return cities.slice(0, count)
+    }
+    
+    // If not enough cities, distribute evenly
+    let cityIndex = 0
+    for (let i = 0; i < count; i++) {
+      distributedCities.push(cities[cityIndex % cities.length])
+      cityIndex++
+    }
+    
+    return distributedCities
   }
 }
 

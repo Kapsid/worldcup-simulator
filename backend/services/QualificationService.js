@@ -1075,11 +1075,24 @@ class QualificationService {
         // Fill remaining slots with best runners-up
         const remainingSlots = totalSlots - winners.length
         if (remainingSlots > 0) {
-          runnersUp.sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points
-            if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
-            return b.goalsFor - a.goalsFor
-          })
+          // For UEFA, use average points per match to make it fair for groups of different sizes
+          if (confederationId === 'uefa') {
+            runnersUp.sort((a, b) => {
+              const avgA = a.played > 0 ? a.points / a.played : 0
+              const avgB = b.played > 0 ? b.points / b.played : 0
+              
+              if (avgB !== avgA) return avgB - avgA  // Higher average points first
+              if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+              return b.goalsFor - a.goalsFor
+            })
+          } else {
+            // For other confederations, use total points
+            runnersUp.sort((a, b) => {
+              if (b.points !== a.points) return b.points - a.points
+              if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+              return b.goalsFor - a.goalsFor
+            })
+          }
 
           for (let i = 0; i < Math.min(remainingSlots, runnersUp.length); i++) {
             qualifiedTeams.push({
@@ -1107,16 +1120,23 @@ class QualificationService {
       return
     }
 
-    // Check if both groups are complete
+    // Check if all groups are complete
     const groupWinners = []
     for (const group of confederation.groups) {
       const n = group.teams.length
-      const totalMatches = (n * (n - 1)) / 2
-      const playedMatches = group.teams.reduce((sum, team) => sum + team.played, 0) / 2
+      // Check if this confederation plays home and away matches
+      const isDoubleRoundRobin = ['uefa', 'conmebol', 'caf', 'ofc', 'afc'].includes(confederation.confederationId)
+      // Each team plays against every other team (once or twice)
+      const matchesPerTeam = isDoubleRoundRobin ? 2 * (n - 1) : (n - 1)
       
-      if (playedMatches === totalMatches) {
+      // Check if all teams have played all their matches
+      const allTeamsComplete = group.teams.every(team => team.played === matchesPerTeam)
+      
+      console.log(`${confederation.confederationId} playoff check - Group ${group.name}: Teams played ${group.teams.map(t => t.played).join(',')} matches (expected ${matchesPerTeam} each)`)
+      
+      if (allTeamsComplete) {
         // Group is complete, get winner
-        const winner = group.teams[0].toObject() // Convert Mongoose subdocument to plain object
+        const winner = group.teams[0].toObject ? group.teams[0].toObject() : group.teams[0] // Handle both Mongoose and plain objects
         groupWinners.push({
           ...winner,
           groupName: group.name
@@ -1124,10 +1144,20 @@ class QualificationService {
       }
     }
 
-    const requiredGroupWinners = confederation.confederationId === 'ofc' ? 2 : 8
+    let requiredGroupWinners
+    if (confederation.confederationId === 'ofc') {
+      requiredGroupWinners = 2
+    } else if (confederation.confederationId === 'caf') {
+      requiredGroupWinners = 8  // CAF has 8 groups
+    } else {
+      requiredGroupWinners = 8  // AFC has 8 groups
+    }
+    
+    console.log(`${confederation.confederationId}: Found ${groupWinners.length} group winners, required: ${requiredGroupWinners}`)
     
     if (groupWinners.length === requiredGroupWinners) {
       // All groups complete, create playoff matches
+      console.log(`${confederation.confederationId}: Creating playoff matches...`)
       confederation.playoffs.matches = []
       
       if (confederation.confederationId === 'ofc') {
@@ -1179,8 +1209,65 @@ class QualificationService {
             description: 'Second Leg'
           }
         ]
+      } else if (confederation.confederationId === 'caf') {
+        // CAF: 8 group winners, home-and-away playoff matches for 4 qualifiers
+        // Randomly shuffle group winners and pair them up for 4 matches
+        const shuffledWinners = [...groupWinners].sort(() => Math.random() - 0.5)
+        
+        for (let i = 0; i < 4; i++) {
+          const team1 = shuffledWinners[i * 2]
+          const team2 = shuffledWinners[i * 2 + 1]
+          
+          // First leg
+          confederation.playoffs.matches.push({
+            matchId: `caf_playoff_${team1.teamId}_vs_${team2.teamId}_leg1`,
+            homeTeam: {
+              teamId: team1.teamId,
+              name: team1.name,
+              country: team1.country,
+              flag: team1.flag,
+              ranking: team1.ranking
+            },
+            awayTeam: {
+              teamId: team2.teamId,
+              name: team2.name,
+              country: team2.country,
+              flag: team2.flag,
+              ranking: team2.ranking
+            },
+            homeScore: null,
+            awayScore: null,
+            played: false,
+            leg: 1,
+            description: `CAF Playoff ${i + 1} - First Leg`
+          })
+          
+          // Second leg
+          confederation.playoffs.matches.push({
+            matchId: `caf_playoff_${team2.teamId}_vs_${team1.teamId}_leg2`,
+            homeTeam: {
+              teamId: team2.teamId,
+              name: team2.name,
+              country: team2.country,
+              flag: team2.flag,
+              ranking: team2.ranking
+            },
+            awayTeam: {
+              teamId: team1.teamId,
+              name: team1.name,
+              country: team1.country,
+              flag: team1.flag,
+              ranking: team1.ranking
+            },
+            homeScore: null,
+            awayScore: null,
+            played: false,
+            leg: 2,
+            description: `CAF Playoff ${i + 1} - Second Leg`
+          })
+        }
       } else {
-        // CAF/AFC: 8 group winners, home-and-away playoff matches for 4 qualifiers
+        // AFC: 8 group winners, home-and-away playoff matches for 4 qualifiers
         // Randomly shuffle group winners and pair them up for 4 matches
         const shuffledWinners = [...groupWinners].sort(() => Math.random() - 0.5)
         
@@ -1239,6 +1326,7 @@ class QualificationService {
       }
 
       confederation.playoffs.available = true
+      console.log(`${confederation.confederationId}: Playoffs populated with ${confederation.playoffs.matches.length} matches`)
     }
   }
 
