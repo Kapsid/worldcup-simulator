@@ -38,6 +38,7 @@
             v-for="tournament in tournaments" 
             :key="tournament._id"
             class="tournament-card glass-white"
+            :class="{ 'tournament-themed': tournament?.logo?.colorScheme }"
             @click="openTournament(tournament._id)"
           >
             <div class="tournament-header-card">

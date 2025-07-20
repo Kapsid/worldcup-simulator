@@ -2,6 +2,7 @@ import Tournament from '../models/Tournament.js'
 import World from '../models/World.js'
 import WorldRankingService from './WorldRankingService.js'
 import MascotService from './MascotService.js'
+import BrandingService from './BrandingService.js'
 import { getCountryByCode } from '../data/countries.js'
 import { getCountryCities } from '../data/cities.js'
 
@@ -27,6 +28,15 @@ class TournamentService {
       // Generate mascot for the tournament
       const mascot = MascotService.generateMascot(hostCountryCode, year || new Date().getFullYear())
       
+      // Generate logo for the tournament
+      const logo = BrandingService.generateLogo(hostCountryCode, year || new Date().getFullYear(), name)
+      
+      // Generate anthem for the tournament
+      const anthem = BrandingService.generateAnthem(hostCountryCode, year || new Date().getFullYear(), name)
+      
+      // Generate official ball design for the tournament
+      const ballDesign = BrandingService.generateBallDesign(hostCountryCode, year || new Date().getFullYear(), name)
+      
       // Generate host cities (randomly select 6-8 cities)
       const numCities = Math.floor(Math.random() * 3) + 6; // 6-8 cities
       const cityData = getCountryCities(hostCountryCode, numCities)
@@ -40,6 +50,9 @@ class TournamentService {
         worldId: worldId || undefined,
         year: year || undefined,
         mascot,
+        logo,
+        anthem,
+        ballDesign,
         hostCities: cityData.cities,
         lastOpenedAt: new Date()
       })

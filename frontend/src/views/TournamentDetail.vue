@@ -1,5 +1,5 @@
 <template>
-  <div class="tournament-detail">
+  <div class="tournament-detail" :class="{ 'tournament-themed': tournament?.logo?.colorScheme }">
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
@@ -49,16 +49,6 @@
                   </div>
                 </div>
                 
-                <!-- Mascot Section - Prominent -->
-                <div v-if="tournament.mascot" class="tournament-mascot">
-                  <div class="mascot-image-large">
-                    <img :src="tournament.mascot.imageUrl" :alt="tournament.mascot.name" />
-                  </div>
-                  <div class="mascot-info-header">
-                    <h3>{{ tournament.mascot.name }}</h3>
-                    <p class="mascot-title">Official Mascot</p>
-                  </div>
-                </div>
                 
                 <div class="status-section">
                   <span :class="`status-badge status-${tournament.status}`">
@@ -71,10 +61,6 @@
                 </div>
               </div>
               
-              <!-- Mascot Description -->
-              <div v-if="tournament.mascot" class="mascot-description-section">
-                <p class="mascot-description">{{ tournament.mascot.description }}</p>
-              </div>
               
               <!-- Edit Form -->
               <div v-if="editMode" class="edit-form">
@@ -138,6 +124,12 @@
               <!-- Tournament Meta -->
             </div>
           </div>
+          
+          <!-- Tournament Branding Section -->
+          <TournamentBranding 
+            v-if="tournament.mascot || tournament.logo || tournament.anthem"
+            :tournament="tournament" 
+          />
           
           <!-- Tournament Content -->
           <div class="tournament-content">
@@ -354,6 +346,8 @@ import GroupMatches from '../components/GroupMatches.vue'
 import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
 import TournamentNews from '../components/TournamentNews.vue'
+import TournamentBranding from '../components/TournamentBranding.vue'
+import { applyTournamentTheme, removeTournamentTheme } from '../styles/tournament-theme.js'
 
 export default {
   name: 'TournamentDetail',
@@ -365,7 +359,8 @@ export default {
     GroupMatches,
     GroupStandings,
     KnockoutBracket,
-    TournamentNews
+    TournamentNews,
+    TournamentBranding
   },
   data() {
     return {
@@ -424,9 +419,32 @@ export default {
     if (this.tournament) {
       this.checkGroupMatchesCompletion()
       this.loadUnreadNewsCount()
+      
+      // Apply tournament theming
+      this.applyTournamentTheming()
+    }
+  },
+  beforeUnmount() {
+    // Clean up theming when leaving the component
+    removeTournamentTheme()
+  },
+  watch: {
+    tournament: {
+      handler(newTournament) {
+        if (newTournament) {
+          this.applyTournamentTheming()
+        }
+      },
+      deep: true
     }
   },
   methods: {
+    applyTournamentTheming() {
+      if (this.tournament?.logo?.colorScheme) {
+        applyTournamentTheme(this.tournament)
+      }
+    },
+    
     goBack() {
       if (this.isWorldTournament) {
         const worldId = this.worldId || this.tournament?.worldId

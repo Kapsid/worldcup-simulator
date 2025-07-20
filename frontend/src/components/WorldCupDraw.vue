@@ -62,7 +62,7 @@
               <div class="team-flag">{{ team.countryFlag }}</div>
               <div class="team-info">
                 <span class="team-name">{{ team.countryName }}</span>
-                <span class="team-ranking">FIFA #{{ team.fifaRanking }}</span>
+                <span class="team-ranking">FIFA #{{ team.worldRanking || team.fifaRanking || team.ranking || '?' }}</span>
                 <span v-if="team.isHost" class="host-badge">
                   <i class="fas fa-home"></i>
                   Host
@@ -228,7 +228,7 @@
                 <span class="team-pot">P{{ getTeamPot(team) }}</span>
               </div>
               <div 
-                v-for="i in (4 - group.teams.length)" 
+                v-for="i in Math.max(0, 4 - group.teams.length)" 
                 :key="'empty-' + i"
                 class="empty-slot"
               >
@@ -283,7 +283,7 @@
                 <span class="team-flag">{{ team.countryFlag }}</span>
                 <span class="team-name">{{ team.countryName }}</span>
                 <span class="team-pot">Pot {{ getTeamPot(team) }}</span>
-                <span class="team-ranking">FIFA #{{ team.fifaRanking }}</span>
+                <span class="team-ranking">FIFA #{{ team.worldRanking || team.fifaRanking || team.ranking || '?' }}</span>
               </div>
             </div>
           </div>
@@ -406,7 +406,7 @@ export default {
 
         if (response.ok) {
           this.pots = data.pots
-          await this.loadGroups()
+          this.initializeGroups()
           // Reload pots to ensure team names are populated
           await this.loadPots()
         } else {
@@ -437,10 +437,10 @@ export default {
         if (response.ok) {
           this.groups = data.groups
           this.currentPhase = 'groups'
-          // Reload groups to ensure they're properly populated
-          setTimeout(() => {
-            this.loadGroups()
-          }, 100)
+          // Initialize groups structure if needed
+          if (this.groups.length === 0) {
+            this.initializeGroups()
+          }
         } else {
           this.error = data.error || 'Failed to draw teams'
         }
@@ -549,11 +549,18 @@ export default {
       this.animationProgress = 0
       this.drawStatusText = 'Preparing the draw ceremony...'
       
-      // Clear current groups to show empty state
-      this.groups = this.groups.map(group => ({
-        ...group,
-        teams: []
-      }))
+      // Initialize groups if they don't exist or clear existing ones
+      if (this.groups.length === 0) {
+        this.groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => ({
+          groupLetter: letter,
+          teams: []
+        }))
+      } else {
+        this.groups = this.groups.map(group => ({
+          ...group,
+          teams: []
+        }))
+      }
 
       // Get draw order from pots
       const drawOrder = []
@@ -754,6 +761,14 @@ export default {
         }
       }
       return '?'
+    },
+
+    initializeGroups() {
+      // Initialize empty groups structure
+      this.groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => ({
+        groupLetter: letter,
+        teams: []
+      }))
     },
 
     proceedToDraw() {

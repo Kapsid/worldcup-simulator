@@ -1,5 +1,5 @@
 <template>
-  <div class="tournament-header glass-white">
+  <div class="tournament-header glass-white" :class="{ 'tournament-themed': tournament?.logo?.colorScheme }">
     <div class="back-navigation">
       <button @click="$emit('back')" class="back-btn">
         <i class="fas fa-arrow-left"></i>

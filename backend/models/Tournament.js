@@ -58,6 +58,77 @@ const tournamentSchema = new mongoose.Schema({
     description: {
       type: String,
       required: false
+    },
+    personality: {
+      type: String,
+      required: false
+    },
+    backstory: {
+      type: String,
+      required: false
+    }
+  },
+  logo: {
+    imageUrl: {
+      type: String,
+      required: false
+    },
+    description: {
+      type: String,
+      required: false
+    },
+    elements: [{
+      type: String
+    }]
+  },
+  anthem: {
+    title: {
+      type: String,
+      required: false
+    },
+    lyrics: {
+      type: String,
+      required: false
+    },
+    style: {
+      type: String,
+      required: false
+    },
+    duration: {
+      type: String,
+      required: false
+    }
+  },
+  ballDesign: {
+    name: {
+      type: String,
+      required: false
+    },
+    imageUrl: {
+      type: String,
+      required: false
+    },
+    description: {
+      type: String,
+      required: false
+    },
+    designElements: {
+      pattern: String,
+      inspiration: String,
+      panelCount: Number,
+      technology: String
+    },
+    colorScheme: {
+      primary: String,
+      secondary: String,
+      accent: String,
+      description: String
+    },
+    specifications: {
+      circumference: String,
+      weight: String,
+      pressure: String,
+      technology: String
     }
   },
   hostCities: [{

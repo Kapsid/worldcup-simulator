@@ -28,7 +28,7 @@ export const confederations = [
     flag: '🌎',
     qualificationSlots: 5, // Direct qualification slots
     format: 'single_league',
-    description: 'Single round-robin league format',
+    description: 'Double round-robin league format',
     structure: {
       groups: 1,
       teamsPerGroup: 10, // All 10 CONMEBOL teams
@@ -45,7 +45,7 @@ export const confederations = [
     flag: '🌎',
     qualificationSlots: 3, // Direct qualification slots
     format: 'groups_direct',
-    description: 'Group stage qualification',
+    description: 'Group stage with home-away matches',
     structure: {
       groups: 6,
       teamsPerGroup: 6, // Approximately 35 teams / 6 groups
@@ -62,7 +62,7 @@ export const confederations = [
     flag: '🌏',
     qualificationSlots: 4, // Direct qualification slots
     format: 'groups_direct',
-    description: 'Group stage qualification',
+    description: 'Group stage with home-away matches',
     structure: {
       groups: 8,
       teamsPerGroup: 6, // 46 teams / 8 groups = ~6 teams per group
@@ -79,7 +79,7 @@ export const confederations = [
     flag: '🌍',
     qualificationSlots: 4, // Direct qualification slots
     format: 'groups_direct',
-    description: 'Group stage qualification',
+    description: 'Group stage with home-away matches',
     structure: {
       groups: 8,
       teamsPerGroup: 7, // 54 teams / 8 groups = ~7 teams per group
@@ -96,7 +96,7 @@ export const confederations = [
     flag: '🌊',
     qualificationSlots: 1, // Direct qualification slots
     format: 'groups_direct',
-    description: 'Group stage qualification',
+    description: 'Group stage with home-away matches',
     structure: {
       groups: 2,
       teamsPerGroup: 6, // Approximately 11 teams / 2 groups

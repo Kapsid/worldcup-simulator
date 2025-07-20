@@ -870,13 +870,6 @@ export const countries = [
     "population": "1,380,004,385"
   },
   {
-    "name": "Lebanon",
-    "code": "LIB",
-    "flag": "🇱🇧",
-    "worldRanking": 107,
-    "confederation": "afc"
-  },
-  {
     "name": "Benin",
     "code": "BEN",
     "flag": "🇧🇯",

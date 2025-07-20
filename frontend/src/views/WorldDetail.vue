@@ -44,6 +44,10 @@
             <div class="step-info">
               <h3>Step 1: Generate Host Candidates</h3>
               <p>FIFA will select 3-8 candidate countries based on rankings and capabilities</p>
+              <div v-if="excludedConfederation" class="confederation-notice">
+                <i class="fas fa-info-circle"></i>
+                Note: Countries from {{ getConfederationName(excludedConfederation) }} are excluded (previous host's confederation)
+              </div>
             </div>
             <button @click="generateCandidates" :disabled="generatingCandidates" class="btn-primary">
               <i v-if="generatingCandidates" class="fas fa-spinner fa-spin"></i>
@@ -65,7 +69,7 @@
                 <div class="candidate-info">
                   <h4>{{ candidate.name }}</h4>
                   <div class="candidate-stats">
-                    <span class="ranking">World Rank: #{{ candidate.rank || candidate.fifaRanking || 'N/A' }}</span>
+                    <span class="ranking">World Rank: #{{ candidate.rank || candidate.worldRanking || 'N/A' }}</span>
                     <span class="points">Points: {{ candidate.points || 1500 }}</span>
                     <span class="chance">Win Chance: {{ candidate.winChance }}%</span>
                   </div>
@@ -418,6 +422,7 @@ export default {
       voting: false,
       votingComplete: false,
       selectedHost: null,
+      excludedConfederation: null,
       
       // Tournament Management
       activeTab: 'current',
@@ -538,6 +543,7 @@ export default {
     await this.loadWorld()
     await this.loadUserProfile()
     await this.loadCountryRankings()
+    await this.checkExcludedConfederation()
     
     // Start on past tournaments tab if no current tournament
     if (!this.currentTournament && this.pastTournaments.length > 0) {
@@ -618,18 +624,104 @@ export default {
           if (fallbackResponse.ok) {
             const countries = await fallbackResponse.json()
             this.countryRankings = countries
-              .sort((a, b) => (a.fifaRanking || 999) - (b.fifaRanking || 999))
+              .sort((a, b) => (a.worldRanking || 999) - (b.worldRanking || 999))
           }
         }
       } catch (error) {
         console.error('Error loading country rankings:', error)
       }
     },
+
+    async checkExcludedConfederation() {
+      try {
+        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        if (response.ok) {
+          const countries = await response.json()
+          this.excludedConfederation = this.getLastHostConfederation(countries)
+        }
+      } catch (error) {
+        console.error('Error checking excluded confederation:', error)
+      }
+    },
+
+    getLastHostConfederation(countries) {
+      // Get the most recent tournament host from world's history
+      let lastHostCode = null
+
+      // Check worldCupHistory first (this includes both real and simulated history and is always up-to-date)
+      if (this.worldCupHistory && this.worldCupHistory.length > 0) {
+        const sortedHistory = [...this.worldCupHistory].sort((a, b) => b.year - a.year)
+        lastHostCode = sortedHistory[0].host?.code
+      } 
+      // Fallback: check world's simulatedHistory directly
+      else if (this.world.simulatedHistory && this.world.simulatedHistory.length > 0) {
+        const sortedHistory = [...this.world.simulatedHistory].sort((a, b) => b.year - a.year)
+        lastHostCode = sortedHistory[0].host?.code
+      } 
+      // If no simulated history, use real World Cup history up to the world's beginning year
+      else if (this.world.useRealHistoricData) {
+        // Use built-in real World Cup history and find the most recent tournament before this world's beginning
+        const realHistory = [
+          { year: 2022, host: { code: 'QAT' } },
+          { year: 2018, host: { code: 'RUS' } },
+          { year: 2014, host: { code: 'BRA' } },
+          { year: 2010, host: { code: 'RSA' } },
+          { year: 2006, host: { code: 'GER' } },
+          { year: 2002, host: { code: 'JPN' } }, // Japan/Korea (using Japan as primary)
+          { year: 1998, host: { code: 'FRA' } },
+          { year: 1994, host: { code: 'USA' } },
+          { year: 1990, host: { code: 'ITA' } },
+          { year: 1986, host: { code: 'MEX' } },
+          { year: 1982, host: { code: 'ESP' } },
+          { year: 1978, host: { code: 'ARG' } },
+          { year: 1974, host: { code: 'GER' } },
+          { year: 1970, host: { code: 'MEX' } }
+        ]
+        
+        const realHistoryBeforeWorld = realHistory
+          .filter(wc => wc.year < this.world.beginningYear)
+          .sort((a, b) => b.year - a.year)
+        
+        if (realHistoryBeforeWorld.length > 0) {
+          lastHostCode = realHistoryBeforeWorld[0].host?.code
+        }
+      }
+
+      if (!lastHostCode) {
+        console.log('No previous host found, allowing all confederations')
+        return null
+      }
+
+      // Find the confederation of the last host
+      const lastHostCountry = countries.find(c => c.code === lastHostCode)
+      if (lastHostCountry) {
+        console.log(`Last host was ${lastHostCountry.name} (${lastHostCode}) from ${lastHostCountry.confederation}`)
+        return lastHostCountry.confederation
+      }
+
+      console.log('Last host country not found in countries data')
+      return null
+    },
+
+    getConfederationName(confederationCode) {
+      const confederationNames = {
+        'uefa': 'UEFA (Europe)',
+        'conmebol': 'CONMEBOL (South America)', 
+        'concacaf': 'CONCACAF (North & Central America)',
+        'afc': 'AFC (Asia)',
+        'caf': 'CAF (Africa)',
+        'ofc': 'OFC (Oceania)'
+      }
+      return confederationNames[confederationCode] || confederationCode.toUpperCase()
+    },
     
     async generateCandidates() {
       this.generatingCandidates = true
       
       try {
+        // Load latest world cup history to get accurate last host info
+        await this.loadWorldCupHistory()
+        
         // Simulate delay
         await new Promise(resolve => setTimeout(resolve, 1500))
         
@@ -637,11 +729,17 @@ export default {
         if (response.ok) {
           const countries = await response.json()
           
-          // Select 3-8 candidates based on FIFA ranking
+          // Determine the last host's confederation to exclude it
+          const lastHostConfederation = this.getLastHostConfederation(countries)
+          this.excludedConfederation = lastHostConfederation
+          console.log('Last host confederation:', lastHostConfederation)
+          
+          // Select 3-8 candidates based on FIFA ranking, excluding last host's confederation
           const candidateCount = Math.floor(Math.random() * 6) + 3 // 3-8
           const topCountries = countries
-            .filter(c => c.fifaRanking && c.fifaRanking <= 50)
-            .sort((a, b) => a.fifaRanking - b.fifaRanking)
+            .filter(c => c.worldRanking && c.worldRanking <= 50)
+            .filter(c => !lastHostConfederation || c.confederation !== lastHostConfederation)
+            .sort((a, b) => a.worldRanking - b.worldRanking)
           
           const selectedCandidates = []
           const usedCountries = new Set()
@@ -655,14 +753,14 @@ export default {
               const index = Math.floor(rankingWeight * Math.min(topCountries.length, 30))
               country = topCountries[index]
               attempts++
-            } while (usedCountries.has(country.code) && attempts < 50)
+            } while (country && usedCountries.has(country.code) && attempts < 50)
             
-            if (!usedCountries.has(country.code)) {
+            if (country && !usedCountries.has(country.code)) {
               usedCountries.add(country.code)
               
               // Calculate win chance based on ranking
               const baseChance = 100 / candidateCount
-              const rankingBonus = (50 - (country.fifaRanking || 50)) / 50 * 30
+              const rankingBonus = (50 - (country.worldRanking || 50)) / 50 * 30
               const winChance = Math.round(baseChance + rankingBonus + (Math.random() - 0.5) * 10)
               
               // Try to get world ranking for display if available
@@ -670,7 +768,7 @@ export default {
               
               selectedCandidates.push({
                 ...country,
-                rank: worldRanking ? worldRanking.rank : country.fifaRanking,
+                rank: worldRanking ? worldRanking.rank : country.worldRanking,
                 points: worldRanking ? worldRanking.points : 1500,
                 winChance: Math.max(5, Math.min(95, winChance))
               })
@@ -1085,6 +1183,20 @@ export default {
 .step-container {
   text-align: center;
   padding: 2rem;
+}
+
+.confederation-notice {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: var(--radius-md);
+  color: #f8c146;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: var(--font-weight-medium);
 }
 
 .step-info h3 {

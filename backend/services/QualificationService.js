@@ -315,7 +315,7 @@ class QualificationService {
     if (n < 2) return matches
 
     // Check if this confederation plays home and away matches
-    const isDoubleRoundRobin = confederationId === 'uefa' || confederationId === 'conmebol'
+    const isDoubleRoundRobin = confederationId === 'uefa' || confederationId === 'conmebol' || confederationId === 'caf' || confederationId === 'ofc' || confederationId === 'afc'
 
     // Generate all possible matches
     for (let i = 0; i < n; i++) {
@@ -347,7 +347,7 @@ class QualificationService {
           date: new Date()
         })
 
-        // For UEFA and CONMEBOL, add the return match
+        // For double round-robin confederations, add the return match
         if (isDoubleRoundRobin) {
           matches.push({
             matchId: `${group.groupId}_${teamB.teamId}_vs_${teamA.teamId}`,
@@ -1005,7 +1005,7 @@ class QualificationService {
     
     for (const group of groups) {
       // Check if this confederation plays home and away matches
-      const isDoubleRoundRobin = confederationId === 'uefa' || confederationId === 'conmebol'
+      const isDoubleRoundRobin = confederationId === 'uefa' || confederationId === 'conmebol' || confederationId === 'caf' || confederationId === 'ofc' || confederationId === 'afc'
       
       // Calculate total matches based on format
       const n = group.teams.length
@@ -1331,7 +1331,7 @@ class QualificationService {
           qualifiedCount: qualifiedFromConfederation.length
         })
       } else {
-        // Other confederations (UEFA, CONMEBOL, CONCACAF)
+        // Other confederations with group qualification
         console.log(`Confederation ${confederation.confederationId} completion check:`, {
           playedMatches,
           totalMatches,
