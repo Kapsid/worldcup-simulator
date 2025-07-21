@@ -17,7 +17,10 @@
         <tr 
           v-for="(team, index) in standings" 
           :key="team.teamId"
-          :class="{ 'highlighted': team.teamId === highlightedTeamId }"
+          :class="{ 
+            'highlighted': team.teamId === highlightedTeamId,
+            'rival': team.teamId === rivalTeamId
+          }"
         >
           <td class="position">{{ index + 1 }}</td>
           <td class="team-name">
@@ -45,6 +48,10 @@ export default {
       default: () => []
     },
     highlightedTeamId: {
+      type: String,
+      default: null
+    },
+    rivalTeamId: {
       type: String,
       default: null
     },
@@ -165,8 +172,15 @@ export default {
 }
 
 .mini-standings tr.highlighted {
-  background-color: rgba(0, 102, 204, 0.15);
+  background-color: rgba(0, 102, 204, 0.2);
   font-weight: 600;
+  border-left: 3px solid var(--fifa-blue);
+}
+
+.mini-standings tr.rival {
+  background-color: rgba(255, 215, 0, 0.15);
+  font-weight: 500;
+  border-left: 3px solid var(--fifa-gold);
 }
 
 .position {

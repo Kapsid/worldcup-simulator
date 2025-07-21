@@ -80,7 +80,7 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
                   class="team-name clickable-team"
-                  @mouseenter="showTooltip($event, match.homeTeam._id)"
+                  @mouseenter="showTooltip($event, match.homeTeam._id, match.awayTeam._id)"
                   @mouseleave="hideTooltip"
                 >
                   {{ match.homeTeam.countryName }}
@@ -116,7 +116,7 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
                   class="team-name clickable-team"
-                  @mouseenter="showTooltip($event, match.awayTeam._id)"
+                  @mouseenter="showTooltip($event, match.awayTeam._id, match.homeTeam._id)"
                   @mouseleave="hideTooltip"
                 >
                   {{ match.awayTeam.countryName }}
@@ -143,6 +143,7 @@
         :visible="tooltip.visible"
         :standings="tooltip.standings"
         :highlighted-team-id="tooltip.teamId"
+        :rival-team-id="tooltip.rivalTeamId"
         :position="tooltip.position"
       />
     </Teleport>
@@ -322,7 +323,14 @@ export default {
     getMatchesByMatchday(matchday) {
       return this.matches
         .filter(match => match.matchday === matchday)
-        .sort((a, b) => a.group.groupLetter.localeCompare(b.group.groupLetter))
+        .sort((a, b) => {
+          // First sort by group letter
+          const groupCompare = a.group.groupLetter.localeCompare(b.group.groupLetter)
+          if (groupCompare !== 0) return groupCompare
+          
+          // Then sort by match ID to ensure stable sort order
+          return a._id.localeCompare(b._id)
+        })
     },
 
     getMatchdayStatus(matchday) {
@@ -337,7 +345,7 @@ export default {
     },
 
     // Tooltip methods
-    async showTooltip(event, teamId) {
+    async showTooltip(event, teamId, rivalTeamId = null) {
       if (!teamId) return
       
       // Clear any existing timeout
@@ -354,6 +362,7 @@ export default {
       this.tooltip = {
         visible: true,
         teamId: teamId,
+        rivalTeamId: rivalTeamId,
         position: {
           x: event.clientX + 15,  // 15px to the right of mouse
           y: event.clientY - 40   // 40px above mouse

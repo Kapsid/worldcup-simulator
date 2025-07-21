@@ -371,7 +371,33 @@ export default {
         'Newcastle': { latitude: 54.9783, longitude: -1.6178 },
         'Nottingham': { latitude: 52.9548, longitude: -1.1581 },
         'Leicester': { latitude: 52.6369, longitude: -1.1398 },
-        'Coventry': { latitude: 52.4068, longitude: -1.5197 }
+        'Coventry': { latitude: 52.4068, longitude: -1.5197 },
+        'London': { latitude: 51.5074, longitude: -0.1278 },
+        'Southampton': { latitude: 50.9097, longitude: -1.4044 },
+        
+        // Wales cities
+        'Cardiff': { latitude: 51.4816, longitude: -3.1791 },
+        'Swansea': { latitude: 51.6214, longitude: -3.9436 },
+        'Newport': { latitude: 51.5877, longitude: -2.9984 },
+        'Wrexham': { latitude: 53.0478, longitude: -2.9916 },
+        'Bangor': { latitude: 53.2280, longitude: -4.1299 },
+        'Aberystwyth': { latitude: 52.4140, longitude: -4.0830 },
+        
+        // Scotland cities
+        'Edinburgh': { latitude: 55.9533, longitude: -3.1883 },
+        'Glasgow': { latitude: 55.8642, longitude: -4.2518 },
+        'Aberdeen': { latitude: 57.1497, longitude: -2.0943 },
+        'Dundee': { latitude: 56.4620, longitude: -2.9707 },
+        'Stirling': { latitude: 56.1165, longitude: -3.9369 },
+        'Inverness': { latitude: 57.4778, longitude: -4.2247 },
+        'Perth': { latitude: 56.3953, longitude: -3.4316 },
+        
+        // Northern Ireland cities
+        'Belfast': { latitude: 54.5973, longitude: -5.9301 },
+        'Derry': { latitude: 54.9966, longitude: -7.3086 },
+        'Londonderry': { latitude: 54.9966, longitude: -7.3086 },
+        'Lisburn': { latitude: 54.5162, longitude: -6.0583 },
+        'Newry': { latitude: 54.1751, longitude: -6.3402 }
         
       }
       

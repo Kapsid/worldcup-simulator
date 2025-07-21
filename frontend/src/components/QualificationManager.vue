@@ -10,6 +10,14 @@
       <!-- Confederation Tabs -->
       <div class="confederation-tabs">
         <button 
+          @click="activeConfederation = 'all'"
+          :class="['tab-button', { active: activeConfederation === 'all' }]"
+          :style="{ '--conf-color': '#2c3e50' }"
+        >
+          <span class="tab-flag">🌍</span>
+          <span class="tab-name">All Confederations</span>
+        </button>
+        <button 
           v-for="confederation in confederations" 
           :key="confederation.id"
           @click="activeConfederation = confederation.id"
@@ -22,9 +30,392 @@
         </button>
       </div>
 
+      <!-- Finalization Status Box - Always Visible -->
+      <div v-if="qualificationStarted && (allQualificationComplete || qualificationFinalized)" class="finalization-status-box">
+        <div v-if="!qualificationFinalized" class="finalization-ready">
+          <div class="status-icon">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="status-content">
+            <h4>Qualification Complete!</h4>
+            <p>All confederations have finished their qualification process. Ready to start the tournament.</p>
+            <button 
+              @click="finalizeQualification"
+              :disabled="finalizing"
+              class="btn-finalize"
+            >
+              <i v-if="finalizing" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-rocket"></i>
+              {{ finalizing ? 'Finalizing...' : 'Start World Cup Tournament' }}
+            </button>
+          </div>
+        </div>
+        
+        <div v-else class="finalization-complete">
+          <div class="status-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="status-content">
+            <h4>Tournament Ready!</h4>
+            <p>{{ allQualifiedTeams.length }} teams have qualified for the World Cup.</p>
+            <button 
+              @click="goToTournament" 
+              :disabled="finalizing"
+              class="btn-go-tournament"
+            >
+              <i v-if="finalizing" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-arrow-right"></i>
+              {{ finalizing ? 'Preparing...' : 'GO TO TOURNAMENT' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Confederations View -->
+      <div v-if="activeConfederation === 'all'" class="all-confederations-content">
+        <!-- Show matchday selector only if not viewing playoffs -->
+        <div v-if="!showAllConfederationsPlayoffs" class="matchday-selector">
+          <button 
+            @click="allConfederationsMatchday = Math.max(1, allConfederationsMatchday - 1)"
+            :disabled="allConfederationsMatchday <= 1"
+            class="matchday-nav"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <h3>Matchday {{ allConfederationsMatchday }}</h3>
+          <button 
+            @click="allConfederationsMatchday = allConfederationsMatchday + 1"
+            :disabled="allConfederationsMatchday >= getMaxMatchday() && !areAllGroupMatchesComplete()"
+            class="matchday-nav"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+          <button 
+            v-if="areAllGroupMatchesComplete()"
+            @click="showAllConfederationsPlayoffs = true"
+            class="matchday-nav playoffs-btn"
+          >
+            <i class="fas fa-medal"></i>
+            Playoffs
+          </button>
+        </div>
+        
+        <!-- Playoffs selector -->
+        <div v-else class="matchday-selector">
+          <button 
+            @click="showAllConfederationsPlayoffs = false"
+            class="matchday-nav"
+          >
+            <i class="fas fa-chevron-left"></i>
+            Back to Matchdays
+          </button>
+          <h3><i class="fas fa-medal"></i> Playoffs</h3>
+        </div>
+
+        <!-- Matchday actions (only show for matchdays, not playoffs) -->
+        <div v-if="!showAllConfederationsPlayoffs" class="all-matches-actions">
+          <button 
+            v-if="!simulatingAllMatchday"
+            @click="simulateAllMatchdayMatches"
+            :disabled="!hasUnplayedMatchesInMatchday(allConfederationsMatchday)"
+            class="btn-primary"
+          >
+            <i class="fas fa-play"></i>
+            {{ `Simulate All Matchday ${allConfederationsMatchday} Matches` }}
+          </button>
+          
+          <div v-if="simulatingAllMatchday" class="simulation-controls">
+            <button 
+              @click="pauseSimulation"
+              :disabled="simulationPaused"
+              class="btn-secondary"
+            >
+              <i class="fas fa-pause"></i>
+              Pause
+            </button>
+            <button 
+              v-if="simulationPaused"
+              @click="resumeSimulation"
+              class="btn-primary"
+            >
+              <i class="fas fa-play"></i>
+              Resume
+            </button>
+            <button 
+              @click="toggleFastMode"
+              :class="['btn-small', fastMode ? 'btn-success' : 'btn-secondary']"
+              :title="fastMode ? 'Fast Mode ON' : 'Fast Mode OFF'"
+            >
+              <i class="fas fa-fast-forward"></i>
+              {{ fastMode ? 'Fast' : 'Normal' }}
+            </button>
+            <div class="simulation-status">
+              <i class="fas fa-spinner fa-spin simulation-spinner"></i>
+              {{ getSimulationProgressText() }}
+            </div>
+          </div>
+          
+          <!-- Progress indicator -->
+          <div v-if="simulatingAllMatchday && simulationProgress.total > 0" class="simulation-progress">
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                :style="{ width: (simulationProgress.completed / simulationProgress.total * 100) + '%' }"
+              ></div>
+            </div>
+            <div class="progress-text">
+              {{ simulationProgress.completed }} / {{ simulationProgress.total }} matches
+              <div v-if="simulationProgress.currentMatch" class="current-match">
+                <span class="match-teams">
+                  <span class="team">
+                    <span class="team-flag">{{ simulationProgress.currentMatch.homeFlag }}</span>
+                    {{ simulationProgress.currentMatch.homeTeam }}
+                  </span>
+                  <span v-if="!simulationProgress.lastResult" class="vs">vs</span>
+                  <span v-else class="result-in-vs">{{ simulationProgress.lastResult }}</span>
+                  <span class="team">
+                    {{ simulationProgress.currentMatch.awayTeam }}
+                    <span class="team-flag">{{ simulationProgress.currentMatch.awayFlag }}</span>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playoff actions -->
+        <div v-if="showAllConfederationsPlayoffs" class="all-matches-actions">
+          <button 
+            @click="simulateAllPlayoffMatches"
+            :disabled="simulatingAllPlayoffs || !hasUnplayedPlayoffMatches()"
+            class="btn-primary"
+          >
+            <i v-if="simulatingAllPlayoffs" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-play"></i>
+            {{ simulatingAllPlayoffs ? 'Simulating...' : 'Simulate All Playoff Matches' }}
+          </button>
+        </div>
+
+        <!-- Show playoff matches or regular matches -->
+        <div v-if="showAllConfederationsPlayoffs" class="confederations-matches">
+          <div v-for="conf in getConfederationsWithPlayoffs()" 
+               :key="conf.id" 
+               class="confederation-matches-section"
+          >
+            <h4 class="confederation-header">
+              <span>{{ conf.flag }}</span>
+              {{ conf.name }} Playoffs
+              <span class="match-count">({{ conf.playoffMatches.length }} matches)</span>
+            </h4>
+            <div class="playoff-ties-container">
+              <div 
+                v-for="tie in conf.playoffTies" 
+                :key="tie.id" 
+                class="playoff-tie-card"
+                :class="{ 'tie-completed': tie.completed }"
+              >
+                <div class="tie-header">
+                  <span class="tie-label">{{ tie.name }}</span>
+                  <span class="tie-status">
+                    {{ tie.completed ? 'Completed' : 'In Progress' }}
+                  </span>
+                </div>
+                
+                <div class="tie-teams">
+                  <div class="tie-team">
+                    <span class="team-flag">{{ tie.team1.flag }}</span>
+                    <router-link 
+                      :to="`/tournament/${tournament._id}/qualifying-team/${tie.team1.teamId}`" 
+                      class="team-name clickable-team"
+                      @mouseenter="showTooltip($event, tie.team1.teamId)"
+                      @mouseleave="hideTooltip"
+                    >
+                      {{ tie.team1.name }}
+                    </router-link>
+                  </div>
+                  
+                  <div class="vs-section">vs</div>
+                  
+                  <div class="tie-team">
+                    <router-link 
+                      :to="`/tournament/${tournament._id}/qualifying-team/${tie.team2.teamId}`" 
+                      class="team-name clickable-team"
+                      @mouseenter="showTooltip($event, tie.team2.teamId)"
+                      @mouseleave="hideTooltip"
+                    >
+                      {{ tie.team2.name }}
+                    </router-link>
+                    <span class="team-flag">{{ tie.team2.flag }}</span>
+                  </div>
+                </div>
+                
+                <div class="tie-legs">
+                  <div class="leg">
+                    <div class="leg-header">1st Leg (at {{ tie.team1.name }})</div>
+                    <div class="leg-match-display">
+                      <div v-if="tie.firstLeg.played" class="leg-result">
+                        <div class="leg-team home-team">
+                          <span class="team-flag">{{ tie.team1.flag }}</span>
+                          <span class="team-name">{{ tie.team1.name }}</span>
+                          <span class="team-score">{{ tie.firstLeg.homeScore }}</span>
+                        </div>
+                        <div class="score-separator">-</div>
+                        <div class="leg-team away-team">
+                          <span class="team-score">{{ tie.firstLeg.awayScore }}</span>
+                          <span class="team-name">{{ tie.team2.name }}</span>
+                          <span class="team-flag">{{ tie.team2.flag }}</span>
+                        </div>
+                      </div>
+                      <button 
+                        v-else
+                        @click="simulatePlayoffMatchInAllView(tie.firstLeg.matchId)"
+                        :disabled="simulatingPlayoffMatch === tie.firstLeg.matchId"
+                        class="btn-simulate-small"
+                      >
+                        <i v-if="simulatingPlayoffMatch === tie.firstLeg.matchId" class="fas fa-spinner fa-spin"></i>
+                        <i v-else class="fas fa-play"></i>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="leg">
+                    <div class="leg-header">2nd Leg (at {{ tie.team2.name }})</div>
+                    <div class="leg-match-display">
+                      <div v-if="tie.secondLeg.played" class="leg-result">
+                        <div class="leg-team home-team">
+                          <span class="team-flag">{{ tie.team2.flag }}</span>
+                          <span class="team-name">{{ tie.team2.name }}</span>
+                          <span class="team-score">{{ tie.secondLeg.homeScore }}</span>
+                        </div>
+                        <div class="score-separator">-</div>
+                        <div class="leg-team away-team">
+                          <span class="team-score">{{ tie.secondLeg.awayScore }}</span>
+                          <span class="team-name">{{ tie.team1.name }}</span>
+                          <span class="team-flag">{{ tie.team1.flag }}</span>
+                        </div>
+                      </div>
+                      <button 
+                        v-else
+                        @click="simulatePlayoffMatchInAllView(tie.secondLeg.matchId)"
+                        :disabled="simulatingPlayoffMatch === tie.secondLeg.matchId"
+                        class="btn-simulate-small"
+                      >
+                        <i v-if="simulatingPlayoffMatch === tie.secondLeg.matchId" class="fas fa-spinner fa-spin"></i>
+                        <i v-else class="fas fa-play"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-if="tie.winner" class="tie-winner">
+                  <i class="fas fa-arrow-right"></i>
+                  <span class="winner-flag">{{ tie.winner.flag }}</span>
+                  <span class="winner-name">{{ tie.winner.name }}</span>
+                  <span class="progresses">progresses</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Show playoff winner if available -->
+            <div v-if="conf.playoffWinner" class="playoff-winner">
+              <div class="winner-header">
+                <h5>
+                  <i class="fas fa-trophy"></i>
+                  Playoff Winner
+                </h5>
+              </div>
+              <div class="winner-team">
+                <span class="team-flag">{{ conf.playoffWinner.flag }}</span>
+                <span class="team-name">{{ conf.playoffWinner.name }}</span>
+                <span class="qualification-badge">World Cup Qualified</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Show regular matches -->
+        <div v-else class="confederations-matches">
+          <div v-for="conf in getConfederationsWithMatchesInMatchday(allConfederationsMatchday)" 
+               :key="conf.id" 
+               class="confederation-matches-section"
+          >
+            <h4 class="confederation-header">
+              <span>{{ conf.flag }}</span>
+              {{ conf.name }}
+              <span class="match-count">({{ conf.matches.length }} matches)</span>
+            </h4>
+            <div class="qual-matches-grid">
+              <div 
+                v-for="match in conf.matches" 
+                :key="match.matchId" 
+                class="qual-match-card"
+                :class="{ 'match-completed': match.played }"
+              >
+                <div class="qual-match-header">
+                  <span class="group-label">{{ match.group }}</span>
+                  <span class="match-status">
+                    {{ match.played ? 'Completed' : 'Scheduled' }}
+                  </span>
+                </div>
+                
+                <div class="qual-match-teams">
+                  <div class="team home-team">
+                    <div class="team-flag">{{ match.homeTeam.flag }}</div>
+                    <router-link 
+                      :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
+                      class="team-name clickable-team"
+                      @mouseenter="showTooltip($event, match.homeTeam.teamId)"
+                      @mouseleave="hideTooltip"
+                    >
+                      {{ match.homeTeam.name }}
+                    </router-link>
+                  </div>
+                  
+                  <div class="qual-match-score">
+                    <div class="score-display">
+                      <span class="home-score">{{ match.played ? match.homeScore : '-' }}</span>
+                      <span class="score-separator">:</span>
+                      <span class="away-score">{{ match.played ? match.awayScore : '-' }}</span>
+                    </div>
+                    <div class="match-actions">
+                      <button 
+                        v-if="!match.played"
+                        @click="simulateMatch(match.matchId)"
+                        :disabled="simulatingMatch === match.matchId"
+                        class="btn-small simulate-btn"
+                      >
+                        <i v-if="simulatingMatch === match.matchId" class="fas fa-spinner fa-spin"></i>
+                        <i v-else class="fas fa-play"></i>
+                      </button>
+                      <button 
+                        @click="showMatchDetail(match)"
+                        class="btn-small detail-btn"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="team away-team">
+                    <div class="team-flag">{{ match.awayTeam.flag }}</div>
+                    <router-link 
+                      :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
+                      class="team-name clickable-team"
+                      @mouseenter="showTooltip($event, match.awayTeam.teamId)"
+                      @mouseleave="hideTooltip"
+                    >
+                      {{ match.awayTeam.name }}
+                    </router-link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Active Confederation Content -->
-      <div v-if="activeConfederationData" class="confederation-content">
+      <div v-else-if="activeConfederationData" class="confederation-content">
         <div class="confederation-header">
           <h3>{{ activeConfederationData.fullName }}</h3>
           <p>{{ activeConfederationData.description }}</p>
@@ -39,7 +430,7 @@
           </div>
           <div v-else class="qualification-content">
             <!-- Show groups and matches for active confederation -->
-            <div v-if="getActiveConfederationData()" class="confederation-qualification">
+            <div v-if="getActiveConfederationData() || debugShowMissingData()" class="confederation-qualification">
               
               <!-- Sub-navigation tabs -->
               <div class="sub-navigation">
@@ -78,8 +469,8 @@
               <div class="sub-tab-content">
                 <!-- Groups & Standings Tab -->
                 <div v-if="activeSubTab === 'groups'" class="groups-tab">
-                  <div v-if="getActiveConfederationData().groups && getActiveConfederationData().groups.length > 0" class="groups-grid">
-                    <div v-for="group in getActiveConfederationData().groups" :key="group.groupId" class="group-table">
+                  <div v-if="(getActiveConfederationData() || getActiveConfederationDataFallback())?.groups && (getActiveConfederationData() || getActiveConfederationDataFallback()).groups.length > 0" class="groups-grid">
+                    <div v-for="group in (getActiveConfederationData() || getActiveConfederationDataFallback()).groups" :key="group.groupId" class="group-table">
                       <div class="group-header">
                         <h5>{{ group.name }}</h5>
                       </div>
@@ -126,7 +517,7 @@
                 </div>
                 
                 <!-- UEFA Runners-up Table -->
-                <div v-if="activeSubTab === 'groups' && activeConfederation === 'uefa' && getActiveConfederationData().groups && getActiveConfederationData().groups.length > 0" class="runners-up-section">
+                <div v-if="activeSubTab === 'groups' && activeConfederation === 'uefa' && (getActiveConfederationData() || getActiveConfederationDataFallback())?.groups && (getActiveConfederationData() || getActiveConfederationDataFallback()).groups.length > 0" class="runners-up-section">
                   <div class="runners-up-header">
                     <h4>Runners-up Rankings</h4>
                     <p class="runners-up-description">Ordered by average points per match (to balance groups of different sizes)</p>
@@ -142,7 +533,6 @@
                           <th>Avg</th>
                           <th>GD</th>
                           <th>GF</th>
-                          <th>Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -162,10 +552,6 @@
                           <td class="avg-points">{{ team.avgPoints }}</td>
                           <td>{{ team.goalDifference }}</td>
                           <td>{{ team.goalsFor }}</td>
-                          <td>
-                            <span v-if="index < 4" class="qualified-badge">Qualified</span>
-                            <span v-else class="eliminated-badge">Eliminated</span>
-                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -174,7 +560,7 @@
 
                 <!-- Matches Tab -->
                 <div v-else-if="activeSubTab === 'matches'" class="matches-tab">
-                  <div v-if="getActiveConfederationData().matches && getActiveConfederationData().matches.length > 0" class="matches-section">
+                  <div v-if="(getActiveConfederationData() || getActiveConfederationDataFallback())?.matches && (getActiveConfederationData() || getActiveConfederationDataFallback()).matches.length > 0" class="matches-section">
                     <!-- Matchday Tabs -->
                     <div class="matchday-tabs">
                       <button
@@ -546,16 +932,6 @@
           {{ regenerating ? 'Regenerating...' : 'Regenerate Qualification' }}
         </button>
 
-        <button 
-          v-if="allQualificationComplete && !qualificationFinalized"
-          @click="finalizeQualification"
-          :disabled="finalizing"
-          class="btn-success action-btn"
-        >
-          <i v-if="finalizing" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-check"></i>
-          {{ finalizing ? 'Finalizing...' : 'Finalize Qualification & Start Tournament' }}
-        </button>
 
       </div>
 
@@ -571,6 +947,7 @@
         :visible="tooltip.visible"
         :standings="tooltip.standings"
         :highlighted-team-id="tooltip.teamId"
+        :rival-team-id="tooltip.rivalTeamId"
         :position="tooltip.position"
       />
     </Teleport>
@@ -616,10 +993,23 @@ export default {
       totalSlots: 32,
       activeMatchday: 1,
       activeSubTab: 'groups', // groups, matches, standings
+      allConfederationsMatchday: 1,
+      simulatingAllMatchday: false,
+      showAllConfederationsPlayoffs: false,
+      simulatingAllPlayoffs: false,
+      simulationPaused: false,
+      fastMode: false,
+      simulationProgress: {
+        completed: 0,
+        total: 0,
+        currentMatch: null,
+        lastResult: null
+      },
       // Tooltip data
       tooltip: {
         visible: false,
         teamId: null,
+        rivalTeamId: null,
         position: { x: 0, y: 0 },
         standings: []
       }
@@ -629,6 +1019,12 @@ export default {
     // Auto-select first unfinished matchday when confederation changes
     activeConfederation() {
       this.activeMatchday = this.defaultActiveMatchday()
+      
+      // For All Confederations view, set to first unfinished matchday
+      if (this.activeConfederation === 'all') {
+        this.allConfederationsMatchday = this.getFirstUnfinishedMatchday()
+      }
+      
       // Reset playoff tab if switching to a confederation that doesn't have playoffs
       if (this.activeSubTab === 'playoff' && !['ofc', 'caf', 'afc'].includes(this.activeConfederation)) {
         this.activeSubTab = 'groups'
@@ -638,6 +1034,12 @@ export default {
     // Auto-select first unfinished matchday when qualification data loads
     qualificationData() {
       this.activeMatchday = this.defaultActiveMatchday()
+      
+      // For All Confederations view, set to first unfinished matchday
+      if (this.activeConfederation === 'all') {
+        this.allConfederationsMatchday = this.getFirstUnfinishedMatchday()
+      }
+      
       // Only auto-select matches tab on initial load, not during simulation
       // This prevents forcing users to matches tab when they're viewing other tabs
     }
@@ -649,8 +1051,23 @@ export default {
     allQualificationComplete() {
       if (!this.qualificationData || !this.qualificationData.confederations) return false
       
-      // Check if all confederations are completed
-      const allConfederationsComplete = this.qualificationData.confederations.every(conf => conf.completed)
+      // Check if all confederations are completed (either marked as completed OR actually finished)
+      const allConfederationsComplete = this.qualificationData.confederations.every(conf => {
+        // If already marked as completed, return true
+        if (conf.completed) return true
+        
+        // Otherwise, check if all matches are actually played
+        const allMatchesPlayed = !conf.matches || conf.matches.every(match => match.played)
+        
+        // For confederations with playoffs, also check if playoffs are complete
+        let playoffsComplete = true
+        if (conf.playoffs && conf.playoffs.matches) {
+          playoffsComplete = conf.playoffs.matches.every(match => match.played)
+        }
+        
+        // Confederation is complete if all matches and playoffs are played
+        return allMatchesPlayed && playoffsComplete
+      })
       
       // Also check if we have qualified teams
       const hasQualifiedTeams = this.qualificationData.confederations.some(conf => 
@@ -925,7 +1342,7 @@ export default {
     },
 
     hasUnplayedMatches() {
-      const activeConfData = this.getActiveConfederationData()
+      const activeConfData = this.getActiveConfederationData() || this.getActiveConfederationDataFallback()
       if (!activeConfData || !activeConfData.matches) return false
       
       return activeConfData.matches.some(match => !match.played)
@@ -937,19 +1354,80 @@ export default {
     },
 
     getActiveConfederationData() {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        console.log('DEBUG: No qualification data or confederations')
+        return null
+      }
+      
+      console.log('DEBUG: Looking for confederation:', this.activeConfederation)
+      console.log('DEBUG: Available confederations:', 
+        this.qualificationData.confederations.map(c => c.confederationId))
+      
+      const result = this.qualificationData.confederations.find(conf => 
+        conf.confederationId === this.activeConfederation)
+      
+      console.log('DEBUG: Found confederation:', result ? 'YES' : 'NO')
+      if (!result) {
+        console.log('DEBUG: Full confederation data:', this.qualificationData.confederations)
+      }
+      return result
+    },
+    
+    debugShowMissingData() {
+      // Temporary debugging method to always show content when data is missing
+      // This helps identify the root cause and prevents blank screens
+      if (!this.getActiveConfederationData() && this.qualificationData && this.activeConfederation) {
+        console.log('DEBUG: Showing content despite missing confederation data')
+        return true
+      }
+      return false
+    },
+
+    getActiveConfederationDataFallback() {
+      // Fallback method when primary method fails - try to find data by name or other means
       if (!this.qualificationData || !this.qualificationData.confederations) return null
-      return this.qualificationData.confederations.find(conf => conf.confederationId === this.activeConfederation)
+      
+      // First try exact match (same as original method)
+      let result = this.qualificationData.confederations.find(conf => 
+        conf.confederationId === this.activeConfederation)
+      
+      if (result) return result
+      
+      // Try case-insensitive match
+      result = this.qualificationData.confederations.find(conf => 
+        conf.confederationId?.toLowerCase() === this.activeConfederation?.toLowerCase())
+      
+      if (result) {
+        console.log('DEBUG: Found confederation with case-insensitive match')
+        return result
+      }
+      
+      // Try matching by confederation name from confederations array
+      const confederation = this.confederations.find(c => c.id === this.activeConfederation)
+      if (confederation) {
+        result = this.qualificationData.confederations.find(conf => 
+          conf.confederationId === confederation.id || 
+          conf.name === confederation.name)
+        
+        if (result) {
+          console.log('DEBUG: Found confederation by cross-referencing with confederations array')
+          return result
+        }
+      }
+      
+      console.log('DEBUG: No fallback found for confederation')
+      return null
     },
 
     getGroupName(groupId) {
-      const activeConfData = this.getActiveConfederationData()
+      const activeConfData = this.getActiveConfederationData() || this.getActiveConfederationDataFallback()
       if (!activeConfData || !activeConfData.groups) return 'Unknown Group'
       const group = activeConfData.groups.find(g => g.groupId === groupId)
       return group ? group.name : 'Unknown Group'
     },
 
     getGroupedMatchdays() {
-      const activeConfData = this.getActiveConfederationData()
+      const activeConfData = this.getActiveConfederationData() || this.getActiveConfederationDataFallback()
       if (!activeConfData || !activeConfData.matches) return []
       
       const matchdays = {}
@@ -967,7 +1445,7 @@ export default {
     },
 
     getTeamQualificationClass(team, index, group) {
-      const activeConfData = this.getActiveConfederationData()
+      const activeConfData = this.getActiveConfederationData() || this.getActiveConfederationDataFallback()
       if (!activeConfData) return ''
       
       const confederation = this.confederations.find(c => c.id === this.activeConfederation)
@@ -1033,6 +1511,118 @@ export default {
       }
     },
 
+    async simulateMatch(matchId) {
+      // Optimized version for all confederations view - no full refresh
+      this.simulatingMatch = matchId
+      this.error = ''
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ matchId })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          
+          // Update only the specific match in the data structure
+          if (result.match && this.qualificationData && this.qualificationData.confederations) {
+            for (const conf of this.qualificationData.confederations) {
+              if (conf.matches) {
+                const matchIndex = conf.matches.findIndex(m => m.matchId === matchId)
+                if (matchIndex !== -1) {
+                  // Update the match data
+                  conf.matches[matchIndex] = {
+                    ...conf.matches[matchIndex],
+                    played: true,
+                    homeScore: result.match.homeScore,
+                    awayScore: result.match.awayScore
+                  }
+                  
+                  // Update group standings if needed
+                  if (conf.groups && result.match.groupId) {
+                    const group = conf.groups.find(g => g.groupId === result.match.groupId)
+                    if (group) {
+                      // Update team stats based on match result
+                      this.updateGroupStandings(group, result.match)
+                    }
+                  }
+                  break
+                }
+              }
+            }
+          }
+          
+          // Check if we need to trigger playoff generation after match simulation
+          this.checkAndTriggerPlayoffGeneration()
+          
+          this.$emit('match-simulated', result.match)
+        } else {
+          const data = await response.json()
+          console.error('Error simulating match:', data)
+          this.error = data.error || 'Failed to simulate match'
+        }
+      } catch (error) {
+        console.error('Error simulating match:', error)
+        this.error = error.message || 'Failed to simulate match'
+      } finally {
+        this.simulatingMatch = null
+      }
+    },
+
+    updateGroupStandings(group, match) {
+      // Find the home and away teams in the group
+      const homeTeam = group.teams.find(t => t.teamId === match.homeTeam.teamId)
+      const awayTeam = group.teams.find(t => t.teamId === match.awayTeam.teamId)
+      
+      if (!homeTeam || !awayTeam) return
+      
+      // Update played matches
+      homeTeam.played = (homeTeam.played || 0) + 1
+      awayTeam.played = (awayTeam.played || 0) + 1
+      
+      // Update goals
+      homeTeam.goalsFor = (homeTeam.goalsFor || 0) + match.homeScore
+      homeTeam.goalsAgainst = (homeTeam.goalsAgainst || 0) + match.awayScore
+      awayTeam.goalsFor = (awayTeam.goalsFor || 0) + match.awayScore
+      awayTeam.goalsAgainst = (awayTeam.goalsAgainst || 0) + match.homeScore
+      
+      // Update goal difference
+      homeTeam.goalDifference = homeTeam.goalsFor - homeTeam.goalsAgainst
+      awayTeam.goalDifference = awayTeam.goalsFor - awayTeam.goalsAgainst
+      
+      // Update wins, draws, losses and points
+      if (match.homeScore > match.awayScore) {
+        // Home win
+        homeTeam.won = (homeTeam.won || 0) + 1
+        homeTeam.points = (homeTeam.points || 0) + 3
+        awayTeam.lost = (awayTeam.lost || 0) + 1
+      } else if (match.homeScore < match.awayScore) {
+        // Away win
+        awayTeam.won = (awayTeam.won || 0) + 1
+        awayTeam.points = (awayTeam.points || 0) + 3
+        homeTeam.lost = (homeTeam.lost || 0) + 1
+      } else {
+        // Draw
+        homeTeam.drawn = (homeTeam.drawn || 0) + 1
+        homeTeam.points = (homeTeam.points || 0) + 1
+        awayTeam.drawn = (awayTeam.drawn || 0) + 1
+        awayTeam.points = (awayTeam.points || 0) + 1
+      }
+      
+      // Re-sort the group standings
+      group.teams.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+        return a.name.localeCompare(b.name)
+      })
+    },
+    
     async simulateIndividualMatch(match) {
       this.simulatingMatch = match.matchId
       this.error = ''
@@ -1255,9 +1845,26 @@ export default {
         } else if (team2AwayGoals > team1AwayGoals) {
           return match.awayTeam.name
         } else {
-          // Would go to extra time/penalties - for display just show the winner from backend
-          // The backend will have determined the actual winner
-          return match.homeTeam.name + " (after ET/Pens)"
+          // Tied on aggregate and away goals - check backend for actual winner
+          const confederation = this.getActiveConfederationData() || this.getActiveConfederationDataFallback()
+          if (confederation && confederation.playoffs) {
+            // For OFC, check single winner
+            if (confederation.confederationId === 'ofc' && confederation.playoffs.winner) {
+              return confederation.playoffs.winner.name + " (after ET/Pens)"
+            }
+            // For CAF/AFC, check winners array
+            else if (confederation.playoffs.winners) {
+              // Find which team won from the winners list
+              const winner = confederation.playoffs.winners.find(w => 
+                w.teamId === match.homeTeam.teamId || w.teamId === match.awayTeam.teamId
+              )
+              if (winner) {
+                return winner.name + " (after ET/Pens)"
+              }
+            }
+          }
+          // Fallback if winner not found
+          return "TBD (after ET/Pens)"
         }
       }
     },
@@ -1332,10 +1939,14 @@ export default {
       const standings = this.getStandingsForTeam(teamId)
       if (!standings || standings.length === 0) return
       
+      // Find current match rival for this team
+      const rivalTeamId = this.getRivalTeamId(teamId)
+      
       // Position near where you hover
       this.tooltip = {
         visible: true,
         teamId: teamId,
+        rivalTeamId: rivalTeamId,
         position: {
           x: event.clientX + 15,  // 15px to the right of mouse
           y: event.clientY - 40   // 40px above mouse
@@ -1347,6 +1958,42 @@ export default {
     hideTooltip() {
       this.tooltip.visible = false
       this.tooltip.teamId = null
+      this.tooltip.rivalTeamId = null
+    },
+
+    // Find rival team ID for the current team (opponent in current match)
+    getRivalTeamId(teamId) {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        return null
+      }
+      
+      // Search through all confederations and matches to find current match
+      for (const conf of this.qualificationData.confederations) {
+        if (conf.matches) {
+          // Find matches where this team is playing
+          const currentMatches = conf.matches.filter(match => 
+            (match.homeTeam.teamId === teamId || match.awayTeam.teamId === teamId) && !match.played
+          )
+          
+          // Get the most recent unplayed match (current matchday if viewing all confederations)
+          const currentMatch = currentMatches.find(match => {
+            if (this.activeConfederation === 'all') {
+              return match.matchday === this.allConfederationsMatchday
+            } else {
+              return match.matchday === this.activeMatchday
+            }
+          }) || currentMatches[0] // Fallback to first unplayed match
+          
+          if (currentMatch) {
+            // Return the opponent's team ID
+            return currentMatch.homeTeam.teamId === teamId 
+              ? currentMatch.awayTeam.teamId 
+              : currentMatch.homeTeam.teamId
+          }
+        }
+      }
+      
+      return null
     },
     
     getStandingsForTeam(teamId) {
@@ -1354,6 +2001,22 @@ export default {
         return []
       }
       
+      // If viewing all confederations, search all confederations
+      if (this.activeConfederation === 'all') {
+        for (const confederation of this.qualificationData.confederations) {
+          if (confederation.groups) {
+            for (const group of confederation.groups) {
+              const teamInGroup = group.teams?.find(team => team.teamId === teamId)
+              if (teamInGroup) {
+                return group.teams
+              }
+            }
+          }
+        }
+        return []
+      }
+      
+      // Otherwise search only the active confederation
       const confederation = this.qualificationData.confederations.find(
         conf => conf.confederationId === this.activeConfederation
       )
@@ -1420,6 +2083,507 @@ export default {
         if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference
         return b.goalsFor - a.goalsFor
       })
+    },
+
+    // Get maximum matchday across all confederations
+    getMaxMatchday() {
+      if (!this.qualificationData || !this.qualificationData.confederations) return 1
+      
+      let maxMatchday = 1
+      for (const conf of this.qualificationData.confederations) {
+        if (conf.matches && conf.matches.length > 0) {
+          const confMaxMatchday = Math.max(...conf.matches.map(m => m.matchday || 1))
+          maxMatchday = Math.max(maxMatchday, confMaxMatchday)
+        }
+      }
+      return maxMatchday
+    },
+
+    // Get the first matchday that has unfinished matches
+    getFirstUnfinishedMatchday() {
+      if (!this.qualificationData || !this.qualificationData.confederations) return 1
+      
+      // Go through all matchdays from lowest to highest
+      const maxMatchday = this.getMaxMatchday()
+      for (let matchday = 1; matchday <= maxMatchday; matchday++) {
+        // Check if any confederation has unplayed matches in this matchday
+        const hasUnplayedMatches = this.qualificationData.confederations.some(conf => {
+          if (conf.matches) {
+            return conf.matches.some(m => m.matchday === matchday && !m.played)
+          }
+          return false
+        })
+        
+        if (hasUnplayedMatches) {
+          return matchday
+        }
+      }
+      
+      // If no unfinished matches found, return the max matchday
+      return maxMatchday
+    },
+
+    // Check if there are unplayed matches in a specific matchday across all confederations
+    hasUnplayedMatchesInMatchday(matchday) {
+      if (!this.qualificationData || !this.qualificationData.confederations) return false
+      
+      for (const conf of this.qualificationData.confederations) {
+        if (conf.matches) {
+          const unplayedInMatchday = conf.matches.some(m => 
+            m.matchday === matchday && !m.played
+          )
+          if (unplayedInMatchday) return true
+        }
+      }
+      return false
+    },
+
+    // Get confederations that have matches in the specified matchday
+    getConfederationsWithMatchesInMatchday(matchday) {
+      if (!this.qualificationData || !this.qualificationData.confederations) return []
+      
+      const confederationsWithMatches = []
+      
+      for (const conf of this.qualificationData.confederations) {
+        const confInfo = this.confederations.find(c => c.id === conf.confederationId)
+        if (!confInfo) continue
+        
+        const matchesInMatchday = conf.matches ? 
+          conf.matches.filter(m => m.matchday === matchday) : []
+        
+        if (matchesInMatchday.length > 0) {
+          confederationsWithMatches.push({
+            id: conf.confederationId,
+            name: confInfo.name,
+            flag: confInfo.flag,
+            matches: matchesInMatchday.map(m => ({
+              ...m,
+              group: conf.groups?.find(g => 
+                g.teams.some(t => t.teamId === m.homeTeam.teamId || t.teamId === m.awayTeam.teamId)
+              )?.name || 'Group'
+            }))
+          })
+        }
+      }
+      
+      return confederationsWithMatches
+    },
+
+    // Simulate all matches in a matchday across all confederations
+    async simulateAllMatchdayMatches() {
+      this.simulatingAllMatchday = true
+      this.error = ''
+      
+      try {
+        // Get all unplayed matches in the current matchday
+        const unplayedMatches = []
+        
+        for (const conf of this.qualificationData.confederations) {
+          if (conf.matches) {
+            const matchesToSimulate = conf.matches.filter(m => 
+              m.matchday === this.allConfederationsMatchday && !m.played
+            )
+            unplayedMatches.push(...matchesToSimulate.map(m => ({
+              matchId: m.matchId,
+              confederationId: conf.confederationId,
+              homeTeam: m.homeTeam.name,
+              awayTeam: m.awayTeam.name,
+              homeFlag: m.homeTeam.flag,
+              awayFlag: m.awayTeam.flag
+            })))
+          }
+        }
+        
+        // Initialize progress tracking
+        this.simulationProgress = {
+          completed: 0,
+          total: unplayedMatches.length,
+          currentMatch: null,
+          lastResult: null
+        }
+        
+        // Simulate each match with progress updates
+        for (let i = 0; i < unplayedMatches.length; i++) {
+          // Check if simulation is paused
+          while (this.simulationPaused) {
+            await new Promise(resolve => setTimeout(resolve, 200))
+          }
+          
+          // Check if simulation was stopped
+          if (!this.simulatingAllMatchday) break
+          
+          const match = unplayedMatches[i]
+          
+          // Update current match being simulated
+          this.simulationProgress.currentMatch = {
+            homeTeam: match.homeTeam,
+            awayTeam: match.awayTeam,
+            homeFlag: match.homeFlag,
+            awayFlag: match.awayFlag
+          }
+          this.simulationProgress.lastResult = null // Clear previous result
+          
+          // Get match result after simulation
+          const matchResult = await this.simulateMatchWithResult(match.matchId)
+          
+          // Update progress
+          this.simulationProgress.completed = i + 1
+          
+          // Show the result
+          if (matchResult) {
+            this.simulationProgress.lastResult = `${matchResult.homeScore} - ${matchResult.awayScore}`
+            // Delay based on mode
+            const delay = this.fastMode ? 50 : 150
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+        }
+        
+        this.simulatingAllMatchday = false
+        this.simulationProgress = { completed: 0, total: 0, currentMatch: null, lastResult: null }
+        
+        // Check if we should move to next matchday
+        if (!this.hasUnplayedMatchesInMatchday(this.allConfederationsMatchday) && 
+            this.allConfederationsMatchday < this.getMaxMatchday()) {
+          this.allConfederationsMatchday++
+        }
+      } catch (error) {
+        console.error('Error simulating all matchday matches:', error)
+        this.error = error.message || 'Failed to simulate matches'
+        this.simulatingAllMatchday = false
+        this.simulationPaused = false
+        this.simulationProgress = { completed: 0, total: 0, currentMatch: null, lastResult: null }
+      }
+    },
+
+    pauseSimulation() {
+      this.simulationPaused = true
+    },
+
+    resumeSimulation() {
+      this.simulationPaused = false
+    },
+
+    toggleFastMode() {
+      this.fastMode = !this.fastMode
+    },
+
+    // Simulate match and return result for progress display
+    async simulateMatchWithResult(matchId) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ matchId })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          
+          // Update the match data locally (same as simulateMatch method)
+          if (result.match && this.qualificationData && this.qualificationData.confederations) {
+            for (const conf of this.qualificationData.confederations) {
+              if (conf.matches) {
+                const matchIndex = conf.matches.findIndex(m => m.matchId === matchId)
+                if (matchIndex !== -1) {
+                  conf.matches[matchIndex] = {
+                    ...conf.matches[matchIndex],
+                    played: true,
+                    homeScore: result.match.homeScore,
+                    awayScore: result.match.awayScore
+                  }
+                  
+                  // Update group standings if needed
+                  if (conf.groups && result.match.groupId) {
+                    const group = conf.groups.find(g => g.groupId === result.match.groupId)
+                    if (group) {
+                      this.updateGroupStandings(group, result.match)
+                    }
+                  }
+                  break
+                }
+              }
+            }
+          }
+          
+          // Check if we need to trigger playoff generation after match simulation
+          this.checkAndTriggerPlayoffGeneration()
+          
+          return result.match
+        }
+      } catch (error) {
+        console.error('Error simulating match:', error)
+      }
+      return null
+    },
+
+    // Get simulation progress text for button
+    getSimulationProgressText() {
+      if (this.simulationProgress.total === 0) {
+        return 'Simulating...'
+      }
+      return `Simulating... (${this.simulationProgress.completed}/${this.simulationProgress.total})`
+    },
+
+    // Check if all group stage matches are complete
+    areAllGroupMatchesComplete() {
+      if (!this.qualificationData || !this.qualificationData.confederations) return false
+      
+      for (const conf of this.qualificationData.confederations) {
+        if (conf.matches) {
+          const hasUnplayedMatches = conf.matches.some(m => !m.played)
+          if (hasUnplayedMatches) return false
+        }
+      }
+      return true
+    },
+
+    // Check and trigger playoff generation when needed
+    async checkAndTriggerPlayoffGeneration() {
+      if (this.areAllGroupMatchesComplete()) {
+        // Trigger a partial data refresh to generate playoffs
+        try {
+          const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            this.qualificationData = data.qualification
+          }
+        } catch (error) {
+          console.error('Error refreshing qualification data:', error)
+        }
+      }
+    },
+
+    // Get confederations that have playoffs
+    getConfederationsWithPlayoffs() {
+      if (!this.qualificationData || !this.qualificationData.confederations) return []
+      
+      return this.qualificationData.confederations
+        .filter(conf => ['ofc', 'caf', 'afc'].includes(conf.confederationId) && conf.playoffs)
+        .map(conf => {
+          const confInfo = this.confederations.find(c => c.id === conf.confederationId)
+          const playoffTies = this.processPlayoffTies(conf.playoffs.matches || [], conf.confederationId)
+          
+          return {
+            id: conf.confederationId,
+            name: confInfo?.name || conf.confederationId.toUpperCase(),
+            flag: confInfo?.flag || '🏴',
+            playoffMatches: conf.playoffs.matches || [],
+            playoffTies: playoffTies,
+            playoffWinner: conf.playoffs.winner || (conf.playoffs.winners && conf.playoffs.winners[0])
+          }
+        })
+    },
+
+    // Process playoff matches into two-leg ties
+    processPlayoffTies(matches, confederationId) {
+      if (!matches || matches.length === 0) return []
+      
+      const ties = []
+      
+      if (confederationId === 'ofc') {
+        // OFC has one two-leg tie
+        if (matches.length >= 2) {
+          const firstLeg = matches.find(m => m.type === 'playoff_home') || matches[0]
+          const secondLeg = matches.find(m => m.type === 'playoff_away') || matches[1]
+          
+          const winner = this.determinePlayoffWinner(firstLeg, secondLeg)
+          
+          ties.push({
+            id: 'ofc_playoff',
+            name: 'OFC Playoff',
+            team1: firstLeg.homeTeam,
+            team2: firstLeg.awayTeam,
+            firstLeg: firstLeg,
+            secondLeg: secondLeg,
+            completed: firstLeg.played && secondLeg.played,
+            winner: winner
+          })
+        }
+      } else {
+        // CAF/AFC have multiple two-leg ties
+        for (let i = 0; i < matches.length; i += 2) {
+          if (i + 1 < matches.length) {
+            const firstLeg = matches[i]
+            const secondLeg = matches[i + 1]
+            
+            const winner = this.determinePlayoffWinner(firstLeg, secondLeg)
+            
+            ties.push({
+              id: `${confederationId}_playoff_${i / 2 + 1}`,
+              name: `${confederationId.toUpperCase()} Playoff ${Math.floor(i / 2) + 1}`,
+              team1: firstLeg.homeTeam,
+              team2: firstLeg.awayTeam,
+              firstLeg: firstLeg,
+              secondLeg: secondLeg,
+              completed: firstLeg.played && secondLeg.played,
+              winner: winner
+            })
+          }
+        }
+      }
+      
+      return ties
+    },
+
+    // Determine playoff winner from two legs
+    determinePlayoffWinner(firstLeg, secondLeg) {
+      if (!firstLeg.played || !secondLeg.played) return null
+      
+      const team1Goals = firstLeg.homeScore + secondLeg.awayScore
+      const team2Goals = firstLeg.awayScore + secondLeg.homeScore
+      
+      if (team1Goals > team2Goals) {
+        return firstLeg.homeTeam
+      } else if (team2Goals > team1Goals) {
+        return firstLeg.awayTeam
+      } else {
+        // Check away goals
+        const team1AwayGoals = secondLeg.awayScore
+        const team2AwayGoals = firstLeg.awayScore
+        
+        if (team1AwayGoals > team2AwayGoals) {
+          return firstLeg.homeTeam
+        } else if (team2AwayGoals > team1AwayGoals) {
+          return firstLeg.awayTeam
+        } else {
+          // In a real scenario, this would go to extra time/penalties
+          // For now, we'll check the backend winner or return null
+          return firstLeg.homeTeam // Fallback
+        }
+      }
+    },
+
+    // Check if there are unplayed playoff matches
+    hasUnplayedPlayoffMatches() {
+      const confederationsWithPlayoffs = this.getConfederationsWithPlayoffs()
+      return confederationsWithPlayoffs.some(conf => 
+        conf.playoffMatches.some(match => !match.played)
+      )
+    },
+
+    // Simulate a playoff match in all confederations view
+    async simulatePlayoffMatchInAllView(matchId) {
+      this.simulatingPlayoffMatch = matchId
+      this.error = ''
+      
+      try {
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ matchId })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          
+          // Update the specific playoff match
+          if (result.match && this.qualificationData) {
+            for (const conf of this.qualificationData.confederations) {
+              if (conf.playoffs && conf.playoffs.matches) {
+                const matchIndex = conf.playoffs.matches.findIndex(m => m.matchId === matchId)
+                if (matchIndex !== -1) {
+                  conf.playoffs.matches[matchIndex] = {
+                    ...conf.playoffs.matches[matchIndex],
+                    played: true,
+                    homeScore: result.match.homeScore,
+                    awayScore: result.match.awayScore
+                  }
+                  
+                  // Update playoff winners if all matches are complete
+                  if (conf.playoffs.matches.every(m => m.played)) {
+                    // Check if all confederations are now complete and trigger completion check
+                    console.log('All playoff matches completed for confederation')
+                    await this.refreshCompletionStatus()
+                  }
+                  break
+                }
+              }
+            }
+          }
+        } else {
+          const data = await response.json()
+          this.error = data.error || 'Failed to simulate playoff match'
+        }
+      } catch (error) {
+        console.error('Error simulating playoff match:', error)
+        this.error = error.message || 'Failed to simulate playoff match'
+      } finally {
+        this.simulatingPlayoffMatch = null
+      }
+    },
+
+    // Refresh only completion status without full data reload
+    async refreshCompletionStatus() {
+      try {
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          // Only update completion status and qualified teams, preserve other local data
+          if (data.qualification && data.qualification.confederations) {
+            for (const newConf of data.qualification.confederations) {
+              const existingConf = this.qualificationData.confederations.find(
+                conf => conf.confederationId === newConf.confederationId
+              )
+              if (existingConf) {
+                // Update only completion status and qualified teams
+                existingConf.completed = newConf.completed
+                if (newConf.qualifiedTeams) {
+                  existingConf.qualifiedTeams = newConf.qualifiedTeams
+                }
+              }
+            }
+            
+            // Update global qualification status
+            if (data.qualification.completed !== undefined) {
+              this.qualificationData.completed = data.qualification.completed
+            }
+            if (data.qualification.qualifiedTeams) {
+              this.qualificationData.qualifiedTeams = data.qualification.qualifiedTeams
+            }
+          }
+          
+          console.log('Completion status refreshed successfully')
+        }
+      } catch (error) {
+        console.error('Error refreshing completion status:', error)
+      }
+    },
+
+    // Simulate all playoff matches
+    async simulateAllPlayoffMatches() {
+      this.simulatingAllPlayoffs = true
+      this.error = ''
+      
+      try {
+        const confederationsWithPlayoffs = this.getConfederationsWithPlayoffs()
+        
+        for (const conf of confederationsWithPlayoffs) {
+          const unplayedMatches = conf.playoffMatches.filter(m => !m.played)
+          
+          for (const match of unplayedMatches) {
+            await this.simulatePlayoffMatchInAllView(match.matchId)
+          }
+        }
+      } catch (error) {
+        console.error('Error simulating all playoff matches:', error)
+        this.error = error.message || 'Failed to simulate playoff matches'
+      } finally {
+        this.simulatingAllPlayoffs = false
+      }
     }
   }
 }
@@ -2958,6 +4122,54 @@ export default {
   gap: 12px;
 }
 
+/* Override for all confederations view to show 3 columns */
+.all-confederations-content .qual-matches-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+/* Make match cards more compact in all confederations view */
+.all-confederations-content .qual-match-card {
+  padding: 10px;
+}
+
+.all-confederations-content .qual-match-header {
+  margin-bottom: 6px;
+}
+
+.all-confederations-content .group-label {
+  font-size: 0.65rem;
+  padding: 2px 5px;
+}
+
+.all-confederations-content .match-status {
+  font-size: 0.65rem;
+}
+
+.all-confederations-content .qual-match-teams .team-flag {
+  font-size: 1.2rem;
+}
+
+.all-confederations-content .qual-match-teams .team-name {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+}
+
+.all-confederations-content .qual-match-score {
+  margin: 0 8px;
+}
+
+.all-confederations-content .qual-match-score .score-display {
+  font-size: 1rem;
+  gap: 4px;
+}
+
+.all-confederations-content .qual-match-score .btn-small {
+  min-width: 30px;
+  height: 30px;
+  font-size: 0.65rem;
+}
+
 .qual-match-card {
   background: var(--white);
   border: 1px solid rgba(0, 102, 204, 0.1);
@@ -3109,10 +4321,19 @@ export default {
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .all-confederations-content .qual-matches-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .qual-matches-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+  .all-confederations-content .qual-matches-grid {
+    grid-template-columns: 1fr;
   }
 
   .qual-match-card {
@@ -3133,6 +4354,598 @@ export default {
 
   .qual-match-score {
     margin: 0 8px;
+  }
+}
+
+/* All Confederations View Styles */
+.all-confederations-content {
+  padding: 1.5rem;
+  background: var(--gray-bg);
+  border-radius: var(--radius-lg);
+}
+
+.matchday-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.matchday-selector h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--fifa-blue);
+  min-width: 150px;
+  text-align: center;
+}
+
+.matchday-nav {
+  background: var(--fifa-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1.25rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.matchday-nav:hover:not(:disabled) {
+  background: var(--fifa-dark-blue);
+  transform: translateY(-1px);
+}
+
+.matchday-nav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.all-matches-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.simulation-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.simulation-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-dark-blue);
+}
+
+.simulation-spinner {
+  margin-right: 0.5rem !important;
+  color: var(--fifa-blue);
+}
+
+.confederations-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.confederation-matches-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.confederation-matches-section .confederation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  color: var(--fifa-blue);
+  font-weight: var(--font-weight-bold);
+}
+
+.match-count {
+  font-size: 0.9rem;
+  color: var(--gray);
+  font-weight: normal;
+}
+
+/* Playoff specific styles */
+.playoffs-btn {
+  background: var(--fifa-gold) !important;
+  color: var(--fifa-dark-blue) !important;
+}
+
+.playoffs-btn:hover {
+  background: #d4af37 !important;
+}
+
+.playoff-card {
+  border-color: var(--fifa-gold) !important;
+}
+
+.playoff-card.match-completed {
+  border-color: var(--fifa-gold) !important;
+  background: rgba(255, 215, 0, 0.05) !important;
+}
+
+.playoff-label {
+  background: var(--fifa-gold) !important;
+  color: var(--fifa-dark-blue) !important;
+}
+
+/* Playoff ties layout */
+.playoff-ties-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.playoff-tie-card {
+  background: var(--white);
+  border: 2px solid var(--fifa-gold);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.playoff-tie-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.playoff-tie-card.tie-completed {
+  background: rgba(255, 215, 0, 0.05);
+  border-color: #d4af37;
+}
+
+.tie-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.tie-label {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-gold);
+  font-size: 0.9rem;
+}
+
+.tie-status {
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.tie-teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tie-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.tie-team:last-child {
+  justify-content: flex-end;
+}
+
+.tie-team .team-flag {
+  font-size: 1.5rem;
+}
+
+.tie-team .team-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-dark-blue);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
+}
+
+.tie-team .team-name:hover {
+  background: rgba(0, 102, 204, 0.1);
+  color: var(--fifa-blue);
+}
+
+.vs-section {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-gold);
+  font-size: 1rem;
+  margin: 0 1rem;
+}
+
+.tie-legs {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.leg {
+  flex: 1;
+  text-align: center;
+  background: rgba(0, 102, 204, 0.05);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.leg-header {
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-blue);
+  margin-bottom: 0.5rem;
+}
+
+.leg-score {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.leg-score .score {
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+}
+
+.btn-simulate-small {
+  background: var(--fifa-blue);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.btn-simulate-small:hover:not(:disabled) {
+  background: var(--fifa-dark-blue);
+  transform: scale(1.1);
+}
+
+.btn-simulate-small:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tie-winner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  border-radius: var(--radius-sm);
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-bold);
+}
+
+.tie-winner .winner-flag {
+  font-size: 1.25rem;
+}
+
+.tie-winner .winner-name {
+  font-size: 1rem;
+}
+
+.tie-winner .progresses {
+  font-size: 0.9rem;
+  color: var(--fifa-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tie-winner i {
+  color: var(--fifa-green);
+}
+
+/* Simulation Progress Styles */
+.simulation-progress {
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 102, 204, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--fifa-blue), var(--fifa-green));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  animation: progressPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes progressPulse {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: var(--fifa-dark-blue);
+  text-align: center;
+  font-weight: var(--font-weight-semibold);
+  min-height: 60px; /* Reserve space to prevent layout shift */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.current-match {
+  font-size: 0.8rem;
+  color: var(--fifa-blue);
+  font-weight: normal;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+  min-height: 40px; /* Reserve space for match info */
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.match-teams .team {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.match-teams .team-flag {
+  font-size: 1rem;
+}
+
+.match-teams .vs {
+  color: var(--gray);
+  font-weight: normal;
+  font-size: 0.75rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+.result-in-vs {
+  background: var(--fifa-green);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+  animation: resultAppear 0.3s ease-out;
+  min-width: 40px;
+  text-align: center;
+}
+
+@keyframes resultAppear {
+  0% { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+/* Enhanced playoff leg display */
+.leg-match-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.leg-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.leg-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.leg-team.home-team {
+  justify-content: flex-start;
+}
+
+.leg-team.away-team {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.leg-team .team-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-dark-blue);
+  white-space: nowrap;
+}
+
+.leg-team .team-flag {
+  font-size: 1.1rem;
+}
+
+.leg-team .team-score {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-blue);
+  background: rgba(0, 102, 204, 0.15);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 102, 204, 0.3);
+  min-width: 30px;
+  text-align: center;
+}
+
+.score-separator {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  padding: 0 0.5rem;
+}
+
+/* Finalization Status Box */
+.finalization-status-box {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+  border: 2px solid #4caf50;
+  border-radius: var(--radius-lg);
+  margin: 1.5rem 0;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.1);
+  animation: statusBoxAppear 0.5s ease-out;
+}
+
+.finalization-ready, .finalization-complete {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  gap: 1.5rem;
+}
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: rgba(76, 175, 80, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-icon i {
+  font-size: 1.8rem;
+  color: #4caf50;
+}
+
+.status-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.status-content h4 {
+  margin: 0;
+  color: #4caf50;
+  font-size: 1.3rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.status-content p {
+  margin: 0;
+  color: var(--fifa-dark-blue);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.btn-finalize, .btn-go-tournament {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.btn-finalize:hover, .btn-go-tournament:hover {
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.btn-finalize:disabled, .btn-go-tournament:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-finalize i, .btn-go-tournament i {
+  font-size: 1rem;
+}
+
+@keyframes statusBoxAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .finalization-ready, .finalization-complete {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .status-content {
+    align-items: center;
+  }
+  
+  .btn-finalize, .btn-go-tournament {
+    align-self: center;
   }
 }
 </style>
