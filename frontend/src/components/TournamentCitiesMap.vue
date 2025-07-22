@@ -51,6 +51,9 @@ export default {
     }
   },
   mounted() {
+    console.log('TournamentCitiesMap mounted with:')
+    console.log('- Host country:', this.hostCountry)
+    console.log('- Cities:', JSON.stringify(this.cities))
     // Wait a bit longer for DOM to be fully ready
     setTimeout(() => {
       this.initMap()
@@ -362,6 +365,7 @@ export default {
         'Talca': { latitude: -35.4264, longitude: -71.6554 },
         
         // England cities
+        'London': { latitude: 51.5074, longitude: -0.1278 },
         'Manchester': { latitude: 53.4808, longitude: -2.2426 },
         'Liverpool': { latitude: 53.4084, longitude: -2.9916 },
         'Birmingham': { latitude: 52.4862, longitude: -1.8904 },
@@ -371,9 +375,8 @@ export default {
         'Newcastle': { latitude: 54.9783, longitude: -1.6178 },
         'Nottingham': { latitude: 52.9548, longitude: -1.1581 },
         'Leicester': { latitude: 52.6369, longitude: -1.1398 },
-        'Coventry': { latitude: 52.4068, longitude: -1.5197 },
-        'London': { latitude: 51.5074, longitude: -0.1278 },
         'Southampton': { latitude: 50.9097, longitude: -1.4044 },
+        'Coventry': { latitude: 52.4068, longitude: -1.5197 },
         
         // Wales cities
         'Cardiff': { latitude: 51.4816, longitude: -3.1791 },
@@ -436,9 +439,56 @@ export default {
           }
         } else {
           console.warn(`No coordinates found for city: ${city.name}`)
+          // Try to get approximate coordinates based on host country
+          const countryCoords = this.getCountryDefaultCoordinates(this.hostCountry)
+          if (countryCoords) {
+            console.log(`Using approximate coordinates for ${city.name} based on country ${this.hostCountry}`)
+            return {
+              ...city,
+              latitude: countryCoords.latitude + (Math.random() - 0.5) * 2,
+              longitude: countryCoords.longitude + (Math.random() - 0.5) * 2
+            }
+          }
         }
         return null
       }).filter(Boolean)
+    },
+    
+    getCountryDefaultCoordinates(countryName) {
+      const countryCoordinates = {
+        'England': { latitude: 52.3555, longitude: -1.1743 },
+        'Scotland': { latitude: 56.4907, longitude: -4.2026 },
+        'Wales': { latitude: 52.1307, longitude: -3.7837 },
+        'Northern Ireland': { latitude: 54.6070, longitude: -5.9261 },
+        'United Kingdom': { latitude: 54.0000, longitude: -2.0000 },
+        'Germany': { latitude: 51.1657, longitude: 10.4515 },
+        'France': { latitude: 46.2276, longitude: 2.2137 },
+        'Spain': { latitude: 40.4637, longitude: -3.7492 },
+        'Italy': { latitude: 41.8719, longitude: 12.5674 },
+        'Brazil': { latitude: -14.2350, longitude: -51.9253 },
+        'Argentina': { latitude: -38.4161, longitude: -63.6167 },
+        'USA': { latitude: 37.0902, longitude: -95.7129 },
+        'Mexico': { latitude: 23.6345, longitude: -102.5528 },
+        'Japan': { latitude: 36.2048, longitude: 138.2529 },
+        'Australia': { latitude: -25.2744, longitude: 133.7751 },
+        'South Africa': { latitude: -30.5595, longitude: 22.9375 }
+      }
+      
+      // Try exact match first
+      let coords = countryCoordinates[countryName]
+      
+      // If no exact match, try case-insensitive match
+      if (!coords) {
+        const country = countryName?.toLowerCase()
+        const matchingKey = Object.keys(countryCoordinates).find(key => 
+          key.toLowerCase() === country
+        )
+        if (matchingKey) {
+          coords = countryCoordinates[matchingKey]
+        }
+      }
+      
+      return coords || null
     },
     
     calculateMapBounds(cities) {
