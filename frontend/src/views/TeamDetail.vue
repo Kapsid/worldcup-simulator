@@ -39,7 +39,7 @@
               <div class="team-display">
                 <span class="team-flag">{{ countryInfo?.flag || '🏴' }}</span>
                 <div class="team-details">
-                  <h1>{{ team.name }}</h1>
+                  <h1>{{ team.countryName || team.name }}</h1>
                   <p class="team-subtitle">{{ tournament?.name || 'World Cup' }}</p>
                 </div>
               </div>
@@ -60,71 +60,7 @@
           <!-- Team Content -->
           <div class="team-content">
             <div class="content-grid">
-              <!-- Country Information -->
-              <div class="content-card glass-white">
-                <div class="card-header">
-                  <h3>Country Information</h3>
-                  <i class="fas fa-globe"></i>
-                </div>
-                <div class="card-content">
-                  <div class="country-info">
-                    <div class="info-item">
-                      <span class="info-label">Capital City</span>
-                      <span class="info-value">{{ countryInfo?.capital || 'N/A' }}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">Population</span>
-                      <span class="info-value">{{ countryInfo?.population || 'N/A' }}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">FIFA Ranking</span>
-                      <span class="info-value">#{{ countryInfo?.fifaRanking || 'N/A' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
               
-              <!-- Tournament Performance -->
-              <div class="content-card glass-white">
-                <div class="card-header">
-                  <h3>Tournament Performance</h3>
-                  <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="card-content">
-                  <div class="performance-stats">
-                    <div class="stat-row">
-                      <span class="stat-label">Matches Played</span>
-                      <span class="stat-value">{{ matchStats.played }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Wins</span>
-                      <span class="stat-value wins">{{ matchStats.wins }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Draws</span>
-                      <span class="stat-value draws">{{ matchStats.draws }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Losses</span>
-                      <span class="stat-value losses">{{ matchStats.losses }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Goals For</span>
-                      <span class="stat-value">{{ matchStats.goalsFor }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Goals Against</span>
-                      <span class="stat-value">{{ matchStats.goalsAgainst }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Goal Difference</span>
-                      <span class="stat-value" :class="{ 'positive': matchStats.goalDifference > 0, 'negative': matchStats.goalDifference < 0 }">
-                        {{ matchStats.goalDifference > 0 ? '+' : '' }}{{ matchStats.goalDifference }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
               
               <!-- Match History -->
               <div class="content-card glass-white full-width">
@@ -133,16 +69,16 @@
                   <i class="fas fa-history"></i>
                 </div>
                 <div class="card-content">
-                  <div v-if="matches.length === 0" class="empty-matches">
+                  <div v-if="allMatches.length === 0" class="empty-matches">
                     <i class="fas fa-calendar-times"></i>
                     <p>No matches played yet</p>
                   </div>
                   <div v-else class="matches-list">
                     <div 
-                      v-for="match in matches" 
+                      v-for="match in allMatches" 
                       :key="match._id"
                       class="match-item"
-                      :class="{ 'completed': match.status === 'completed', 'scheduled': match.status === 'scheduled' }"
+                      :class="{ 'completed': match.status === 'completed', 'scheduled': match.status === 'scheduled', 'qualification': match.isQualification, 'knockout': match.isKnockout }"
                     >
                       <div class="match-info">
                         <div class="match-teams">
@@ -156,7 +92,9 @@
                         </div>
                         <div class="match-details">
                           <span class="match-round">{{ formatMatchRound(match) }}</span>
-                          <span class="match-date">{{ formatDate(match.scheduledDate) }}</span>
+                          <span class="match-date">{{ formatDate(match.scheduledDate || match.date) }}</span>
+                          <span v-if="match.isQualification" class="match-type">Qualification</span>
+                          <span v-if="match.isKnockout" class="match-type knockout">Knockout</span>
                         </div>
                       </div>
                       <div class="match-score">
@@ -231,23 +169,64 @@ export default {
       team: null,
       tournament: null,
       matches: [],
+      qualificationMatches: [],
+      knockoutMatches: [],
       countries: [],
       loading: false,
-      matchStats: {
-        played: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0
-      }
     }
   },
   computed: {
     countryInfo() {
       if (!this.team) return null
       return this.countries.find(c => c.code === this.team.countryCode)
+    },
+    
+    allMatches() {
+      // Combine qualification, group, and knockout matches
+      const combined = [...this.qualificationMatches, ...this.matches, ...this.knockoutMatches]
+      
+      console.log('All matches combined:', {
+        qualification: this.qualificationMatches.length,
+        group: this.matches.length,
+        knockout: this.knockoutMatches.length,
+        total: combined.length
+      })
+      
+      // Sort by tournament progression order
+      return combined.sort((a, b) => {
+        // Define match type priority (lower number = earlier in tournament)
+        const getMatchPriority = (match) => {
+          if (match.isQualification) {
+            // Qualification matches come first, sorted by matchday
+            return (match.matchday || 1) * 100 // multiply by 100 to ensure they come before group stage
+          }
+          if (match.isKnockout) {
+            // Knockout matches come after group stage
+            const knockoutOrder = {
+              'round16': 4000,
+              'quarterfinal': 5000,
+              'semifinal': 6000,
+              'third_place': 7000,
+              'final': 8000
+            }
+            return knockoutOrder[match.round] || 9000
+          }
+          // Group stage matches (matchday 1, 2, 3)
+          return 3000 + (match.matchday || 1)
+        }
+        
+        const priorityA = getMatchPriority(a)
+        const priorityB = getMatchPriority(b)
+        
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB
+        }
+        
+        // If same priority, sort by date
+        const dateA = new Date(a.scheduledDate || a.date || 0)
+        const dateB = new Date(b.scheduledDate || b.date || 0)
+        return dateA - dateB
+      })
     }
   },
   mounted() {
@@ -271,9 +250,10 @@ export default {
           this.loadTournament(),
           this.loadTeam(),
           this.loadCountries(),
-          this.loadTeamMatches()
+          this.loadTeamMatches(),
+          this.loadQualificationMatches(),
+          this.loadKnockoutMatches()
         ])
-        this.calculateMatchStats()
       } catch (error) {
         console.error('Error loading team data:', error)
       } finally {
@@ -343,42 +323,135 @@ export default {
       }
     },
     
-    calculateMatchStats() {
-      if (!this.team || !this.matches.length) return
-      
-      const stats = {
-        played: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0
-      }
-      
-      this.matches.forEach(match => {
-        if (match.status === 'completed') {
-          stats.played++
-          
-          const isHome = match.homeTeam._id === this.team._id
-          const teamScore = isHome ? match.homeScore : match.awayScore
-          const opponentScore = isHome ? match.awayScore : match.homeScore
-          
-          stats.goalsFor += teamScore
-          stats.goalsAgainst += opponentScore
-          
-          if (teamScore > opponentScore) {
-            stats.wins++
-          } else if (teamScore === opponentScore) {
-            stats.draws++
-          } else {
-            stats.losses++
+    async loadQualificationMatches() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/qualification/${this.$route.params.tournamentId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
+        })
+        
+        if (response.ok) {
+          const qualificationData = await response.json()
+          let qualMatches = []
+          
+          // Extract team matches from qualification data
+          if (qualificationData && qualificationData.confederations) {
+            for (const confed of qualificationData.confederations) {
+              if (confed.groups) {
+                for (const group of confed.groups) {
+                  if (group.matches) {
+                    for (const match of group.matches) {
+                      // Check if this team is in the match
+                      if ((match.homeTeam && match.homeTeam.teamId === this.$route.params.teamId) ||
+                          (match.awayTeam && match.awayTeam.teamId === this.$route.params.teamId)) {
+                        qualMatches.push({
+                          _id: match.matchId,
+                          homeTeam: {
+                            _id: match.homeTeam.teamId,
+                            name: match.homeTeam.name,
+                            countryName: match.homeTeam.name,
+                            countryCode: match.homeTeam.country,
+                            countryFlag: match.homeTeam.flag
+                          },
+                          awayTeam: {
+                            _id: match.awayTeam.teamId,
+                            name: match.awayTeam.name,
+                            countryName: match.awayTeam.name,
+                            countryCode: match.awayTeam.country,
+                            countryFlag: match.awayTeam.flag
+                          },
+                          homeScore: match.homeScore,
+                          awayScore: match.awayScore,
+                          status: match.played ? 'completed' : 'scheduled',
+                          matchday: match.matchday,
+                          round: match.round,
+                          date: match.date,
+                          scheduledDate: match.date,
+                          isQualification: true,
+                          confederation: confed.name
+                        })
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+          this.qualificationMatches = qualMatches
+          console.log('Loaded qualification matches:', qualMatches.length, qualMatches)
         }
-      })
-      
-      stats.goalDifference = stats.goalsFor - stats.goalsAgainst
-      this.matchStats = stats
+      } catch (error) {
+        console.error('Error loading qualification matches:', error)
+        // Don't fail if qualification matches can't be loaded
+      }
+    },
+    
+    async loadKnockoutMatches() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/knockout/${this.$route.params.tournamentId}/bracket`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const bracketData = await response.json()
+          let knockoutMatches = []
+          
+          // Extract team matches from knockout bracket data
+          if (bracketData && bracketData.matches) {
+            for (const [round, matches] of Object.entries(bracketData.matches)) {
+              for (const match of matches) {
+                // Check if this team is in the match
+                if ((match.homeTeam && match.homeTeam._id === this.$route.params.teamId) ||
+                    (match.awayTeam && match.awayTeam._id === this.$route.params.teamId)) {
+                  knockoutMatches.push({
+                    _id: match._id,
+                    homeTeam: {
+                      _id: match.homeTeam?._id,
+                      name: match.homeTeam?.countryName || match.homeTeam?.name,
+                      countryName: match.homeTeam?.countryName,
+                      countryCode: match.homeTeam?.countryCode,
+                      countryFlag: match.homeTeam?.countryFlag
+                    },
+                    awayTeam: {
+                      _id: match.awayTeam?._id,
+                      name: match.awayTeam?.countryName || match.awayTeam?.name,
+                      countryName: match.awayTeam?.countryName,
+                      countryCode: match.awayTeam?.countryCode,
+                      countryFlag: match.awayTeam?.countryFlag
+                    },
+                    homeScore: match.homeScore,
+                    awayScore: match.awayScore,
+                    homeExtraTimeScore: match.homeExtraTimeScore,
+                    awayExtraTimeScore: match.awayExtraTimeScore,
+                    homePenaltyScore: match.homePenaltyScore,
+                    awayPenaltyScore: match.awayPenaltyScore,
+                    status: match.status,
+                    round: match.round,
+                    matchPosition: match.matchPosition,
+                    date: match.date,
+                    scheduledDate: match.scheduledDate,
+                    isKnockout: true,
+                    decidedBy: match.decidedBy,
+                    winner: match.winner
+                  })
+                }
+              }
+            }
+          }
+          
+          this.knockoutMatches = knockoutMatches
+          console.log('Loaded knockout matches:', knockoutMatches.length, knockoutMatches)
+        }
+      } catch (error) {
+        console.error('Error loading knockout matches:', error)
+        // Don't fail if knockout matches can't be loaded
+      }
     },
     
     getMatchResult(match) {
@@ -399,6 +472,23 @@ export default {
     },
     
     formatMatchRound(match) {
+      if (match.isQualification) {
+        if (match.confederation && match.matchday) {
+          return `${match.confederation} Qualifying MD ${match.matchday}`
+        }
+        if (match.matchday) return `Qualifying MD ${match.matchday}`
+        return 'Qualification Match'
+      }
+      if (match.isKnockout) {
+        const roundNames = {
+          'round16': 'Round of 16',
+          'quarterfinal': 'Quarter-final',
+          'semifinal': 'Semi-final',
+          'final': 'Final',
+          'third_place': 'Third Place Play-off'
+        }
+        return roundNames[match.round] || match.round
+      }
       if (match.round) return `Round ${match.round}`
       if (match.matchday) return `Matchday ${match.matchday}`
       return 'Tournament Match'
@@ -599,76 +689,6 @@ export default {
   font-size: 1.25rem;
 }
 
-.country-info {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.info-item:last-child {
-  border-bottom: none;
-}
-
-.info-label {
-  color: var(--gray);
-  font-weight: var(--font-weight-medium);
-}
-
-.info-value {
-  font-weight: var(--font-weight-semibold);
-  color: var(--fifa-dark-blue);
-}
-
-.performance-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-}
-
-.stat-row .stat-label {
-  color: var(--gray);
-  font-weight: var(--font-weight-medium);
-}
-
-.stat-row .stat-value {
-  font-weight: var(--font-weight-bold);
-  color: var(--fifa-dark-blue);
-}
-
-.stat-row .stat-value.wins {
-  color: #28a745;
-}
-
-.stat-row .stat-value.draws {
-  color: #ffc107;
-}
-
-.stat-row .stat-value.losses {
-  color: #dc3545;
-}
-
-.stat-row .stat-value.positive {
-  color: #28a745;
-}
-
-.stat-row .stat-value.negative {
-  color: #dc3545;
-}
 
 .empty-matches {
   text-align: center;
@@ -702,6 +722,26 @@ export default {
   border-color: rgba(40, 167, 69, 0.1);
 }
 
+.match-item.qualification {
+  background: rgba(255, 193, 7, 0.05);
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.match-item.qualification.completed {
+  background: rgba(255, 193, 7, 0.08);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.match-item.knockout {
+  background: rgba(220, 53, 69, 0.05);
+  border-color: rgba(220, 53, 69, 0.2);
+}
+
+.match-item.knockout.completed {
+  background: rgba(220, 53, 69, 0.08);
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
 .match-info {
   flex: 1;
 }
@@ -733,6 +773,21 @@ export default {
   gap: 16px;
   color: var(--gray);
   font-size: 0.9rem;
+}
+
+.match-type {
+  background: rgba(255, 193, 7, 0.2);
+  color: #e6a700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+}
+
+.match-type.knockout {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
 }
 
 .match-score {

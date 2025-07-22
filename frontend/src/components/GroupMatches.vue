@@ -80,6 +80,8 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
                   class="team-name clickable-team"
+                  @mouseenter="showTooltip($event, match.homeTeam._id, match.awayTeam._id)"
+                  @mouseleave="hideTooltip"
                 >
                   {{ match.homeTeam.countryName }}
                 </router-link>
@@ -91,14 +93,22 @@
                   <span class="score-separator">:</span>
                   <span class="away-score">{{ match.awayScore ?? '-' }}</span>
                 </div>
-                <button 
-                  v-if="match.status === 'scheduled' && !readOnly"
-                  @click="simulateMatch(match._id)"
-                  :disabled="loading"
-                  class="btn-small simulate-btn"
-                >
-                  <i class="fas fa-play"></i>
-                </button>
+                <div class="match-actions">
+                  <button 
+                    v-if="match.status === 'scheduled' && !readOnly"
+                    @click="simulateMatch(match._id)"
+                    :disabled="loading"
+                    class="btn-small simulate-btn"
+                  >
+                    <i class="fas fa-play"></i>
+                  </button>
+                  <button 
+                    @click="showMatchDetail(match)"
+                    class="btn-small detail-btn"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
               </div>
               
               <div class="team away-team">
@@ -106,32 +116,50 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
                   class="team-name clickable-team"
+                  @mouseenter="showTooltip($event, match.awayTeam._id, match.homeTeam._id)"
+                  @mouseleave="hideTooltip"
                 >
                   {{ match.awayTeam.countryName }}
                 </router-link>
               </div>
             </div>
             
-            <div v-if="match.status === 'completed'" class="match-result">
-              <span class="result-text">
-                {{ getMatchResult(match) }}
-              </span>
-              <span class="simulated-time">
-                {{ formatTime(match.simulatedAt) }}
-              </span>
+            <!-- Match Venue -->
+            <div v-if="match.city" class="match-venue">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>{{ match.city }}</span>
             </div>
+            
           </div>
         </div>
       </div>
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
+    
+    <!-- Standings Tooltip - teleported to body to avoid container positioning issues -->
+    <Teleport to="body">
+      <StandingsTooltip
+        :visible="tooltip.visible"
+        :standings="tooltip.standings"
+        :highlighted-team-id="tooltip.teamId"
+        :rival-team-id="tooltip.rivalTeamId"
+        :position="tooltip.position"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script>
+
+import StandingsTooltip from './StandingsTooltip.vue'
+
 export default {
   name: 'GroupMatches',
+  components: {
+    StandingsTooltip
+  },
+
   props: {
     tournament: {
       type: Object,
@@ -147,7 +175,15 @@ export default {
       matches: [],
       activeMatchday: 1,
       loading: false,
-      error: ''
+      error: '',
+      // Tooltip data
+      tooltip: {
+        visible: false,
+        teamId: null,
+        position: { x: 0, y: 0 },
+        standings: []
+      },
+      tooltipTimeout: null
     }
   },
   computed: {
@@ -185,6 +221,11 @@ export default {
       } catch (error) {
         console.error('Error loading matches:', error)
       }
+    },
+
+    showMatchDetail(match) {
+      // Navigate to match detail page
+      this.$router.push(`/tournament/${this.tournament._id}/match/${match._id}`)
     },
 
     async generateMatches() {
@@ -282,7 +323,14 @@ export default {
     getMatchesByMatchday(matchday) {
       return this.matches
         .filter(match => match.matchday === matchday)
-        .sort((a, b) => a.group.groupLetter.localeCompare(b.group.groupLetter))
+        .sort((a, b) => {
+          // First sort by group letter
+          const groupCompare = a.group.groupLetter.localeCompare(b.group.groupLetter)
+          if (groupCompare !== 0) return groupCompare
+          
+          // Then sort by match ID to ensure stable sort order
+          return a._id.localeCompare(b._id)
+        })
     },
 
     getMatchdayStatus(matchday) {
@@ -296,18 +344,99 @@ export default {
       return matchdayMatches.length > 0 && matchdayMatches.every(match => match.status === 'completed')
     },
 
-    getMatchResult(match) {
-      if (match.homeScore > match.awayScore) {
-        return `${match.homeTeam.countryName} wins`
-      } else if (match.homeScore < match.awayScore) {
-        return `${match.awayTeam.countryName} wins`
-      } else {
-        return 'Draw'
+    // Tooltip methods
+    async showTooltip(event, teamId, rivalTeamId = null) {
+      if (!teamId) return
+      
+      // Clear any existing timeout
+      if (this.tooltipTimeout) {
+        clearTimeout(this.tooltipTimeout)
+        this.tooltipTimeout = null
       }
+      
+      // Get standings for the team's group
+      const standings = await this.getStandingsForTeam(teamId)
+      if (!standings || standings.length === 0) return
+      
+      // Position near where you hover
+      this.tooltip = {
+        visible: true,
+        teamId: teamId,
+        rivalTeamId: rivalTeamId,
+        position: {
+          x: event.clientX + 15,  // 15px to the right of mouse
+          y: event.clientY - 40   // 40px above mouse
+        },
+        standings: standings
+      }
+      
+      // Auto-hide after 5 seconds
+      this.tooltipTimeout = setTimeout(() => {
+        this.hideTooltip()
+      }, 5000)
     },
+    
+    hideTooltip() {
+      // Clear any existing timeout
+      if (this.tooltipTimeout) {
+        clearTimeout(this.tooltipTimeout)
+        this.tooltipTimeout = null
+      }
+      
+      this.tooltip.visible = false
+      this.tooltip.teamId = null
+    },
+    
+    async getStandingsForTeam(teamId) {
+      if (!teamId || !this.tournament._id) return []
+      
+      try {
+        // Find the team in current matches to get the group
+        const teamMatch = this.matches.find(match => 
+          match.homeTeam._id === teamId || match.awayTeam._id === teamId
+        )
+        
+        if (!teamMatch) return []
+        
+        const groupId = teamMatch.group._id
+        
+        // Fetch group standings from API
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/standings`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const allStandings = await response.json()
+          // Filter standings for the specific group and transform data
+          const groupStandings = allStandings
+            .filter(standing => standing.group._id === groupId)
+            .map(standing => ({
+              teamId: standing.team._id,
+              name: standing.team.countryName,
+              flag: standing.team.countryFlag,
+              played: standing.played || 0,
+              points: standing.points || 0
+            }))
+          
+          return groupStandings
+        }
+        
+        return []
+      } catch (error) {
+        console.error('Error fetching group standings:', error)
+        return []
+      }
+    }
 
-    formatTime(dateString) {
-      return new Date(dateString).toLocaleTimeString()
+  },
+  beforeUnmount() {
+    // Clean up any pending tooltip timeout
+    if (this.tooltipTimeout) {
+      clearTimeout(this.tooltipTimeout)
+      this.tooltipTimeout = null
     }
   }
 }
@@ -404,15 +533,15 @@ export default {
 
 .matches-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .match-card {
   background: var(--white);
   border: 1px solid rgba(0, 102, 204, 0.1);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border-radius: var(--radius-md);
+  padding: 12px;
   transition: all 0.3s ease;
 }
 
@@ -430,47 +559,64 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .group-label {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-blue);
   background: rgba(0, 102, 204, 0.1);
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .match-status {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--gray);
+}
+
+.match-venue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 102, 204, 0.1);
+  color: var(--gray);
+  font-size: 0.75rem;
+}
+
+.match-venue i {
+  color: var(--fifa-blue);
+  font-size: 0.7rem;
 }
 
 .match-teams {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .team {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
 }
 
 .team-flag {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .team-name {
   font-weight: var(--font-weight-semibold);
   color: var(--fifa-dark-blue);
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 .clickable-team {
@@ -494,15 +640,21 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin: 0 20px;
+  gap: 4px;
+  margin: 0 12px;
+}
+
+.match-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .score-display {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.5rem;
+  gap: 6px;
+  font-size: 1.2rem;
   font-weight: var(--font-weight-bold);
   color: var(--fifa-dark-blue);
 }
@@ -515,10 +667,10 @@ export default {
   background: var(--fifa-blue);
   color: var(--white);
   border: none;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   transition: all 0.3s ease;
 }
 
@@ -531,23 +683,21 @@ export default {
   cursor: not-allowed;
 }
 
-.match-result {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+.detail-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.3s ease;
 }
 
-.result-text {
-  font-weight: var(--font-weight-semibold);
-  color: var(--fifa-green);
+.detail-btn:hover {
+  background: #00aa44;
 }
 
-.simulated-time {
-  font-size: 0.8rem;
-  color: var(--gray);
-}
 
 .error-message {
   color: var(--fifa-red);
@@ -572,15 +722,27 @@ export default {
 
   .matches-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
-  .match-teams {
-    flex-direction: column;
-    gap: 16px;
+  .match-card {
+    padding: 10px;
+  }
+
+  .team-flag {
+    font-size: 1.2rem;
+  }
+
+  .team-name {
+    font-size: 0.7rem;
+  }
+
+  .score-display {
+    font-size: 1rem;
   }
 
   .match-score {
-    margin: 0;
+    margin: 0 8px;
   }
 }
 </style>

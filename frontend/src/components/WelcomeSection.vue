@@ -9,43 +9,69 @@
         <h2>Ready for kickoff, {{ username }}?</h2>
         <p>Experience the ultimate World Cup simulation with authentic teams, real statistics, and legendary moments waiting to be created.</p>
         
-        <div v-if="lastTournament" class="last-tournament-info">
-          <div class="tournament-badge">
-            <span class="country-flag">{{ getCountryFlag(lastTournament.hostCountryCode) }}</span>
-            <div class="tournament-details">
-              <h4>{{ lastTournament.name }}</h4>
-              <p>{{ lastTournament.hostCountry }} • {{ formatStatus(lastTournament.status) }}</p>
-              <div class="tournament-stats">
-                <span class="team-count">{{ lastTournament.teamCount || 0 }}/{{ lastTournament.settings?.maxTeams || 32 }} Teams</span>
-                <span v-if="lastTournament.canActivate" class="ready-badge">
-                  <i class="fas fa-check-circle"></i>
-                  Ready
-                </span>
-                <span v-else class="not-ready-badge">
-                  <i class="fas fa-clock"></i>
-                  {{ (lastTournament.settings?.maxTeams || 32) - (lastTournament.teamCount || 0) }} teams needed
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="quick-actions">
-            <button @click="continueTournament" class="btn-primary action-btn">
-              <i class="fas fa-play"></i>
-              Continue Tournament
-            </button>
-          </div>
-        </div>
-        <div v-else class="quick-actions">
-          <button @click="createTournament" class="btn-primary action-btn">
-            <i class="fas fa-plus"></i>
-            Create Tournament
-          </button>
-        </div>
       </div>
       
       <div class="hero-visual">
         <div class="trophy-icon">
           <i class="fas fa-trophy"></i>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Access Tiles -->
+    <div class="quick-access-section">
+      <h3>Quick Access</h3>
+      <div class="tiles-grid">
+        <!-- Last World Tile -->
+        <div class="access-tile glass-white" @click="continueLastWorld" :class="{ 'disabled': !lastWorld }">
+          <div class="tile-icon world-icon">
+            <i class="fas fa-globe"></i>
+          </div>
+          <div class="tile-content">
+            <h4>Continue Last World</h4>
+            <div v-if="lastWorld" class="tile-info">
+              <p class="world-name">{{ lastWorld.name }}</p>
+              <div class="world-stats">
+                <span class="world-year">{{ lastWorld.beginningYear }}</span>
+                <span class="separator">•</span>
+                <span class="tournament-count">{{ lastWorld.tournaments?.length || 0 }} tournaments</span>
+              </div>
+            </div>
+            <div v-else class="tile-info no-data">
+              <p>No worlds created yet</p>
+              <small>Create your first world to get started</small>
+            </div>
+          </div>
+          <div class="tile-action">
+            <i class="fas fa-arrow-right"></i>
+          </div>
+        </div>
+
+        <!-- Last Tournament Tile -->
+        <div class="access-tile glass-white" @click="continueLastTournament" :class="{ 'disabled': !lastTournament }">
+          <div class="tile-icon tournament-icon">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="tile-content">
+            <h4>Continue Last Tournament</h4>
+            <div v-if="lastTournament" class="tile-info">
+              <p class="tournament-name">{{ lastTournament.name }}</p>
+              <div class="tournament-stats">
+                <span class="host-info">
+                  {{ getCountryFlag(lastTournament.hostCountryCode) }} {{ lastTournament.hostCountry }}
+                </span>
+                <span class="separator">•</span>
+                <span class="status">{{ formatStatus(lastTournament.status) }}</span>
+              </div>
+            </div>
+            <div v-else class="tile-info no-data">
+              <p>No tournaments created yet</p>
+              <small>Create your first tournament to get started</small>
+            </div>
+          </div>
+          <div class="tile-action">
+            <i class="fas fa-arrow-right"></i>
+          </div>
         </div>
       </div>
     </div>
@@ -65,11 +91,13 @@ export default {
   data() {
     return {
       lastTournament: null,
+      lastWorld: null,
       countries: []
     }
   },
   mounted() {
     this.loadLastTournament()
+    this.loadLastWorld()
     this.loadCountries()
   },
   methods: {
@@ -90,6 +118,27 @@ export default {
       }
     },
     
+    async loadLastWorld() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:3001/api/worlds', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Get the most recently created world
+          if (data.data && data.data.length > 0) {
+            this.lastWorld = data.data[0] // Already sorted by createdAt desc
+          }
+        }
+      } catch (error) {
+        console.error('Error loading last world:', error)
+      }
+    },
+
     async loadCountries() {
       try {
         const response = await fetch('http://localhost:3001/api/tournaments/countries')
@@ -109,6 +158,22 @@ export default {
     
     createTournament() {
       this.$router.push('/tournaments')
+    },
+
+    continueLastWorld() {
+      if (this.lastWorld) {
+        this.$router.push(`/worlds/${this.lastWorld._id}`)
+      } else {
+        this.$router.push('/worlds')
+      }
+    },
+
+    continueLastTournament() {
+      if (this.lastTournament) {
+        this.$router.push(`/tournament/${this.lastTournament._id}`)
+      } else {
+        this.$router.push('/tournaments')
+      }
     },
     
     getCountryFlag(countryCode) {
@@ -279,6 +344,147 @@ export default {
   filter: drop-shadow(0 10px 30px rgba(255, 215, 0, 0.3));
 }
 
+/* Quick Access Tiles */
+.quick-access-section {
+  margin-top: 40px;
+}
+
+.quick-access-section h3 {
+  color: var(--white);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.access-tile {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.access-tile:not(.disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.access-tile.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.access-tile.disabled:hover {
+  transform: none;
+}
+
+.tile-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.world-icon {
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+}
+
+.tournament-icon {
+  background: linear-gradient(135deg, var(--fifa-gold), #FFE55C);
+  color: var(--fifa-dark-blue);
+}
+
+.tile-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tile-content h4 {
+  color: var(--fifa-dark-blue);
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 8px 0;
+}
+
+.tile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.world-name,
+.tournament-name {
+  color: var(--fifa-blue);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.world-stats,
+.tournament-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--gray);
+  flex-wrap: wrap;
+}
+
+.separator {
+  opacity: 0.5;
+}
+
+.host-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.no-data {
+  opacity: 0.7;
+}
+
+.no-data p {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin: 0 0 4px 0;
+}
+
+.no-data small {
+  color: rgba(108, 117, 125, 0.8);
+  font-size: 0.75rem;
+}
+
+.tile-action {
+  color: var(--fifa-blue);
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.access-tile:not(.disabled):hover .tile-action {
+  transform: translateX(4px);
+  color: var(--fifa-dark-blue);
+}
 
 @media (max-width: 1024px) {
   .hero-card {

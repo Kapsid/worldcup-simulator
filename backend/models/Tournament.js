@@ -25,11 +25,122 @@ const tournamentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  worldId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'World',
+    required: false
+  },
+  year: {
+    type: Number,
+    required: false,
+    min: 1900,
+    max: 2200
+  },
   status: {
     type: String,
-    enum: ['draft', 'active', 'completed', 'cancelled'],
+    enum: ['draft', 'active', 'completed', 'cancelled', 'qualification_complete'],
     default: 'draft'
   },
+  type: {
+    type: String,
+    enum: ['manual', 'qualification'],
+    required: true
+  },
+  mascot: {
+    name: {
+      type: String,
+      required: false
+    },
+    imageUrl: {
+      type: String,
+      required: false
+    },
+    description: {
+      type: String,
+      required: false
+    },
+    personality: {
+      type: String,
+      required: false
+    },
+    backstory: {
+      type: String,
+      required: false
+    }
+  },
+  logo: {
+    imageUrl: {
+      type: String,
+      required: false
+    },
+    description: {
+      type: String,
+      required: false
+    },
+    elements: [{
+      type: String
+    }]
+  },
+  anthem: {
+    title: {
+      type: String,
+      required: false
+    },
+    lyrics: {
+      type: String,
+      required: false
+    },
+    style: {
+      type: String,
+      required: false
+    },
+    duration: {
+      type: String,
+      required: false
+    }
+  },
+  ballDesign: {
+    name: {
+      type: String,
+      required: false
+    },
+    imageUrl: {
+      type: String,
+      required: false
+    },
+    description: {
+      type: String,
+      required: false
+    },
+    designElements: {
+      pattern: String,
+      inspiration: String,
+      panelCount: Number,
+      technology: String
+    },
+    colorScheme: {
+      primary: String,
+      secondary: String,
+      accent: String,
+      description: String
+    },
+    specifications: {
+      circumference: String,
+      weight: String,
+      pressure: String,
+      technology: String
+    }
+  },
+  hostCities: [{
+    name: {
+      type: String,
+      required: true
+    },
+    isCapital: {
+      type: Boolean,
+      default: false
+    }
+  }],
   lastOpenedAt: {
     type: Date,
     default: Date.now
@@ -59,6 +170,29 @@ const tournamentSchema = new mongoose.Schema({
   canActivate: {
     type: Boolean,
     default: false
+  },
+  qualifiedTeams: [{
+    teamId: String,
+    name: String,
+    country: String,
+    flag: String,
+    confederation: String,
+    qualificationMethod: String
+  }],
+  winner: {
+    name: String,
+    code: String,
+    flag: String
+  },
+  runnerUp: {
+    name: String,
+    code: String,
+    flag: String
+  },
+  finalScore: String,
+  completedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

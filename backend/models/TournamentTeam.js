@@ -22,7 +22,7 @@ const tournamentTeamSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  fifaRanking: {
+  worldRanking: {
     type: Number,
     required: true,
     min: 1
@@ -44,6 +44,6 @@ tournamentTeamSchema.index({ tournament: 1, countryCode: 1 }, { unique: true })
 
 // Index for efficient queries
 tournamentTeamSchema.index({ tournament: 1, addedAt: 1 })
-tournamentTeamSchema.index({ tournament: 1, fifaRanking: 1 })
+tournamentTeamSchema.index({ tournament: 1, worldRanking: 1 })
 
 export default mongoose.model('TournamentTeam', tournamentTeamSchema)

@@ -38,6 +38,7 @@
             v-for="tournament in tournaments" 
             :key="tournament._id"
             class="tournament-card glass-white"
+            :class="{ 'tournament-themed': tournament?.logo?.colorScheme }"
             @click="openTournament(tournament._id)"
           >
             <div class="tournament-header-card">
@@ -108,10 +109,11 @@
         </div>
         
         <div class="modal-actions">
-          <button @click="closeDeleteModal" class="btn-secondary">
+          <button @click="closeDeleteModal" class="btn-secondary modal-btn">
+            <i class="fas fa-times"></i>
             Cancel
           </button>
-          <button @click="deleteTournament" :disabled="deleting" class="btn-danger">
+          <button @click="deleteTournament" :disabled="deleting" class="btn-danger modal-btn">
             <i v-if="deleting" class="fas fa-spinner fa-spin"></i>
             <i v-else class="fas fa-trash"></i>
             {{ deleting ? 'Deleting...' : 'Delete Tournament' }}
@@ -173,11 +175,38 @@
             <span v-if="createErrors.hostCountry" class="field-error">{{ createErrors.hostCountry }}</span>
           </div>
           
+          <div class="form-group">
+            <label for="tournamentType">Tournament Type</label>
+            <select 
+              id="tournamentType"
+              v-model="createForm.type" 
+              required
+              class="input select"
+              :class="{ 'error': createErrors.type }"
+            >
+              <option value="">Select tournament type...</option>
+              <option value="manual">Manual Team Selection</option>
+              <option value="qualification">Qualification Process</option>
+            </select>
+            <span v-if="createErrors.type" class="field-error">{{ createErrors.type }}</span>
+            <div class="type-description">
+              <p v-if="createForm.type === 'manual'" class="description-text">
+                <i class="fas fa-info-circle"></i>
+                You will manually select and add teams to the tournament
+              </p>
+              <p v-if="createForm.type === 'qualification'" class="description-text">
+                <i class="fas fa-info-circle"></i>
+                Teams will go through a qualification process to enter the tournament
+              </p>
+            </div>
+          </div>
+          
           <div class="modal-actions">
-            <button type="button" @click="closeCreateModal" class="btn-secondary">
+            <button type="button" @click="closeCreateModal" class="btn-secondary modal-btn">
+              <i class="fas fa-times"></i>
               Cancel
             </button>
-            <button type="submit" :disabled="creating" class="btn-primary">
+            <button type="submit" :disabled="creating" class="btn-primary modal-btn">
               <i v-if="creating" class="fas fa-spinner fa-spin"></i>
               <i v-else class="fas fa-plus"></i>
               {{ creating ? 'Creating...' : 'Create Tournament' }}
@@ -212,7 +241,8 @@ export default {
       createErrors: {},
       createForm: {
         name: '',
-        selectedCountryCode: ''
+        selectedCountryCode: '',
+        type: ''
       },
       showDeleteModal: false,
       tournamentToDelete: null,
@@ -285,6 +315,10 @@ export default {
         this.createErrors.hostCountry = 'Please select a host country'
       }
       
+      if (!this.createForm.type) {
+        this.createErrors.type = 'Please select a tournament type'
+      }
+      
       return Object.keys(this.createErrors).length === 0
     },
     
@@ -309,7 +343,8 @@ export default {
           body: JSON.stringify({
             name: this.createForm.name,
             hostCountry: selectedCountry.name,
-            hostCountryCode: selectedCountry.code
+            hostCountryCode: selectedCountry.code,
+            type: this.createForm.type
           })
         })
         
@@ -368,7 +403,8 @@ export default {
       this.showCreateModal = false
       this.createForm = {
         name: '',
-        selectedCountryCode: ''
+        selectedCountryCode: '',
+        type: ''
       }
       this.createErrors = {}
       this.createError = ''
@@ -764,10 +800,12 @@ export default {
 .modal-actions {
   display: flex;
   gap: 16px;
-  margin-top: 32px;
+  margin-top: 0;
+  padding: 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.modal-actions button {
+.modal-btn {
   flex: 1;
   height: 48px;
   font-size: 1rem;
@@ -775,6 +813,12 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  padding: 12px 24px;
 }
 
 .error-message {
@@ -794,7 +838,7 @@ export default {
 }
 
 .modal-content {
-  padding: 0 24px;
+  padding: 0 24px 24px 24px;
   text-align: center;
 }
 
@@ -834,6 +878,23 @@ export default {
 .btn-danger:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.type-description {
+  margin-top: 8px;
+}
+
+.description-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fifa-blue);
+  font-size: 0.85rem;
+  background: rgba(0, 102, 204, 0.1);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--fifa-blue);
+  margin: 0;
 }
 
 @media (max-width: 768px) {

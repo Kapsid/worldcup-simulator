@@ -45,6 +45,10 @@ const matchSchema = new mongoose.Schema({
   simulatedAt: {
     type: Date,
     default: null
+  },
+  city: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true

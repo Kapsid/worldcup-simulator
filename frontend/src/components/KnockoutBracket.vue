@@ -28,16 +28,6 @@
           <i v-else class="fas fa-fast-forward"></i>
           {{ tournamentCompleted ? 'Tournament Completed' : 'Simulate All Rounds' }}
         </button>
-        <button 
-          v-if="bracket.matches"
-          @click="fixBracket" 
-          :disabled="loading"
-          class="btn-warning"
-        >
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-wrench"></i>
-          Fix Bracket
-        </button>
       </div>
     </div>
 
@@ -96,7 +86,10 @@
             >
               <div class="match-header">
                 <span class="match-label">{{ getMatchLabel(match) }}</span>
-                <span class="match-status">{{ match.status }}</span>
+                <span class="match-city" v-if="match.city">
+                  <i class="fas fa-map-marker-alt"></i>
+                  {{ match.city }}
+                </span>
               </div>
               
               <div class="match-teams">
@@ -125,14 +118,22 @@
                 
                 <div class="vs-divider">
                   <span class="vs-text">VS</span>
-                  <button 
-                    v-if="match.status === 'ready' && !readOnly"
-                    @click="simulateMatch(match._id)"
-                    :disabled="loading"
-                    class="btn-small simulate-btn"
-                  >
-                    <i class="fas fa-play"></i>
-                  </button>
+                  <div class="match-actions">
+                    <button 
+                      v-if="match.status === 'ready' && !readOnly"
+                      @click="simulateMatch(match._id)"
+                      :disabled="loading"
+                      class="btn-small simulate-btn"
+                    >
+                      <i class="fas fa-play"></i>
+                    </button>
+                    <button 
+                      @click="showMatchDetail(match)"
+                      class="btn-small detail-btn"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
                 </div>
                 
                 <div class="team" :class="{ winner: match.winner && match.winner._id === match.awayTeam?._id }">
@@ -166,6 +167,12 @@
                 <span class="decided-by">
                   {{ getDecidedByText(match.decidedBy) }}
                 </span>
+              </div>
+              
+              <!-- Match Venue -->
+              <div v-if="match.city" class="match-venue">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ match.city }}</span>
               </div>
             </div>
           </div>
@@ -227,20 +234,21 @@
             </div>
           </div>
         </div>
-        
-        <div class="fourth-place">
-          <div class="team-card">
-            <div class="team-flag">{{ finalResults.fourthPlace?.countryFlag }}</div>
-            <router-link 
-              v-if="finalResults.fourthPlace"
-              :to="`/tournament/${tournament._id}/team/${finalResults.fourthPlace._id}`"
-              class="team-name clickable-team"
-            >
-              {{ finalResults.fourthPlace.countryName }}
-            </router-link>
-            <span v-else class="team-name">TBD</span>
-            <div class="position-text">4th Place</div>
-          </div>
+      </div>
+    </div>
+
+    <!-- Final match completed - waiting to show results -->
+    <div v-if="waitingForFinalResults" class="final-match-celebration">
+      <div class="celebration-content">
+        <div class="celebration-icon">
+          <i class="fas fa-trophy"></i>
+        </div>
+        <h3>🏆 Tournament Complete! 🏆</h3>
+        <p>Preparing champion celebration...</p>
+        <div class="countdown-dots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
         </div>
       </div>
     </div>
@@ -283,7 +291,8 @@ export default {
       loading: false,
       error: '',
       tournamentCompleted: false,
-      showBracketView: false
+      showBracketView: false,
+      waitingForFinalResults: false
     }
   },
   mounted() {
@@ -304,9 +313,13 @@ export default {
           this.bracket = await response.json()
           this.activeRound = this.getFirstIncompleteRound()
           
+          console.log('Tournament status:', this.tournament.status)
           if (this.tournament.status === 'completed') {
             this.tournamentCompleted = true
+            console.log('Tournament completed, loading final results...')
             await this.loadFinalResults()
+            console.log('Final results loaded:', this.finalResults)
+            console.log('tournamentCompleted flag:', this.tournamentCompleted)
           }
         }
       } catch (error) {
@@ -376,11 +389,18 @@ export default {
 
         if (response.ok) {
           await this.loadBracket()
-          this.$emit('match-simulated')
           
           if (this.tournament.status === 'completed') {
-            this.tournamentCompleted = true
-            await this.loadFinalResults()
+            // Tournament just completed! Give user time to see the final match result
+            console.log('🏆 Tournament completed! Showing final match result before celebration...')
+            this.waitingForFinalResults = true
+            
+            // Wait 4 seconds to let user appreciate the final match result
+            setTimeout(async () => {
+              this.waitingForFinalResults = false
+              this.tournamentCompleted = true
+              await this.loadFinalResults()
+            }, 4000)
           }
         } else {
           this.error = data.error || 'Failed to simulate match'
@@ -519,43 +539,14 @@ export default {
       }
     },
 
-    async fixBracket() {
-      if (!confirm('This will fix the bracket advancement logic. Are you sure you want to continue?')) {
-        return
-      }
-
-      this.loading = true
-      this.error = ''
-
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/fix`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          this.bracket = data.bracket
-          this.error = 'Bracket fixed successfully!'
-          setTimeout(() => {
-            this.error = ''
-          }, 3000)
-        } else {
-          this.error = data.error || 'Failed to fix bracket'
-        }
-      } catch (error) {
-        this.error = 'Network error. Please try again.'
-      } finally {
-        this.loading = false
-      }
-    },
 
     toggleBracketView() {
       this.showBracketView = !this.showBracketView
+    },
+
+    showMatchDetail(match) {
+      // Navigate to match detail page
+      this.$router.push(`/tournament/${this.tournament._id}/match/${match._id}`)
     }
   }
 }
@@ -708,15 +699,15 @@ export default {
 
 .matches-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 16px;
 }
 
 .knockout-match {
   background: var(--white);
   border: 1px solid rgba(0, 102, 204, 0.1);
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  border-radius: var(--radius-md);
+  padding: 16px;
   transition: all 0.3s ease;
 }
 
@@ -734,22 +725,26 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .match-label {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-blue);
-  font-size: 1.1rem;
+  font-size: 0.9rem;
 }
 
-.match-status {
-  font-size: 0.8rem;
-  color: var(--gray);
-  text-transform: uppercase;
-  padding: 4px 8px;
-  background: rgba(0, 102, 204, 0.1);
-  border-radius: 4px;
+.match-city {
+  font-size: 0.7rem;
+  color: var(--fifa-blue);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.match-city i {
+  font-size: 0.6rem;
 }
 
 .match-teams {
@@ -763,10 +758,10 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
-  padding: 16px;
-  border-radius: var(--radius-md);
+  padding: 8px;
+  border-radius: var(--radius-sm);
   transition: all 0.3s ease;
 }
 
@@ -783,13 +778,14 @@ export default {
 }
 
 .team-flag {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .team-name {
   font-weight: var(--font-weight-semibold);
   color: var(--fifa-dark-blue);
   text-align: center;
+  font-size: 0.85rem;
 }
 
 .clickable-team {
@@ -813,7 +809,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: var(--font-weight-bold);
 }
 
@@ -835,24 +831,30 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin: 0 16px;
+  gap: 4px;
+  margin: 0 8px;
 }
 
 .vs-text {
   font-weight: var(--font-weight-bold);
   color: var(--gray);
-  font-size: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.match-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .simulate-btn {
   background: var(--fifa-blue);
   color: var(--white);
   border: none;
-  padding: 8px 16px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   transition: all 0.3s ease;
 }
 
@@ -863,6 +865,21 @@ export default {
 .simulate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.detail-btn {
+  background: var(--fifa-green);
+  color: var(--white);
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.3s ease;
+}
+
+.detail-btn:hover {
+  background: #00aa44;
 }
 
 .match-result {
@@ -876,6 +893,23 @@ export default {
 .result-text {
   font-weight: var(--font-weight-bold);
   color: var(--fifa-green);
+}
+
+.match-venue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 102, 204, 0.1);
+  color: var(--gray);
+  font-size: 0.8rem;
+}
+
+.match-venue i {
+  color: var(--fifa-blue);
+  font-size: 0.75rem;
 }
 
 .decided-by {
@@ -983,20 +1017,6 @@ export default {
   font-size: 1.5rem;
 }
 
-.fourth-place {
-  display: flex;
-  justify-content: center;
-}
-
-.fourth-place .team-card {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.position-text {
-  font-size: 0.9rem;
-  color: var(--gray);
-  font-weight: var(--font-weight-semibold);
-}
 
 @keyframes bounce {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
@@ -1045,6 +1065,104 @@ export default {
 
   .podium-position {
     order: unset !important;
+  }
+}
+
+/* Final match celebration overlay */
+.final-match-celebration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: celebrationFadeIn 0.5s ease-out;
+}
+
+.celebration-content {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  padding: 3rem;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: celebrationScale 0.6s ease-out;
+}
+
+.celebration-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #ffd700;
+  animation: trophyRotate 2s ease-in-out infinite;
+}
+
+.celebration-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.celebration-content p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.countdown-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.countdown-dots .dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.countdown-dots .dot:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.countdown-dots .dot:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes celebrationFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes celebrationScale {
+  0% { 
+    opacity: 0;
+    transform: scale(0.8) translateY(50px);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes trophyRotate {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(-10deg) scale(1.1); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { 
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.3);
   }
 }
 </style>

@@ -418,7 +418,50 @@ export default {
 
     getTeamCode(team) {
       if (!team || !team.countryName) return 'TBD'
-      return this.countryCodes[team.countryName] || team.countryName.substring(0, 3).toUpperCase()
+      const teamCode = this.countryCodes[team.countryName] || team.countryName.substring(0, 3).toUpperCase()
+      const groupPosition = this.getGroupPosition(team)
+      return groupPosition ? `${teamCode} (${groupPosition})` : teamCode
+    },
+
+    getGroupPosition(team) {
+      if (!team || !team.countryName) return null
+      
+      // Standard World Cup bracket arrangement:
+      // Round of 16 matches follow specific group arrangement
+      // Match 1: A1 vs B2, Match 2: C1 vs D2, Match 3: E1 vs F2, Match 4: G1 vs H2
+      // Match 5: B1 vs A2, Match 6: D1 vs C2, Match 7: F1 vs E2, Match 8: H1 vs G2
+      
+      const r16Matches = this.getRoundMatches('round16')
+      
+      // Find the team in Round of 16 matches to determine their group position
+      for (let i = 0; i < r16Matches.length; i++) {
+        const match = r16Matches[i]
+        const matchPosition = match.matchPosition || (i + 1)
+        
+        if (match.homeTeam && match.homeTeam.countryName === team.countryName) {
+          return this.getGroupPositionFromMatchPosition(matchPosition, 'home')
+        } else if (match.awayTeam && match.awayTeam.countryName === team.countryName) {
+          return this.getGroupPositionFromMatchPosition(matchPosition, 'away')
+        }
+      }
+      
+      return null
+    },
+
+    getGroupPositionFromMatchPosition(matchPosition, homeAway) {
+      // Standard World Cup bracket positioning
+      const groupPositions = {
+        1: { home: 'A1', away: 'B2' },
+        2: { home: 'C1', away: 'D2' },
+        3: { home: 'E1', away: 'F2' },
+        4: { home: 'G1', away: 'H2' },
+        5: { home: 'B1', away: 'A2' },
+        6: { home: 'D1', away: 'C2' },
+        7: { home: 'F1', away: 'E2' },
+        8: { home: 'H1', away: 'G2' }
+      }
+      
+      return groupPositions[matchPosition] ? groupPositions[matchPosition][homeAway] : null
     },
 
     isWinner(match, team) {

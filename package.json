@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "simple-update-notifier": "^2.0.0"
   }
 }
