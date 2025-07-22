@@ -272,7 +272,10 @@ export default {
         const data = await response.json()
 
         if (response.ok) {
+          // Preserve current matchday when simulating individual matches
+          const currentMatchday = this.activeMatchday
           await this.loadMatches()
+          this.activeMatchday = currentMatchday
           this.$emit('match-simulated')
         } else {
           this.error = data.error || 'Failed to simulate match'

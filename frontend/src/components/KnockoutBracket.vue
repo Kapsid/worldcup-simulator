@@ -388,7 +388,10 @@ export default {
         const data = await response.json()
 
         if (response.ok) {
+          // Preserve current round when simulating individual matches
+          const currentRound = this.activeRound
           await this.loadBracket()
+          this.activeRound = currentRound
           
           if (this.tournament.status === 'completed') {
             // Tournament just completed! Give user time to see the final match result
