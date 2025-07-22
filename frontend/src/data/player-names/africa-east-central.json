@@ -1,0 +1,135 @@
+{
+  "CAF": {
+    "country": "Central African Republic",
+    "firstNames": [
+      "Aimé", "Alexandre", "André", "Antoine", "Aristide", "Barthélemy", "Bernard", "Bruno", "Charles", "Claude",
+      "Daniel", "Denis", "Dieudonné", "Emmanuel", "Éric", "Félix", "François", "Gaston", "Georges", "Gilbert",
+      "Henri", "Hilaire", "Isaac", "Jean", "Joseph", "Laurent", "Louis", "Marcel", "Martin", "Maurice",
+      "Michel", "Nicolas", "Pascal", "Patrick", "Paul", "Philippe", "Pierre", "Raymond", "Robert", "Roger",
+      "Serge", "Sylvain", "Théodore", "Thierry", "Thomas", "Vincent", "Yves", "Zacharie", "Alain", "Baudouin",
+      "Célestin", "Dominique", "Étienne", "François", "Germain", "Hubert", "Innocent", "Jacques", "Lucien", "Norbert"
+    ],
+    "surnames": [
+      "Kaba", "Yakité", "Koyalipou", "Bangala", "Gourtay", "Tatoloum", "Youan", "Kolingba", "Bozizé", "Patassé",
+      "Dacko", "Bokassa", "Demafouth", "Gonda", "Kette", "Mboli", "Ngoupandé", "Sarandji", "Touadéra", "Ziguélé",
+      "Bangui", "Berberati", "Bouar", "Carnot", "Kaga-Bandoro", "Mbaiki", "Mobaye", "Ndélé", "Obo", "Sibut",
+      "Yakoma", "Bambari", "Birao", "Bocaranga", "Bossangoa", "Bozoum", "Gambo", "Grimari", "Kémo", "Markounda",
+      "Ouadda", "Ouango", "Paoua", "Rafai", "Zemio", "Alindao", "Bakouma", "Bangassou", "Batangafo", "Berbérati",
+      "Bimbo", "Boda", "Boganangone", "Damara", "Ippy", "Kouango", "Nana-Mambéré", "Ouham", "Sangha-Mbaéré", "Vakaga"
+    ]
+  },
+  "TCD": {
+    "country": "Chad",
+    "firstNames": [
+      "Achta", "Adam", "Ahmat", "Ali", "Amine", "Aziz", "Baba", "Bachar", "Bakari", "Brahim",
+      "Déby", "Djamel", "Djibrine", "Garba", "Hissène", "Ibrahim", "Idriss", "Mahamat", "Mohamed", "Moussa",
+      "Oumar", "Saleh", "Youssouf", "Abdallah", "Adoum", "Ahmad", "Bichara", "Daoud", "Hassan", "Haroun",
+      "Khamis", "Mahmoud", "Mustapha", "Omar", "Ramadan", "Souleymane", "Yakour", "Zakaria", "Abdelkerim", "Abakar",
+      "Djidda", "Hamid", "Khalil", "Mahamat", "Nour", "Saleh", "Tahir", "Yacine", "Abderaman", "Adoum",
+      "Haroun", "Moussa", "Ousman", "Ramzi", "Salah", "Youssef", "Acyl", "Bachar", "Cherif", "Deby"
+    ],
+    "surnames": [
+      "Déby", "Habré", "Malloum", "Oueddei", "Tombalbaye", "Kamougué", "Choua", "Lol", "Acyl", "Abdelkerim",
+      "Djamouss", "Kotoko", "Bagirmi", "Hadjerai", "Kanembu", "Zaghawa", "Sara", "Maba", "Dadjo", "Bideyat",
+      "Daza", "Kreda", "Teda", "Gorane", "Kanembou", "Boulala", "Massa", "Moussei", "Tupuri", "Gabri",
+      "Laka", "Mbay", "Ngambay", "Sar", "Kaba", "Fer", "Karo", "Somrai", "Barma", "Bilala",
+      "Kuka", "Medogo", "Migami", "Mokulu", "Mussey", "Zime", "Barein", "Gadang", "Karo", "Marba",
+      "Nancere", "Ngete", "Peve", "Zimé", "Berakou", "Dagana", "Jaya", "Kenga", "Mango", "Sokoro"
+    ]
+  },
+  "COG": {
+    "country": "Congo",
+    "firstNames": [
+      "Alain", "Albert", "Alphonse", "André", "Antoine", "Aristide", "Barthélemy", "Bernard", "Bienvenu", "Charles",
+      "Claude", "Daniel", "Denis", "Dieudonné", "Dominique", "Emmanuel", "Étienne", "Félix", "François", "Gabriel",
+      "Georges", "Germain", "Gilbert", "Henri", "Hilaire", "Innocent", "Isaac", "Jean", "Joseph", "Jules",
+      "Laurent", "Louis", "Marcel", "Martin", "Maurice", "Michel", "Nicolas", "Pascal", "Patrick", "Paul",
+      "Philippe", "Pierre", "Raymond", "Robert", "Roger", "Serge", "Simon", "Sylvain", "Théodore", "Thierry",
+      "Thomas", "Vincent", "Yves", "Zacharie", "Adolphe", "Anatole", "Barnabé", "Célestin", "Christophe", "Cyprien"
+    ],
+    "surnames": [
+      "Sassou", "Nguesso", "Lissouba", "Yhombi", "Opango", "Kolélas", "Milongo", "Poaty", "Samba", "Makélélé",
+      "Moukandjo", "Bifouma", "Ngouali", "Thievy", "Malonga", "Bouka", "Bassouamina", "Ganvoula", "Ikolo", "Mabiala",
+      "Ndockyt", "Tchimbembé", "Andzouana", "Bemba", "Diabankana", "Ebanega", "Makouta", "Massengo", "Nzolantima", "Vouama",
+      "Bakala", "Diawara", "Guela", "Itoua", "Makiesse", "Matondo", "Ndinga", "Obambou", "Poaty", "Tchicot",
+      "Akono", "Bouanga", "Dembi", "Fila", "Ibayi", "Kimbembe", "Malonga", "Niama", "Oko", "Pambou",
+      "Tchoutchoua", "Ampion", "Bassinga", "Diabankana", "Eyeghe", "Makaya", "Matsoua", "Ngoma", "Ossey", "Samba"
+    ]
+  },
+  "COD": {
+    "country": "DR Congo",
+    "firstNames": [
+      "Chancel", "Yoane", "Théo", "Arthur", "Cédric", "Gaël", "Grejohn", "Samuel", "Jonathan", "Silas",
+      "Zeno", "Meshack", "Henoc", "Aaron", "Rocky", "Edo", "Fiston", "Ngonda", "Yannick", "Jackson",
+      "Christian", "Dieumerci", "Joris", "Meschak", "Nathan", "Philemon", "Gedeon", "Arsène", "Britt", "Chris",
+      "Djos", "Exaucé", "Gloire", "Heritier", "Jephte", "Merveille", "Neeskens", "Presnel", "Zakaria", "Aldo",
+      "Beni", "Didier", "Fabrice", "Giannelli", "Herita", "Kevinho", "Mabi", "Papy", "Tresor", "Youssouf",
+      "Amale", "Chadrac", "Elisée", "Francois", "Grady", "Herve", "Joel", "Manu", "Patou", "Yves"
+    ],
+    "surnames": [
+      "Mbemba", "Wissa", "Bongonda", "Moutoussamy", "Bakambu", "Kakuta", "Yombo", "Bastien", "David", "Wanyama",
+      "Debast", "Elia", "Inonga", "Bushiri", "Bolasie", "Muleka", "Ngakia", "Mayulu", "Mulumbu", "Mulongo",
+      "Ngoy", "Tisserand", "Lokonga", "Mpenza", "Mbuyi", "Kalulu", "Kayembe", "Tshimanga", "Lilepo", "Mpoku",
+      "Mandanda", "Kebano", "Batshuayi", "Benteke", "Lukaku", "Musonda", "Boyata", "Mpanzu", "Dembele", "Ngoy",
+      "Makoun", "Mavuba", "M'Poku", "Muzalimoja", "Nangis", "Ngbakoto", "Tshiembe", "Yamfam", "Zakuani", "Zola",
+      "Assombalonga", "Castaignos", "Dendocker", "Foket", "Kana-Biyik", "Mangala", "Mpanzu", "Tshiembe", "Yamfam", "Zola"
+    ]
+  },
+  "GAB": {
+    "country": "Gabon",
+    "firstNames": [
+      "Pierre-Emerick", "Mario", "Denis", "Aaron", "André", "Axel", "Bruno", "Cédric", "David", "Emmanuel",
+      "Fabrice", "Guélor", "Henri", "Junior", "Kévin", "Lloyd", "Malick", "Nicolas", "Olivier", "Patrick",
+      "Rodrigue", "Sidney", "Yann", "Alain", "Didier", "Éric", "François", "Georges", "Hugues", "Jean",
+      "Landry", "Merlin", "Pascal", "Serge", "Anthony", "Bruno", "Christian", "Daniel", "Étienne", "Francis",
+      "Gabriel", "Hervé", "Isaac", "Joseph", "Laurent", "Michel", "Noël", "Paul", "Raymond", "Sylvain",
+      "Thierry", "Vincent", "William", "Yves", "Zacharie", "Albert", "Bernard", "Charles", "Dominique", "Félix"
+    ],
+    "surnames": [
+      "Aubameyang", "Lemina", "Bouanga", "Appiah", "Ecuele", "Manga", "Kanga", "Palun", "Oyono", "Oyongo",
+      "Poko", "Boupendza", "Allevinah", "Oyé", "Ndong", "Tandjigora", "Ebang", "Meye", "Ngouali", "Sambissa",
+      "Obiang", "Pedrinho", "Diabang", "Biyogho", "Ndouassel", "Moussounda", "Nguema", "Ovono", "Palun", "Poko",
+      "Tandjigora", "Aubameyang", "Boupendza", "Ecuele", "Kanga", "Lemina", "Manga", "Oyé", "Sambissa", "Appiah",
+      "Biyogho", "Diabang", "Ebang", "Meye", "Ndong", "Ndouassel", "Ngouali", "Moussounda", "Nguema", "Ovono",
+      "Pedrinho", "Obiang", "Allevinah", "Oyono", "Oyongo", "Bouanga", "Biteghe", "Eneme", "Kombouaré", "Moubandja"
+    ]
+  },
+  "GNQ": {
+    "country": "Equatorial Guinea",
+    "firstNames": [
+      "Emilio", "Jannick", "Carlos", "Basilio", "Josete", "Salvador", "Federico", "Pablo", "Iban", "Pedro",
+      "José", "Miguel", "Antonio", "Raúl", "Luis", "Francisco", "Manuel", "Alejandro", "Rubén", "David",
+      "Álvaro", "Daniel", "Iván", "Sergio", "Óscar", "Adrián", "Roberto", "Joaquín", "Fernando", "Gonzalo",
+      "Ricardo", "Alberto", "Rafael", "Andrés", "Enrique", "Jesús", "Jaime", "Alfonso", "Ramón", "Tomás",
+      "Guillermo", "Eduardo", "Víctor", "Agustín", "Santiago", "Ignacio", "Martín", "Lorenzo", "Esteban", "Nicolás",
+      "Juan", "Cristian", "Diego", "Gabriel", "Rodrigo", "Sebastián", "Mateo", "Lucas", "Hugo", "Bruno"
+    ],
+    "surnames": [
+      "Nsue", "Buyla", "Akapo", "Salvador", "Miranda", "Senra", "Bikoro", "Asué", "Nlavo", "Coco",
+      "Eyang", "Bacuna", "Owono", "Anvene", "Obiang", "Machín", "Siafa", "Ndong", "Ebiede", "Ganet",
+      "Iba", "Mbega", "Mokake", "Nlate", "Ondo", "Pineda", "Sapeh", "Añonma", "Bindang", "Ebwelle",
+      "Edu", "Eneme", "Epitié", "Esono", "Etogo", "Eyang", "Ganet", "Iba", "Mbega", "Mokake",
+      "Nlate", "Ondo", "Pineda", "Sapeh", "Anvene", "Añonma", "Bindang", "Ebwelle", "Edu", "Eneme",
+      "Epitié", "Esono", "Etogo", "Bikoro", "Akapo", "Asué", "Bacuna", "Coco", "Ebiede", "Machín"
+    ]
+  },
+  "KEN": {
+    "country": "Kenya",
+    "firstNames": [
+      "Michael", "Joseph", "John", "David", "James", "Daniel", "Samuel", "Peter", "Paul", "Stephen",
+      "Brian", "Collins", "Dennis", "Francis", "Geoffrey", "Harrison", "Henry", "Ian", "Kenneth", "Kevin",
+      "Lawrence", "Nicholas", "Oliver", "Patrick", "Richard", "Robert", "Timothy", "Vincent", "William", "Wilson",
+      "Antony", "Austin", "Bernard", "Charles", "Christopher", "Cliffton", "Dominic", "Edwin", "Eric", "Felix",
+      "George", "Humphrey", "Isaac", "Jacob", "Kelvin", "Leonard", "Mark", "Martin", "Moses", "Nathan",
+      "Oscar", "Philip", "Raymond", "Simon", "Thomas", "Victor", "Boniface", "Duncan", "Abdallah", "Tom"
+    ],
+    "surnames": [
+      "Otieno", "Wanyama", "Akumu", "Odhiambo", "Okello", "Ogada", "Origi", "Owuor", "Omija", "Rupia",
+      "Were", "Abila", "Ayunga", "Chuma", "Ingotsi", "Juma", "Kahata", "Khamis", "Kiprotich", "Masika",
+      "Meja", "Miheso", "Muguna", "Nondi", "Okello", "Omija", "Ouma", "Owino", "Rucha", "Shikondi",
+      "Tuyisenge", "Wanjala", "Yusuf", "Akhulia", "Beja", "Gitau", "Harambee", "Kapaito", "Kimwatu", "Matasi",
+      "Mbuyu", "Ndhine", "Ogola", "Omoto", "Seleman", "Shittu", "Situma", "Sserunkuma", "Tumwesigye", "Wadri",
+      "Walusimbi", "Waruru", "Omurwa", "Anyembe", "Odada", "Aluko", "Jeremiah", "Jonah", "Katana", "Shaban"
+    ]
+  }
+}

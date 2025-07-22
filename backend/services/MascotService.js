@@ -208,7 +208,19 @@ class MascotService {
     if (!mascotCategory.options || mascotCategory.options.length === 0) {
       // Fallback to animals if selected type not available
       const fallbackOptions = countryData.animals || mascotData.DEFAULT.animals;
-      return fallbackOptions[Math.floor(Math.random() * fallbackOptions.length)];
+      const fallbackMascot = fallbackOptions[Math.floor(Math.random() * fallbackOptions.length)];
+      
+      // Generate name components for fallback
+      const nameTemplates = this.getNameTemplates();
+      const templates = nameTemplates.animals;
+      const template = this.selectWeightedTemplate(templates);
+      const components = this.generateNameComponents('animals', countryData, { 
+        options: fallbackOptions, 
+        category: 'Animal Spirit' 
+      });
+      const name = this.applyTemplate(template, components);
+      
+      return { name, type: 'animals', category: 'Animal Spirit' };
     }
     
     // Select appropriate template for this type
@@ -404,16 +416,19 @@ class MascotService {
   }
 
   generateImageDescription(mascotData, countryCode) {
-    const { name, type, category } = mascotData;
+    const { name, type, category = 'mascot' } = mascotData;
     const country = countries.find(c => c.code === countryCode);
     const countryName = country ? country.name : 'the host nation';
     
+    // Ensure category is a string and provide fallback
+    const safeCategory = category && typeof category === 'string' ? category.toLowerCase() : 'mascot';
+    
     const typeDescriptions = {
-      animals: `a majestic ${category.toLowerCase()} representing the wildlife spirit of ${countryName}`,
-      mythical: `a legendary ${category.toLowerCase()} from the folklore of ${countryName}`,
-      cultural: `a proud ${category.toLowerCase()} embodying the heritage of ${countryName}`,
-      abstract: `a modern ${category.toLowerCase()} symbolizing the energy of ${countryName}`,
-      hybrid: `a futuristic ${category.toLowerCase()} blending tradition and innovation of ${countryName}`
+      animals: `a majestic ${safeCategory} representing the wildlife spirit of ${countryName}`,
+      mythical: `a legendary ${safeCategory} from the folklore of ${countryName}`,
+      cultural: `a proud ${safeCategory} embodying the heritage of ${countryName}`,
+      abstract: `a modern ${safeCategory} symbolizing the energy of ${countryName}`,
+      hybrid: `a futuristic ${safeCategory} blending tradition and innovation of ${countryName}`
     };
     
     return `${name} is ${typeDescriptions[type] || typeDescriptions.animals}, designed with vibrant colors and dynamic features that capture the essence of the tournament spirit.`;

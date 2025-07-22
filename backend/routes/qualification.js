@@ -143,22 +143,61 @@ router.post('/:tournamentId/simulate-matchday/:confederationId/:matchday', authe
 
 // Simulate individual match
 router.post('/:tournamentId/simulate-match', authenticateToken, async (req, res) => {
+  console.error(`🔥 ROUTE HIT: /api/qualification/${req.params.tournamentId}/simulate-match`)
+  console.error(`🔥 ROUTE BODY:`, req.body)
+  console.error(`🔥 ROUTE PARAMS:`, req.params)
+  
+  // Write to file to confirm route is hit
+  const fs = await import('fs')
+  let logMessage = `${new Date().toISOString()} - Route hit: ${req.params.tournamentId}/simulate-match - Body: ${JSON.stringify(req.body)}\n`
+  fs.appendFileSync('/tmp/backend-debug.log', logMessage)
   try {
     const { tournamentId } = req.params
     const { matchId } = req.body
+    
+    // Check player stats count BEFORE simulation
+    const PlayerStats = await import('../models/PlayerStats.js').then(m => m.default)
+    const statsCountBefore = await PlayerStats.countDocuments({})
+    console.error(`🔢 ROUTE: PlayerStats BEFORE simulation: ${statsCountBefore}`)
     
     if (!matchId) {
       return res.status(400).json({ error: 'Match ID is required' })
     }
     
-    console.log(`Simulating individual match ${matchId} for tournament ${tournamentId}`)
+    console.error(`QUALIFICATION ROUTE: Simulating individual match ${matchId} for tournament ${tournamentId}`)
+    
+    logMessage = `  -> About to call QualificationService.simulateIndividualMatch\n`
+    fs.appendFileSync('/tmp/backend-debug.log', logMessage)
     
     const result = await QualificationService.simulateIndividualMatch(tournamentId, matchId)
     
+    logMessage = `  -> QualificationService.simulateIndividualMatch completed\n`
+    fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+    console.error(`QUALIFICATION ROUTE: Individual match simulation completed for ${matchId}`)
+    
+    // Check if player stats were created AFTER simulation
+    const statsCountAfter = await PlayerStats.countDocuments({})
+    console.error(`🔢 ROUTE: PlayerStats AFTER simulation: ${statsCountAfter}`)
+    const newStatsCreated = statsCountAfter - statsCountBefore
+    console.error(`🔢 ROUTE: New PlayerStats created: ${newStatsCreated}`)
+    
+    // Write stats info to file
+    logMessage = `  -> PlayerStats BEFORE: ${statsCountBefore}, AFTER: ${statsCountAfter}, NEW: ${newStatsCreated}\n`
+    fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+    
     res.json({
       success: true,
-      message: 'Match simulated successfully',
-      match: result.match
+      message: `Match simulated successfully - ROUTE WAS HIT AT ${Date.now()}`,
+      match: result.match,
+      debug: {
+        routeHit: true,
+        timestamp: new Date().toISOString(),
+        matchId: matchId,
+        tournamentId: tournamentId,
+        playerStatsBefore: statsCountBefore,
+        playerStatsAfter: statsCountAfter,
+        newStatsCreated: newStatsCreated
+      }
     })
   } catch (error) {
     console.error('Error simulating individual match:', error)
@@ -360,5 +399,159 @@ router.post('/:tournamentId/simulate-ofc-playoff', authenticateToken, async (req
   // Redirect to generic playoff endpoint
   return res.redirect(307, `/${req.params.tournamentId}/simulate-playoff`)
 })
+
+// Get top scorers by confederation in qualification
+router.get('/:tournamentId/top-scorers/:confederationId', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId, confederationId } = req.params
+    const { limit = 20 } = req.query
+    
+    // Import PlayerStats model
+    const PlayerStats = await import('../models/PlayerStats.js').then(m => m.default)
+    const Player = await import('../models/Player.js').then(m => m.default)
+    
+    // Get all qualification stats for this tournament
+    const playerStats = await PlayerStats.find({
+      $or: [
+        { tournamentId: tournamentId },
+        { worldId: { $exists: true } } // Include worldId queries for broader coverage
+      ],
+      competitionType: 'qualification',
+      goals: { $gt: 0 } // Only players who scored
+    })
+    .populate('player')
+    .sort({ goals: -1, matchesStarted: -1 })
+    .limit(parseInt(limit) * 6) // Get more to filter by confederation
+    
+    // Filter by confederation and get player details
+    const confederationTopScorers = []
+    
+    for (const stats of playerStats) {
+      if (!stats.player) continue
+      
+      // Get full player details to check nationality/confederation
+      const fullPlayer = await Player.findById(stats.player._id)
+      if (!fullPlayer) continue
+      
+      // Determine confederation from player nationality or teamId
+      const playerConfederation = getPlayerConfederation(fullPlayer)
+      
+      if (playerConfederation === confederationId.toUpperCase()) {
+        confederationTopScorers.push({
+          player: {
+            _id: fullPlayer._id,
+            displayName: fullPlayer.displayName,
+            nationality: fullPlayer.nationality,
+            position: fullPlayer.position,
+            teamId: fullPlayer.teamId
+          },
+          goals: stats.goals,
+          matchesStarted: stats.matchesStarted,
+          matchesPlayed: stats.matchesPlayed,
+          goalsPerGame: stats.matchesPlayed > 0 ? (stats.goals / stats.matchesPlayed).toFixed(2) : 0
+        })
+        
+        if (confederationTopScorers.length >= parseInt(limit)) break
+      }
+    }
+    
+    res.json(confederationTopScorers)
+  } catch (error) {
+    console.error('Error fetching confederation top scorers:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get all confederation top scorers for tournament
+router.get('/:tournamentId/all-confederation-top-scorers', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId } = req.params
+    const { limit = 20 } = req.query
+    
+    const confederations = ['UEFA', 'CONMEBOL', 'CONCACAF', 'AFC', 'CAF', 'OFC']
+    const allConfederationStats = {}
+    
+    // Get top scorers for each confederation
+    for (const confederation of confederations) {
+      const response = await fetch(`http://localhost:3001/api/qualification/${tournamentId}/top-scorers/${confederation.toLowerCase()}?limit=${limit}`, {
+        headers: { 'Authorization': req.headers.authorization }
+      })
+      
+      if (response.ok) {
+        allConfederationStats[confederation] = await response.json()
+      } else {
+        allConfederationStats[confederation] = []
+      }
+    }
+    
+    res.json(allConfederationStats)
+  } catch (error) {
+    console.error('Error fetching all confederation top scorers:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Helper function to determine confederation from player
+function getPlayerConfederation(player) {
+  // Map common country codes to confederations
+  const confederationMap = {
+    // UEFA - Europe
+    'GER': 'UEFA', 'FRA': 'UEFA', 'ESP': 'UEFA', 'ITA': 'UEFA', 'ENG': 'UEFA', 
+    'NED': 'UEFA', 'POR': 'UEFA', 'BEL': 'UEFA', 'POL': 'UEFA', 'CRO': 'UEFA',
+    'UKR': 'UEFA', 'AUT': 'UEFA', 'CZE': 'UEFA', 'DEN': 'UEFA', 'SWE': 'UEFA',
+    'NOR': 'UEFA', 'FIN': 'UEFA', 'SUI': 'UEFA', 'SCO': 'UEFA', 'IRL': 'UEFA',
+    'WAL': 'UEFA', 'HUN': 'UEFA', 'SVK': 'UEFA', 'SVN': 'UEFA', 'SRB': 'UEFA',
+    'BIH': 'UEFA', 'MNE': 'UEFA', 'MKD': 'UEFA', 'ALB': 'UEFA', 'KOS': 'UEFA',
+    'BUL': 'UEFA', 'ROU': 'UEFA', 'GRE': 'UEFA', 'TUR': 'UEFA', 'CYP': 'UEFA',
+    'MLT': 'UEFA', 'ISL': 'UEFA', 'EST': 'UEFA', 'LVA': 'UEFA', 'LTU': 'UEFA',
+    'BLR': 'UEFA', 'MDA': 'UEFA', 'GEO': 'UEFA', 'ARM': 'UEFA', 'AZE': 'UEFA',
+    'RUS': 'UEFA',
+    
+    // CONMEBOL - South America  
+    'BRA': 'CONMEBOL', 'ARG': 'CONMEBOL', 'URU': 'CONMEBOL', 'COL': 'CONMEBOL',
+    'CHI': 'CONMEBOL', 'PER': 'CONMEBOL', 'ECU': 'CONMEBOL', 'PAR': 'CONMEBOL',
+    'BOL': 'CONMEBOL', 'VEN': 'CONMEBOL',
+    
+    // CONCACAF - North/Central America & Caribbean
+    'USA': 'CONCACAF', 'MEX': 'CONCACAF', 'CAN': 'CONCACAF', 'CRC': 'CONCACAF',
+    'PAN': 'CONCACAF', 'HON': 'CONCACAF', 'SLV': 'CONCACAF', 'GTM': 'CONCACAF',
+    'NIC': 'CONCACAF', 'BLZ': 'CONCACAF', 'JAM': 'CONCACAF', 'CUB': 'CONCACAF',
+    'HAI': 'CONCACAF', 'DOM': 'CONCACAF', 'TRI': 'CONCACAF', 'SKN': 'CONCACAF',
+    'LCA': 'CONCACAF', 'VIN': 'CONCACAF', 'GRN': 'CONCACAF', 'BRB': 'CONCACAF',
+    'ATG': 'CONCACAF', 'DMA': 'CONCACAF', 'TCA': 'CONCACAF', 'MSR': 'CONCACAF',
+    
+    // AFC - Asia
+    'JPN': 'AFC', 'KOR': 'AFC', 'IRN': 'AFC', 'AUS': 'AFC', 'SAU': 'AFC',
+    'QAT': 'AFC', 'UAE': 'AFC', 'IRQ': 'AFC', 'UZB': 'AFC', 'KGZ': 'AFC',
+    'TJK': 'AFC', 'JOR': 'AFC', 'LBN': 'AFC', 'SYR': 'AFC', 'PAL': 'AFC',
+    'OMN': 'AFC', 'BHR': 'AFC', 'KWT': 'AFC', 'YEM': 'AFC', 'IDN': 'AFC',
+    'THA': 'AFC', 'VIE': 'AFC', 'MAS': 'AFC', 'SIN': 'AFC', 'PHI': 'AFC',
+    'MYA': 'AFC', 'CAM': 'AFC', 'LAO': 'AFC', 'BRU': 'AFC', 'TLS': 'AFC',
+    'IND': 'AFC', 'AFG': 'AFC', 'BAN': 'AFC', 'BHU': 'AFC', 'MDV': 'AFC',
+    'NEP': 'AFC', 'SRI': 'AFC', 'PAK': 'AFC', 'HKG': 'AFC', 'MAC': 'AFC',
+    'TPE': 'AFC', 'CHN': 'AFC', 'PRK': 'AFC', 'MNG': 'AFC', 'GUM': 'AFC',
+    
+    // CAF - Africa
+    'NGA': 'CAF', 'SEN': 'CAF', 'MAR': 'CAF', 'TUN': 'CAF', 'ALG': 'CAF',
+    'EGY': 'CAF', 'CMR': 'CAF', 'GHA': 'CAF', 'CIV': 'CAF', 'MLI': 'CAF',
+    'BFA': 'CAF', 'GAB': 'CAF', 'CGO': 'CAF', 'ZAM': 'CAF', 'ZIM': 'CAF',
+    'RSA': 'CAF', 'KEN': 'CAF', 'UGA': 'CAF', 'TAN': 'CAF', 'ETH': 'CAF',
+    'ANG': 'CAF', 'MOZ': 'CAF', 'MAD': 'CAF', 'COM': 'CAF', 'MRI': 'CAF',
+    'SEY': 'CAF', 'LBR': 'CAF', 'SLE': 'CAF', 'GUI': 'CAF', 'CPV': 'CAF',
+    'GAM': 'CAF', 'GNB': 'CAF', 'EQG': 'CAF', 'CHA': 'CAF', 'CTA': 'CAF',
+    'SUD': 'CAF', 'SSD': 'CAF', 'ERI': 'CAF', 'DJI': 'CAF', 'SOM': 'CAF',
+    'RWA': 'CAF', 'BDI': 'CAF', 'COD': 'CAF', 'TOG': 'CAF', 'BEN': 'CAF',
+    'NIG': 'CAF', 'MWI': 'CAF', 'SWZ': 'CAF', 'LES': 'CAF', 'BOT': 'CAF',
+    'NAM': 'CAF', 'LBY': 'CAF',
+    
+    // OFC - Oceania
+    'NZL': 'OFC', 'NCL': 'OFC', 'TAH': 'OFC', 'FIJ': 'OFC', 'PNG': 'OFC',
+    'SOL': 'OFC', 'VAN': 'OFC', 'SAM': 'OFC', 'COK': 'OFC', 'TGA': 'OFC',
+    'ASA': 'OFC'
+  }
+  
+  const nationality = player.nationality || player.teamId
+  return confederationMap[nationality] || 'UNKNOWN'
+}
 
 export default router

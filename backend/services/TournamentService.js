@@ -3,6 +3,7 @@ import World from '../models/World.js'
 import WorldRankingService from './WorldRankingService.js'
 import MascotService from './MascotService.js'
 import BrandingService from './BrandingService.js'
+import PlayerGenerationService from './PlayerGenerationService.js'
 import { getCountryByCode } from '../data/countries.js'
 import { getCountryCities } from '../data/cities.js'
 
@@ -245,6 +246,28 @@ class TournamentService {
         },
         { new: true }
       )
+
+      // Generate squads for all qualified teams
+      if (tournament && qualifiedTeams && qualifiedTeams.length > 0) {
+        console.log(`Generating squads for ${qualifiedTeams.length} qualified teams...`)
+        
+        for (const team of qualifiedTeams) {
+          try {
+            await PlayerGenerationService.generateSquad(
+              team.code,
+              tournament._id.toString(),
+              tournament.worldId ? tournament.worldId.toString() : null,
+              tournament.year || new Date().getFullYear()
+            )
+            console.log(`✓ Generated squad for ${team.name}`)
+          } catch (squadError) {
+            console.error(`Error generating squad for ${team.name}:`, squadError)
+            // Continue with other teams even if one fails
+          }
+        }
+        
+        console.log('Squad generation completed for all qualified teams')
+      }
 
       return tournament
     } catch (error) {

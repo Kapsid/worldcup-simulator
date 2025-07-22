@@ -4,6 +4,7 @@ import Tournament from '../models/Tournament.js'
 import TournamentGroup from '../models/TournamentGroup.js'
 import TournamentTeam from '../models/TournamentTeam.js'
 import TournamentNewsService from './TournamentNewsService.js'
+import BasicEnhancedMatchService from './BasicEnhancedMatchService.js'
 
 class MatchService {
   async generateGroupMatches(tournamentId) {
@@ -331,7 +332,7 @@ class MatchService {
   async simulateMatch(matchId) {
     try {
       const match = await Match.findById(matchId)
-        .populate('homeTeam awayTeam')
+        .populate('homeTeam awayTeam tournament')
       
       if (!match) {
         throw new Error('Match not found')
@@ -341,6 +342,7 @@ class MatchService {
         throw new Error('Match already completed')
       }
       
+      // First simulate basic score using existing logic
       const { homeScore, awayScore } = this.simulateRealisticScore(match.homeTeam, match.awayTeam)
       
       match.homeScore = homeScore
@@ -349,6 +351,16 @@ class MatchService {
       match.simulatedAt = new Date()
       
       await match.save()
+      
+      // Now run enhanced simulation with detailed match data
+      try {
+        await BasicEnhancedMatchService.simulateBasicMatchDetails(match, 'tournament')
+        console.log(`Enhanced simulation completed for match ${matchId}`)
+      } catch (enhancedError) {
+        console.error('Enhanced simulation failed, but basic match result saved:', enhancedError)
+        // Don't fail the entire match - basic result is still valid
+      }
+      
       await this.updateStandings(match)
       await this.checkGroupStageCompletion(match.tournament)
       

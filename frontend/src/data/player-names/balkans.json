@@ -1,0 +1,97 @@
+{
+  "BIH": {
+    "country": "Bosnia and Herzegovina",
+    "firstNames": [
+      "Adnan", "Ahmed", "Amer", "Armin", "Asmir", "Avdija", "Benjamin", "Bojan", "Dino", "Dženan",
+      "Edin", "Eldar", "Elvir", "Emer", "Ermin", "Haris", "Ibrahim", "Irfan", "Kenan", "Luka",
+      "Marko", "Mehmed", "Mirza", "Muhamed", "Miralem", "Nedim", "Ognjen", "Petar", "Samir", "Sead",
+      "Semir", "Stefan", "Sulejman", "Tarik", "Vedran", "Vedad", "Zlatan", "Zoran", "Adis", "Aldin",
+      "Amel", "Amil", "Amir", "Anur", "Boris", "Damir", "Danijel", "Darko", "Elvis", "Faruk",
+      "Gojko", "Hasan", "Igor", "Jasmin", "Kristijan", "Milan", "Nihad", "Rade", "Sanel", "Vahid"
+    ],
+    "surnames": [
+      "Hodžić", "Muratović", "Halilović", "Osmanović", "Ramić", "Hadzic", "Begić", "Salihović", "Ibrahimović", "Mustafić",
+      "Dautović", "Softić", "Dizdarević", "Fejzić", "Gojković", "Hasanović", "Jašarević", "Kahvić", "Kovačević", "Lukić",
+      "Mehmedović", "Nikolic", "Obradović", "Popović", "Radović", "Stanić", "Stojanović", "Šarić", "Terzić", "Uzunović",
+      "Vranešević", "Zukić", "Ahmetović", "Beganović", "Čolić", "Dodik", "Efendić", "Fajić", "Grković", "Hatibović",
+      "Imamović", "Jukić", "Kamenković", "Latić", "Marković", "Numanović", "Omerović", "Petrović", "Resulović", "Smajić",
+      "Tatar", "Velagić", "Zukanović", "Ahmedhodzic", "Kolasinac", "Pjanic", "Dzeko", "Kodro", "Prevljak", "Civic"
+    ]
+  },
+  "MNE": {
+    "country": "Montenegro",
+    "firstNames": [
+      "Aleksandar", "Andrija", "Boris", "Darko", "Dejan", "Dušan", "Filip", "Goran", "Igor", "Ivan",
+      "Jovan", "Luka", "Marko", "Miloš", "Mirko", "Nemanja", "Nikola", "Petar", "Predrag", "Radovan",
+      "Saša", "Stefan", "Stevan", "Uroš", "Vasilije", "Veljko", "Viktor", "Vladimir", "Vuk", "Žarko",
+      "Bojan", "Bogdan", "Branko", "Danilo", "Dario", "Denis", "Đorđe", "Dragan", "Dražen", "Dušan",
+      "Emir", "Lazar", "Marijan", "Matija", "Milan", "Miljan", "Milutin", "Miodrag", "Nebojša", "Nenad",
+      "Novak", "Ognjen", "Ratko", "Risto", "Slobodan", "Srđan", "Strahinja", "Tijana", "Vojo", "Zoran"
+    ],
+    "surnames": [
+      "Popović", "Nikolić", "Jovanović", "Petrović", "Marković", "Stojanović", "Đurović", "Milošević", "Božović", "Vukčević",
+      "Radović", "Stanković", "Pavlović", "Đukanović", "Simić", "Kostić", "Ristić", "Savić", "Vasić", "Ilić",
+      "Vujović", "Tomašević", "Vuković", "Andrić", "Bajić", "Bogdanović", "Čvorović", "Đukić", "Eraković", "Filipović",
+      "Grbić", "Hrkac", "Injac", "Janković", "Knežević", "Lazović", "Mandić", "Nišić", "Obradović", "Perović",
+      "Rajević", "Sekularac", "Tadić", "Uzunović", "Vešović", "Zogović", "Šćepanović", "Žugić", "Baošić", "Ćetković",
+      "Dragićević", "Garić", "Hadzibegic", "Ivanović", "Krstajić", "Luković", "Milić", "Ostojić", "Pejović", "Raičević"
+    ]
+  },
+  "MKD": {
+    "country": "North Macedonia",
+    "firstNames": [
+      "Aleksandar", "Andrej", "Angel", "Boban", "Bojan", "Darko", "Dejan", "Dimitar", "Dušan", "Goran",
+      "Igor", "Ivan", "Jovan", "Kristijan", "Ljupcho", "Marko", "Martin", "Milan", "Mirko", "Nikola",
+      "Oliver", "Petar", "Robert", "Stefan", "Stojan", "Trajče", "Vančo", "Velimir", "Viktor", "Vlado",
+      "Zlatko", "Zoran", "Aleksandar", "Blagoja", "Branko", "Daniel", "Denis", "Đorče", "Emil", "Filip",
+      "Gjoko", "Hristo", "Ilija", "Jani", "Kiril", "Ljuben", "Mile", "Mime", "Nikolče", "Pero",
+      "Risto", "Saše", "Tome", "Vanče", "Vlade", "Zoran", "Žarko", "Ace", "Bone", "Done"
+    ],
+    "surnames": [
+      "Popovski", "Nikolovski", "Stojkovski", "Petrovski", "Trajkovski", "Jankulovski", "Mitrovski", "Stefanovski", "Angelovski", "Jovanovski",
+      "Kostovski", "Georgievski", "Dimovski", "Marković", "Ristovski", "Spasovski", "Veljkovski", "Zdravkovski", "Božinovski", "Cvetanovski",
+      "Danilov", "Efremovski", "Filipovski", "Gjorgievski", "Hristovski", "Ilievski", "Jankovski", "Kotevski", "Lazarevski", "Mladenovski",
+      "Najdovski", "Ognenovski", "Petkov", "Ristevski", "Serafimovski", "Todorov", "Uzunov", "Vasilev", "Zlatanovski", "Žigovski",
+      "Ademi", "Bardhi", "Churlinov", "Dimitrievski", "Elmas", "Gligorov", "Hasani", "Iljazovski", "Jakimovski", "Kostadinov",
+      "Musliu", "Nestorovski", "Pandev", "Radovanovic", "Spirovski", "Trajkovski", "Velkoski", "Zajkov", "Ashkovski", "Bejtulai"
+    ]
+  },
+  "ALB": {
+    "country": "Albania",
+    "firstNames": [
+      "Agim", "Alban", "Arben", "Armando", "Besar", "Blerim", "Donat", "Drilon", "Elseid", "Endri",
+      "Ergys", "Ermal", "Etrit", "Flamur", "Gentian", "Hysen", "Indrit", "Ismael", "Klaus", "Ledian",
+      "Lorik", "Myrto", "Nedim", "Odise", "Qazim", "Redon", "Rexhep", "Sabien", "Saimir", "Taulant",
+      "Valbon", "Ylber", "Armend", "Besnik", "Bujar", "Dritan", "Endrit", "Florim", "Gent", "Hekuran",
+      "Ilir", "Jetmir", "Klodian", "Luan", "Mentor", "Naser", "Olsi", "Pellumb", "Renato", "Shkëlzen",
+      "Tedi", "Valon", "Xhevdet", "Altin", "Bashkim", "Edi", "Flamur", "Gentian", "Ilir", "Kristjan"
+    ],
+    "surnames": [
+      "Hoxha", "Gjoka", "Berisha", "Krasniqi", "Ahmeti", "Rama", "Duka", "Basha", "Shehi", "Zeneli",
+      "Roshi", "Brahimi", "Hysaj", "Strakosha", "Veseli", "Ismajli", "Balliu", "Bare", "Abrashi", "Gjasula",
+      "Memushaj", "Trashi", "Uzuni", "Bajrami", "Asllani", "Djimsiti", "Dermaku", "Mitrushi", "Cikalleshi", "Kace",
+      "Lenjani", "Muslija", "Nuhiu", "Sahiti", "Vojvoda", "Kastrati", "Lila", "Hasani", "Muçi", "Seferi",
+      "Broja", "Manaj", "Hoxhallari", "Laçi", "Mitaj", "Ramadani", "Tuci", "Aliji", "Bajraktari", "Maloku",
+      "Muriqi", "Rashani", "Rrahmani", "Kastrati", "Lenjani", "Hyseni", "Grezda", "Balaj", "Jahaj", "Kumbulla"
+    ]
+  },
+  "XKX": {
+    "country": "Kosovo",
+    "firstNames": [
+      "Adem", "Afrim", "Agim", "Alban", "Arber", "Arbnor", "Ardian", "Arian", "Armend", "Artan",
+      "Besar", "Blerim", "Bujar", "Dardan", "Driton", "Edon", "Elvir", "Endrit", "Ermal", "Faton",
+      "Fisnik", "Flamur", "Florent", "Genti", "Ilir", "Ismet", "Liridon", "Lorik", "Mensur", "Milot",
+      "Muharrem", "Njomza", "Ognjen", "Qendrim", "Ramiz", "Rial", "Shkodran", "Taulant", "Valon", "Vedat",
+      "Xhevdet", "Ylber", "Zenun", "Albert", "Andi", "Betim", "Dren", "Elvis", "Gentrit", "Hekuran",
+      "Jetmir", "Kreshnik", "Labinot", "Mergim", "Naser", "Olsi", "Përparim", "Rame", "Sabit", "Valmir"
+    ],
+    "surnames": [
+      "Berisha", "Krasniqi", "Ahmeti", "Hasani", "Rama", "Musliu", "Zeneli", "Rrahmani", "Rashani", "Muriqi",
+      "Shala", "Kastrati", "Lenjani", "Gashi", "Sahiti", "Bajrami", "Rexhepi", "Ibrahimi", "Hyseni", "Sylejmani",
+      "Veseli", "Pnishi", "Vojvoda", "Kamberi", "Xhaka", "Dzemaili", "Kololli", "Kryeziu", "Hadergjonaj", "Celina",
+      "Rashica", "Zhegrova", "Muçollari", "Nuhiu", "Kabashi", "Llullaku", "Paqarada", "Halimi", "Kelmendi", "Berisha",
+      "Dresevic", "Aliti", "Rrudhani", "Hoti", "Voca", "Cuculi", "Korenica", "Baftiu", "Rexhaj", "Gashi",
+      "Ismaili", "Muslija", "Pnishi", "Rashani", "Zekaj", "Berisha", "Krasniqi", "Ahmeti", "Hasani", "Musliu"
+    ]
+  }
+}

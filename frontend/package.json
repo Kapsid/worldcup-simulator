@@ -8,6 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dicebear/collection": "^9.2.3",
+    "@dicebear/core": "^9.2.3",
     "leaflet": "^1.9.4",
     "vue": "^3.4.0",
     "vue-leaflet": "^0.1.0",

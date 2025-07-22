@@ -1,0 +1,193 @@
+{
+  "BFA": {
+    "country": "Burkina Faso",
+    "firstNames": [
+      "Abdoul", "Adama", "Ali", "Amadou", "Bertrand", "Brahima", "Cedric", "Dango", "Ernest", "Fabrice",
+      "Gustave", "Hassane", "Ibrahim", "Issouf", "Karim", "Lassina", "Mohamed", "Moussa", "Ousmane", "Paul",
+      "Razack", "Salif", "Steeve", "Tanguy", "Yacouba", "Abdoulaye", "Alain", "Boubacar", "Cyrille", "Djibril",
+      "Edmond", "Firmin", "Habib", "Issa", "Jonathan", "Kassoum", "Laurent", "Malik", "Noel", "Patrick",
+      "Salidou", "Souleymane", "Tiziano", "Willy", "Zakaria", "Abel", "Boureima", "Charles", "Dramane", "Eric",
+      "Franck", "Gerard", "Hamidou", "Idrissa", "Jules", "Kader", "Lucien", "Mamadou", "Omar", "Romaric"
+    ],
+    "surnames": [
+      "Traore", "Ouedraogo", "Sawadogo", "Kabore", "Zongo", "Ouattara", "Compaore", "Tapsoba", "Yameogo", "Kone",
+      "Sangaré", "Dembélé", "Diallo", "Coulibaly", "Koné", "Barry", "Barro", "Bationo", "Bazié", "Dakoure",
+      "Gandé", "Ilboudo", "Kambou", "Kiemtore", "Lengani", "Nacanabo", "Ouali", "Pafadnam", "Sanou", "Simpore",
+      "Tiendrebeogo", "Traoré", "Yaméogo", "Zida", "Zoungrana", "Bancé", "Bassolet", "Dianda", "Kaboré", "Kientéga",
+      "Nikièma", "Ouali", "Rouamba", "Sana", "Some", "Tinto", "Yonli", "Zigani", "Balima", "Belem",
+      "Birba", "Bonkoungou", "Dao", "Hien", "Kando", "Lingani", "Poda", "Sorgho", "Tiemtoré", "Yerbanga"
+    ]
+  },
+  "NER": {
+    "country": "Niger",
+    "firstNames": [
+      "Abdoul", "Amadou", "Ali", "Boubacar", "Ibrahim", "Issouf", "Mahamadou", "Moussa", "Omar", "Ousmane",
+      "Abdoulaye", "Adamou", "Garba", "Harouna", "Issa", "Maman", "Salou", "Sani", "Yahaya", "Zakari",
+      "Boureima", "Chaibou", "Dan", "Elhadj", "Hamidou", "Ide", "Lawali", "Mamane", "Nouhou", "Salifou",
+      "Soumaila", "Tanimoune", "Yacouba", "Abdou", "Alzouma", "Bako", "Daouda", "Habibou", "Idrissa", "Karim",
+      "Lawan", "Moumouni", "Rabiou", "Saadou", "Tahirou", "Wadata", "Youssouf", "Aboubacar", "Hamani", "Maidagi",
+      "Djibo", "Habou", "Kané", "Laouali", "Marou", "Seydou", "Tinni", "Yaye", "Adamou", "Bachir"
+    ],
+    "surnames": [
+      "Mahamadou", "Issouf", "Abdou", "Ali", "Garba", "Moussa", "Ousmane", "Ibrahim", "Amadou", "Boubacar",
+      "Zakari", "Harouna", "Salou", "Issa", "Sani", "Yahaya", "Maman", "Abdoulaye", "Adamou", "Boureima",
+      "Chaibou", "Dan", "Elhadj", "Hamidou", "Ide", "Lawali", "Mamane", "Nouhou", "Salifou", "Soumaila",
+      "Tanimoune", "Yacouba", "Alzouma", "Bako", "Daouda", "Habibou", "Idrissa", "Karim", "Lawan", "Moumouni",
+      "Rabiou", "Saadou", "Tahirou", "Wadata", "Youssouf", "Aboubacar", "Hamani", "Maidagi", "Djibo", "Habou",
+      "Kané", "Laouali", "Marou", "Seydou", "Tinni", "Yaye", "Bachir", "Diallo", "Traoré", "Sidibé"
+    ]
+  },
+  "GIN": {
+    "country": "Guinea",
+    "firstNames": [
+      "Amadou", "Aboubacar", "Ibrahim", "Mamadou", "Mohamed", "Ousmane", "Sekou", "Alpha", "Ibrahima", "Souleymane",
+      "Alsény", "Boubacar", "Daouda", "Issiaga", "Mory", "Naby", "Saidou", "Thierno", "Abdoulaye", "Facinet",
+      "Habib", "Kaba", "Lansana", "Mohamed", "Oumar", "Sékou", "Aboubacar", "Fodé", "Ilaix", "Julian",
+      "Mamady", "Naby", "Rominigue", "Serhou", "Amadou", "Djibril", "Florentin", "Issiaga", "Kaba", "Mouctar",
+      "Ousmane", "Saïdou", "Thierno", "Abdourahmane", "Fode", "Ibrahima", "Kandet", "Moussa", "Sambégou", "Yakhouba",
+      "Aly", "Cherif", "Elhadj", "Ibrahima", "Kandé", "Mouctar", "Saifoulaye", "Yakhouba", "Aboubakar", "Fodé"
+    ],
+    "surnames": [
+      "Keita", "Diallo", "Barry", "Camara", "Conde", "Bah", "Toure", "Sylla", "Diakite", "Konate",
+      "Guilavogui", "Diaby", "Cissé", "Bangoura", "Kanté", "Sampana", "Sylla", "Traoré", "Yansané", "Cissoko",
+      "Diawara", "Kaba", "Moriba", "Jeanvier", "Sow", "Millimono", "Diakité", "Fofana", "Konaté", "Baldé",
+      "Bangoura", "Camara", "Cissé", "Diaby", "Fofana", "Guilavogui", "Keita", "Millimono", "Moriba", "Sampana",
+      "Sylla", "Traoré", "Yansané", "Balde", "Barry", "Conde", "Diakite", "Fofana", "Kaba", "Millimono",
+      "Sakho", "Sampana", "Sylla", "Yansané", "Bangoura", "Cissé", "Diaby", "Fofana", "Konate", "Moriba"
+    ]
+  },
+  "SLE": {
+    "country": "Sierra Leone",
+    "firstNames": [
+      "Mohamed", "Ibrahim", "Alhassan", "Alhaji", "Umaru", "Foday", "Sanusi", "Brima", "Sorie", "Alpha",
+      "Musa", "Abu", "Osman", "Mustapha", "Saidu", "Abdulai", "Momodu", "Salifu", "John", "Augustus",
+      "Kei", "Mohamed", "Sullay", "Alimamy", "Bakarr", "Chernor", "Donald", "Francis", "Hassan", "Ishmail",
+      "Kelfala", "Lansana", "Mohamed", "Osman", "Rashid", "Sulaiman", "Tamba", "Yusupha", "Abdul", "Bangura",
+      "Conteh", "Dumbuya", "Fofanah", "Gberie", "Jalloh", "Kamara", "Mansaray", "Sesay", "Turay", "Wurie",
+      "Alie", "Bangura", "Conteh", "Dumbuya", "Fofanah", "Jalloh", "Kamara", "Mansaray", "Sesay", "Turay"
+    ],
+    "surnames": [
+      "Kamara", "Sesay", "Bangura", "Turay", "Conteh", "Fofanah", "Jalloh", "Mansaray", "Dumbuya", "Wurie",
+      "Koroma", "Sheriff", "Williams", "Johnson", "Cole", "Kargbo", "Massaquoi", "Sankoh", "Yillah", "Suma",
+      "Davies", "George", "King", "Lewis", "Palmer", "Roberts", "Smith", "Taylor", "Thompson", "Wilson",
+      "Bah", "Bundu", "Kanu", "Koker", "Leigh", "Macauley", "Savage", "Tucker", "Wright", "Young",
+      "Blyden", "Brown", "Campbell", "Daniels", "Ellis", "Fullah", "Green", "Harris", "Jones", "Knox",
+      "Lamin", "Morgan", "Nelson", "Pratt", "Richards", "Stevens", "Thomas", "Vincent", "White", "Yansaneh"
+    ]
+  },
+  "LBR": {
+    "country": "Liberia",
+    "firstNames": [
+      "George", "William", "Samuel", "Joseph", "John", "Charles", "Abraham", "Anthony", "Benjamin", "Christopher",
+      "David", "Edward", "Francis", "James", "Moses", "Peter", "Robert", "Stephen", "Thomas", "Alexander",
+      "Daniel", "Emmanuel", "Isaac", "Jacob", "Jonathan", "Matthew", "Michael", "Nicholas", "Patrick", "Paul",
+      "Philip", "Richard", "Simon", "Timothy", "Victor", "Alfred", "Augustine", "Bartholomew", "Cornelius", "Elijah",
+      "Frederick", "Gabriel", "Henry", "Jeremiah", "Joshua", "Lawrence", "Mark", "Nathan", "Oliver", "Quincy",
+      "Solomon", "Theodore", "Vincent", "Wesley", "Zebulon", "Aaron", "Benedict", "Caleb", "Darius", "Ezekiel",
+      "Felix", "Godfrey", "Hezekiah", "Isaiah", "Josiah", "Kenneth", "Luke", "Martin", "Noah", "Oscar"
+    ],
+    "surnames": [
+      "Johnson", "Williams", "Brown", "Jones", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson",
+      "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Garcia", "Martinez", "Robinson", "Clark",
+      "Rodriguez", "Lewis", "Lee", "Walker", "Hall", "Allen", "Young", "Hernandez", "King", "Wright",
+      "Lopez", "Hill", "Scott", "Green", "Adams", "Baker", "Gonzalez", "Nelson", "Carter", "Mitchell",
+      "Perez", "Roberts", "Turner", "Phillips", "Campbell", "Parker", "Evans", "Edwards", "Collins", "Stewart",
+      "Sanchez", "Morris", "Rogers", "Reed", "Cook", "Morgan", "Bell", "Murphy", "Bailey", "Rivera"
+    ]
+  },
+  "TGO": {
+    "country": "Togo",
+    "firstNames": [
+      "Komlan", "Koffi", "Kokou", "Kossi", "Kwame", "Kwaku", "Yao", "Yawa", "Yaovi", "Ameyi",
+      "Edem", "Folly", "Kodjo", "Mawuli", "Mensah", "Nutifafa", "Selom", "Senyo", "Togbe", "Wiyaou",
+      "Amouzou", "Atsou", "Dotse", "Fiogbe", "Gbandi", "Hodonou", "Klutse", "Lawson", "Messan", "Nyasenu",
+      "Placide", "Quashie", "Seyram", "Togbui", "Vinyo", "Xolali", "Yendouban", "Zinsou", "Ablode", "Boko",
+      "Djossou", "Emmanuel", "Francis", "Gilbert", "Jean-Claude", "Komi", "Messan", "Nicolas", "Pascal", "Roderic",
+      "Serge", "Thierry", "Vincent", "Yannick", "Abdou", "Cherif", "Djalma", "Kossi", "Razak", "Seidou"
+    ],
+    "surnames": [
+      "Adebayor", "Gakpe", "Agbenyenu", "Romao", "Dossevi", "Ayité", "Segbefia", "Wome", "Djené", "Salou-Ibrahim",
+      "Bebou", "Nivet", "Gnagnon", "Ayité", "Abrashi", "Aholou", "Amewou", "Assignon", "Ayité", "Dossevi",
+      "Gakpe", "Kana-Biyik", "Mensah", "Romao", "Segbefia", "Agbenyenu", "Bebou", "Djené", "Gnagnon", "Nivet",
+      "Salou-Ibrahim", "Wome", "Abrashi", "Aholou", "Amewou", "Assignon", "Kana-Biyik", "Mensah", "Abalo", "Akakpo",
+      "Dakey", "Djetei", "Gbohouo", "Henen", "Kader", "Laba", "Mawuena", "Placca", "Sama", "Tchagnirou",
+      "Ahlinvi", "Basser", "Dogbé", "Koffi", "Lawson", "Mensah", "Placca", "Romao", "Segbefia", "Wome"
+    ]
+  },
+  "BEN": {
+    "country": "Benin",
+    "firstNames": [
+      "Alain", "Aristide", "Aurelio", "Cedric", "Cebio", "David", "Emmanuel", "Francis", "Gaston", "Ibrahim",
+      "Jodel", "Jordan", "Junior", "Kévin", "Khaled", "Matteo", "Mickaël", "Moumi", "Olivier", "Rodrigue",
+      "Seidou", "Serge", "Steve", "Stéphane", "Youssouf", "Abdel", "Achille", "Ahmed", "Alassane", "Antoine",
+      "Brice", "Charles", "Darius", "Edgar", "Fabrice", "Ghislain", "Hugues", "Jules", "Marcel", "Noël",
+      "Philippe", "Raymond", "Saliou", "Thierry", "Valère", "Wilfried", "Yves", "Zacharie", "Bruno", "Denis",
+      "Etienne", "Félix", "Georges", "Henri", "Jacques", "Laurent", "Maurice", "Nicolas", "Patrick", "Richard"
+    ],
+    "surnames": [
+      "Mounie", "Adenon", "Allagbe", "Assogba", "Coulibaly", "D'Almeida", "Djigla", "Hountondji", "Moumi", "Tijani",
+      "Verdon", "Ahlinvi", "Aholou", "Assignon", "Dossou", "Fomba", "Gbamin", "Kiki", "Lomotey", "Mounié",
+      "Poussin", "Raheriarivony", "Soumaoro", "Ahlinvi", "Assignon", "Dossou", "Gbamin", "Kiki", "Lomotey", "Mounié",
+      "Poussin", "Raheriarivony", "Soumaoro", "Adenon", "Allagbe", "Assogba", "Coulibaly", "D'Almeida", "Djigla", "Hountondji",
+      "Tijani", "Verdon", "Aholou", "Fomba", "Moumi", "Adilehou", "Assou-Ekotto", "Djenepo", "Kossounou", "Ouendo",
+      "Senou", "Zelarayán", "Adeoti", "Dossou", "Hountondji", "Kiki", "Mounié", "Soumaoro", "Tijani", "Verdon"
+    ]
+  },
+  "CPV": {
+    "country": "Cape Verde",
+    "firstNames": [
+      "Ryan", "Bebé", "Garry", "Vozinha", "Nuno", "Steven", "Jamiro", "Stopira", "João", "Kenny",
+      "Willy", "Djaniny", "Júlio", "Hélio", "Platini", "Toni", "Gilson", "Logan", "Luciano", "Marco",
+      "Deroy", "Kevin", "Laros", "Ney", "Patrick", "Pelé", "Ronaldo", "Rui", "Semedo", "Tavares",
+      "Andrezinho", "Babanco", "Calu", "Dady", "Edmilson", "Fábio", "Gegé", "Heldon", "Ianique", "Janio",
+      "Kuca", "Lenini", "Marcos", "Nélson", "Odair", "Paulo", "Quininha", "Rui", "Semedo", "Telmo",
+      "Ulisses", "Vágner", "Xavier", "Zé", "António", "Bruno", "Carlos", "Diney", "Edson", "Fernando"
+    ],
+    "surnames": [
+      "Monteiro", "Mendes", "Silva", "Santos", "Rodrigues", "Fernandes", "Costa", "Pereira", "Lopes", "Gomes",
+      "Tavares", "Semedo", "Andrade", "Borges", "Cabral", "Dias", "Évora", "Fonseca", "Gonçalves", "Lima",
+      "Martins", "Neves", "Oliveira", "Pires", "Ramos", "Soares", "Teixeira", "Varela", "Xavier", "Almeida",
+      "Barbosa", "Carvalho", "Duarte", "Ferreira", "Garcia", "Henriques", "Jesus", "Lourenço", "Morais", "Nascimento",
+      "Pina", "Reis", "Simões", "Torres", "Vieira", "Brito", "Correia", "Delgado", "Espírito Santo", "Freitas",
+      "Leitão", "Machado", "Nunes", "Pinto", "Rosa", "Sousa", "Teixeira", "Vaz", "Barreto", "Cruz"
+    ]
+  },
+  "GMB": {
+    "country": "Gambia",
+    "firstNames": [
+      "Musa", "Omar", "Modou", "Lamin", "Bubacarr", "Ebrima", "Sulayman", "Alieu", "Bakary", "Abdou",
+      "Dembo", "Hamza", "Yusupha", "Saikou", "Muhammed", "Ousman", "Baboucarr", "Abdoulie", "Sainey", "Momodou",
+      "Kebba", "Famara", "Assan", "Dawda", "Pa", "Yankuba", "Nfamara", "Seedy", "Ansumana", "Foday",
+      "Kawsu", "Kemo", "Madi", "Malang", "Ousainou", "Sheriff", "Tombong", "Wally", "Yahya", "Zakaria",
+      "Basiru", "Cherno", "Essa", "Gibril", "Ismaila", "Jatto", "Landing", "Maimuna", "Pa", "Sanna",
+      "Tijan", "Alagie", "Buba", "Dodou", "Hatib", "Karamo", "Matarr", "Nuha", "Siaka", "Wandifa"
+    ],
+    "surnames": [
+      "Jatta", "Ceesay", "Barrow", "Sanneh", "Darboe", "Sarr", "Njie", "Manneh", "Fatty", "Touray",
+      "Colley", "Gomez", "Bah", "Jawara", "Badjie", "Drammeh", "Camara", "Ndure", "Jawo", "Bojang",
+      "Kaba", "Sowe", "Hydara", "Jobe", "Gassama", "Trawally", "Susso", "Keita", "Sanyang", "Cham",
+      "Dibba", "Adams", "Mendy", "Saidy", "Barry", "Coly", "Danso", "Kinteh", "Sallah", "Sonko",
+      "Bobb", "Drammeh", "Gaye", "Jallow", "Kujabi", "Marong", "Secka", "Tamba", "Bajo", "Corr",
+      "Gibba", "Jagne", "Jammeh", "Kargbo", "Mass", "Saho", "Sabally", "Tangara", "Baldeh", "Faye"
+    ]
+  },
+  "GNB": {
+    "country": "Guinea-Bissau",
+    "firstNames": [
+      "Zé", "Alfa", "Nanu", "Moreto", "Fali", "Piqueti", "Pelé", "Joseph", "Mama", "Mauro",
+      "Famana", "Frédéric", "Janio", "Jorge", "Pele", "Zé", "Carlos", "Braima", "Cafú", "Nené",
+      "Mama", "Moreto", "Nanu", "Piqueti", "Toni", "Frédéric", "Jorge", "Pelé", "Zé", "Alfa",
+      "Braima", "Cafú", "Carlos", "Famana", "Fali", "Janio", "Joseph", "Mauro", "Nené", "Toni",
+      "Amadu", "Beto", "Danilo", "Édgar", "Fábio", "Geraldo", "Hélder", "Idrissa", "João", "Kalu",
+      "Luciano", "Malam", "Nuno", "Orlando", "Paulo", "Quinzinho", "Rui", "Sori", "Tiago", "Uelton"
+    ],
+    "surnames": [
+      "Semedo", "Djaló", "Gomes", "Mendes", "Baldé", "Cassamá", "Embaló", "Sanó", "Dabo", "Sané",
+      "Mané", "Silva", "Candé", "Indjai", "Nhamussa", "Braima", "Camará", "Danfa", "Fati", "Ié",
+      "Nandigna", "Sambú", "Sissé", "Té", "Có", "Dafa", "Imbali", "Landu", "Nanú", "Piqueti",
+      "Sambú", "Sané", "Té", "Có", "Dafa", "Embaló", "Gomes", "Imbali", "Landu", "Mané",
+      "Nandigna", "Nanú", "Piqueti", "Sambú", "Sané", "Té", "Baldé", "Braima", "Camará", "Candé",
+      "Cassamá", "Dabo", "Danfa", "Djaló", "Fati", "Ié", "Indjai", "Mendes", "Nhamussa", "Semedo"
+    ]
+  }
+}

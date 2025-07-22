@@ -11,6 +11,7 @@ import TournamentDetail from './views/TournamentDetail.vue'
 import TeamDetail from './views/TeamDetail.vue'
 import QualifyingTeamDetail from './views/QualifyingTeamDetail.vue'
 import MatchDetail from './views/MatchDetail.vue'
+import PlayerDetail from './views/PlayerDetail.vue'
 import Profile from './views/Profile.vue'
 import './styles/global.css'
 
@@ -26,6 +27,7 @@ const routes = [
   { path: '/tournament/:tournamentId/team/:teamId', component: TeamDetail },
   { path: '/tournament/:tournamentId/qualifying-team/:teamId', component: QualifyingTeamDetail },
   { path: '/tournament/:tournamentId/match/:matchId', component: MatchDetail },
+  { path: '/player/:playerId', component: PlayerDetail },
   { path: '/profile', component: Profile }
 ]
 

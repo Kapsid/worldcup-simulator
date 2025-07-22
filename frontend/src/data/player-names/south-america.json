@@ -1,0 +1,154 @@
+{
+  "CHI": {
+    "country": "Chile",
+    "firstNames": [
+      "Alexis", "Arturo", "Ben", "Claudio", "Diego", "Eduardo", "Felipe", "Gary", "Gonzalo", "Ignacio",
+      "Jean", "José", "Marcelo", "Mauricio", "Nicolás", "Pablo", "Paulo", "Rodrigo", "Sebastián", "Víctor",
+      "Alexander", "Carlos", "David", "Fernando", "Francisco", "Gabriel", "Iván", "Jorge", "Luis", "Mario",
+      "Miguel", "Orlando", "Pedro", "Ricardo", "Roberto", "Tomás", "Ángelo", "Bruno", "César", "Daniel",
+      "Esteban", "Fabián", "Gustavo", "Hernán", "Jaime", "Kevin", "Lorenzo", "Manuel", "Patricio", "Raúl",
+      "Samuel", "Waldo", "Xavier", "Yonathan", "Álvaro", "Andrés", "Benja", "Christopher", "Diego", "Emilio"
+    ],
+    "surnames": [
+      "Sánchez", "Vidal", "Brereton", "Bravo", "Valdés", "Aránguiz", "Isla", "Medel", "Jara", "Vargas",
+      "Meneses", "Beausejour", "Díaz", "Pulgar", "Sagal", "Galdames", "Catalán", "Palacios", "Osorio", "Valencia",
+      "Dávila", "Vegas", "Maripán", "Suazo", "Kuscevic", "Lichnovsky", "Roco", "Sierralta", "Tapia", "Fuenzalida",
+      "Castillo", "Campos", "Cortés", "González", "Henríquez", "Martínez", "Orellana", "Pinilla", "Rojas", "Silva",
+      "Torres", "Ampuero", "Baeza", "Contreras", "Fernández", "Gutiérrez", "Loyola", "Morales", "Pérez", "Reyes",
+      "Sepúlveda", "Núñez", "Herrera", "Paredes", "Rodríguez", "Méndez", "Alarcón", "Brereton Díaz", "Núñez", "Castellón"
+    ]
+  },
+  "URU": {
+    "country": "Uruguay",
+    "firstNames": [
+      "Luis", "Edinson", "Diego", "Martín", "Fernando", "José", "Sebastián", "Rodrigo", "Giorgian", "Maximiliano",
+      "Federico", "Nicolás", "Gastón", "Brian", "Matías", "Jonathan", "Carlos", "Álvaro", "Facundo", "Mathías",
+      "Nahitan", "Ronald", "Santiago", "Agustín", "Cristian", "Darwin", "Franco", "Guillermo", "Manuel", "Marcelo",
+      "Pablo", "Ramón", "Sergio", "Thiago", "Alejandro", "Bruno", "Damián", "Emiliano", "Gabriel", "Ignacio",
+      "Joaquín", "Kevin", "Leonardo", "Miguel", "Nicolás", "Óscar", "Pedro", "Rafael", "Tomás", "Valentín",
+      "Walter", "Xavier", "Yamandu", "Álvaro", "Andrés", "Camilo", "Diego", "Esteban", "Fabricio", "Gonzalo"
+    ],
+    "surnames": [
+      "Suárez", "Cavani", "Godín", "Cáceres", "Muslera", "Bentancur", "Coates", "Betancur", "De Arrascaeta", "Vecino",
+      "Valverde", "De la Cruz", "Pereiro", "Rodríguez", "González", "Nández", "Pellistri", "González", "Canobbio", "Olivera",
+      "Núñez", "Araújo", "Miguélez", "Cáceres", "Viña", "Torreira", "Ugarte", "Varela", "Piquerez", "Rossi",
+      "Sosa", "Torres", "Cabrera", "Silva", "Méndez", "Bueno", "García", "Ramírez", "Pérez", "Fernández",
+      "Martínez", "López", "Rodríguez", "Díaz", "Morales", "Castro", "Viera", "Olivera", "Bentancur", "Coates",
+      "De Arrascaeta", "Vecino", "Valverde", "De la Cruz", "Pereiro", "Rodríguez", "González", "Nández", "Pellistri", "González"
+    ]
+  },
+  "COL": {
+    "country": "Colombia",
+    "firstNames": [
+      "James", "Radamel", "Juan", "Carlos", "Davinson", "Yerry", "Santiago", "Luis", "Duván", "Wilmar",
+      "Jefferson", "Steven", "Johan", "Mateus", "Jhon", "Daniel", "Cristian", "Kevin", "Alfredo", "Frank",
+      "Gustavo", "Iván", "Jorge", "Miguel", "Rafael", "Sebastián", "Andrés", "Diego", "Edwin", "Fredy",
+      "Hernán", "Javier", "Leonardo", "Mauricio", "Nicolás", "Óscar", "Pablo", "Ricardo", "Víctor", "Alejandro",
+      "Camilo", "Eduard", "Farid", "Giovanny", "Helibelton", "Jackson", "Kilian", "Luis Fernando", "Marlos", "Nelson",
+      "Orlando", "Pedro", "Quintero", "Robinson", "Stiven", "Teófilo", "Uvaldo", "Vladimir", "Wílson", "Yimmi"
+    ],
+    "surnames": [
+      "Rodríguez", "Falcao", "Cuadrado", "Sánchez", "Mina", "Mina", "Arias", "Díaz", "Zapata", "Barrios",
+      "Lerma", "Alzate", "Mojica", "Uribe", "Arias", "Muñoz", "Borja", "Castaño", "Tapia", "Fabra",
+      "Cuellar", "Córdoba", "Carrascal", "Sinisterra", "Santos Borré", "Muriel", "Morelos", "Asprilla", "Cardona", "Aguilar",
+      "Valoyes", "Perea", "Lucumí", "Medina", "Riascos", "Campuzano", "Vargas", "Montero", "Herrera", "Martínez",
+      "López", "González", "García", "Torres", "Pérez", "Ramírez", "Gómez", "Hernández", "Jiménez", "Ruiz",
+      "Moreno", "Álvarez", "Romero", "Gutiérrez", "Muñoz", "Rojas", "Medina", "Ortiz", "Silva", "Ramos"
+    ]
+  },
+  "PER": {
+    "country": "Peru",
+    "firstNames": [
+      "Paolo", "Jefferson", "André", "Renato", "Christian", "Yoshimar", "Anderson", "Miguel", "Carlos", "Christofer",
+      "Sergio", "Wilder", "Luis", "Alexander", "Aldo", "Edison", "Raziel", "Pedro", "Gianluca", "Marcos",
+      "Oliver", "Piero", "Santiago", "Joao", "Franco", "Jorge", "Rodrigo", "Alberto", "Gabriel", "Iván",
+      "José", "Nilson", "Renzo", "Alexis", "Bryan", "Diego", "Fernando", "Hansell", "Jesús", "Kevin",
+      "Leao", "Manuel", "Nicolás", "Oswaldo", "Paulo", "Raúl", "Sebastián", "Tarek", "Ángel", "Beto",
+      "César", "Daniel", "Enrique", "Fabián", "Gonzalo", "Horacio", "Jair", "Kluivert", "Lucas", "Martín"
+    ],
+    "surnames": [
+      "Guerrero", "Farfán", "Carrillo", "Tapia", "Cueva", "Yotún", "Santamaría", "Araujo", "Zambrano", "Gonzáles",
+      "Peña", "Cartagena", "Advíncula", "Callens", "Corzo", "Flores", "García", "Lapadula", "López", "Orejas",
+      "Aquino", "Burga", "Cáceda", "Da Silva", "Gallese", "Haberer", "Iberico", "Loyola", "Polo", "Reyna",
+      "Rivera", "Sonne", "Trauco", "Quispe", "Valera", "Watanabe", "Lora", "Ramos", "Sánchez", "Rodríguez",
+      "Martínez", "González", "Hernández", "López", "García", "Pérez", "Torres", "Ramírez", "Flores", "Gómez",
+      "Díaz", "Vargas", "Castro", "Mendoza", "Rojas", "Herrera", "Medina", "Gutiérrez", "Jiménez", "Morales"
+    ]
+  },
+  "ECU": {
+    "country": "Ecuador",
+    "firstNames": [
+      "Enner", "Gonzalo", "Pervis", "Moisés", "Piero", "Félix", "Ángel", "Jeremy", "Carlos", "Jackson",
+      "Robert", "Alan", "José", "Willian", "Hernán", "Alexander", "Xavier", "Diego", "Joel", "Romario",
+      "Michael", "Jordan", "Byron", "John", "Kendry", "Leonardo", "Nilson", "Ayrton", "Kevin", "Damián",
+      "Sebastián", "Gustavo", "Anthony", "Andrés", "Christian", "Fernando", "Gabriel", "Iván", "Janner", "Luis",
+      "Mario", "Nicolás", "Óscar", "Pablo", "Ricardo", "Santiago", "Tomás", "Víctor", "Washington", "Yaimar",
+      "Álvaro", "Bruno", "César", "Daniel", "Eduardo", "Francisco", "Héctor", "Ignacio", "Jaime", "Kevin"
+    ],
+    "surnames": [
+      "Valencia", "Plata", "Estupiñán", "Caicedo", "Hincapié", "Torres", "Mena", "Sarmiento", "Gruezo", "Porozo",
+      "Arboleda", "Franco", "Cifuentes", "Pacho", "Galindez", "Domínguez", "Arreaga", "Palacios", "Campana", "Ibarra",
+      "Estrada", "Reasco", "Castillo", "Yeboah", "Páez", "Campuzano", "Ramírez", "Preciado", "Rodríguez", "Ángulo",
+      "Corozo", "Bolanos", "González", "Méndez", "Orejuela", "Pluas", "Quintero", "Segovia", "Vite", "Ayovi",
+      "Bone", "Carabali", "Delgado", "Espinoza", "Farinez", "García", "Hurtado", "Jaramillo", "Klinger", "Loor",
+      "Montaño", "Nazareno", "Ordóñez", "Pineida", "Quiñones", "Riascos", "Sánchez", "Tenorio", "Ugalde", "Vernaza"
+    ]
+  },
+  "VEN": {
+    "country": "Venezuela",
+    "firstNames": [
+      "Salomón", "Josef", "Tomás", "Yangel", "Yeferson", "Roberto", "Alexander", "Darwin", "Rolf-Christel", "Jefferson",
+      "Miguel", "Cristian", "Jhonder", "Jon", "Adalberto", "Fernando", "José", "Samuel", "Sergio", "Wuilker",
+      "Andrés", "Carlos", "Daniel", "Edson", "Francisco", "Gabriel", "Héctor", "Iván", "Junior", "Kevin",
+      "Luis", "Manuel", "Nicolás", "Óscar", "Pablo", "Rafael", "Renny", "Telasco", "Víctor", "Yordan",
+      "Alejandro", "Bruno", "César", "Diego", "Emilio", "Fabián", "Gonzalo", "Ignacio", "Jesús", "Keno",
+      "Lorenzo", "Martín", "Néstor", "Orlando", "Pedro", "Ramón", "Santiago", "Thiago", "Ulises", "Williams"
+    ],
+    "surnames": [
+      "Rondón", "Martínez", "Rincón", "Herrera", "Soteldo", "Rosales", "González", "Machís", "Peñaranda", "Savarino",
+      "Navarro", "Cásseres", "Cádiz", "Aramburu", "Pereira", "Otero", "Velázquez", "Del Prete", "Córdova", "Faríñez",
+      "Celis", "Murillo", "Makoun", "Palacios", "García", "Moreno", "Vargas", "Oviedo", "Chacón", "Espinoza",
+      "Hurtado", "La Mantía", "Ramírez", "Bello", "Cichero", "Fariñez", "Lucena", "Manzano", "Osorio", "Quijada",
+      "Seijas", "Túñez", "Villanueva", "Ángel", "Carrasquel", "Díaz", "Ferraresi", "Graterol", "Hernández", "Jiménez",
+      "López", "Martínez", "Núñez", "Ortega", "Peñalver", "Rodríguez", "Silva", "Torres", "Uribe", "Vera"
+    ]
+  },
+  "PAR": {
+    "country": "Paraguay",
+    "firstNames": [
+      "Miguel", "Gustavo", "Antonio", "Carlos", "Derlis", "Óscar", "Richard", "Cecilio", "Fabián", "Rodrigo",
+      "Ángel", "Diego", "Juan", "Julio", "Roberto", "Sergio", "Walter", "Alejandro", "Alfredo", "Andrés",
+      "Bruno", "César", "Daniel", "Eduardo", "Fernando", "Gabriel", "Hernán", "Ignacio", "Jorge", "Kevin",
+      "Lorenzo", "Manuel", "Nelson", "Orlando", "Pablo", "Rafael", "Santiago", "Tomás", "Víctor", "William",
+      "Alexis", "Blas", "Cristian", "Darío", "Emilio", "Francisco", "Gonzalo", "Hugo", "Isidro", "Javier",
+      "Leonardo", "Marcelo", "Néstor", "Omar", "Pedro", "Raúl", "Sebastián", "Teodoro", "Ulises", "Valentín"
+    ],
+    "surnames": [
+      "Almirón", "Gómez", "Bareiro", "Balbuena", "González", "Romero", "Ortiz", "Domínguez", "Cardozo", "Enciso",
+      "Silva", "Alderete", "Arzamendia", "Villasanti", "Cubas", "Piris", "Espinoza", "Sosa", "Palacios", "Sanabria",
+      "Ramírez", "Morel", "Ayala", "Gamarra", "Bobadilla", "Benítez", "Rojas", "Martínez", "López", "García",
+      "Díaz", "Fernández", "Morales", "Torres", "Pérez", "Rodríguez", "Hernández", "Jiménez", "Ruiz", "Gutiérrez",
+      "Vargas", "Castro", "Ramos", "Méndez", "Navarro", "Medina", "Aguilar", "Guerrero", "Herrera", "Delgado",
+      "Reyes", "Vega", "Cortés", "Flores", "Campos", "Peña", "Sandoval", "Cabrera", "Valdez", "Núñez"
+    ]
+  },
+  "BOL": {
+    "country": "Bolivia",
+    "firstNames": [
+      "Marcelo", "Carlos", "Diego", "Jhasmani", "Roberto", "Leonel", "Juan", "José", "Ramiro", "Óscar",
+      "Fernando", "Miguel", "Rodrigo", "Erwin", "Danny", "Saúl", "Ronald", "Jorge", "Henry", "Luis",
+      "Pablo", "Gilbert", "Alejandro", "Cristian", "Daniel", "Eduardo", "Francisco", "Gabriel", "Héctor", "Iván",
+      "Jaime", "Kevin", "Lorenzo", "Manuel", "Nelson", "Orlando", "Pedro", "Rafael", "Santiago", "Tomás",
+      "Víctor", "Walter", "Xavier", "Yamil", "Álvaro", "Bruno", "César", "Diego", "Emilio", "Fabián",
+      "Gonzalo", "Hugo", "Ignacio", "Javier", "Kike", "Leonardo", "Mario", "Nicolás", "Oliver", "Patricio"
+    ],
+    "surnames": [
+      "Moreno", "Lampe", "Wayar", "Campos", "Fernández", "Justiniano", "Arce", "Quinteros", "Vaca", "Ribera",
+      "Saucedo", "Haquin", "Sagredo", "Segovia", "Bejarano", "Torres", "Chumacero", "Villarroel", "Miranda", "Álvarez",
+      "Ramallo", "Medina", "Céspedes", "Rodríguez", "García", "López", "González", "Martínez", "Pérez", "Hernández",
+      "Díaz", "Jiménez", "Ruiz", "Vargas", "Castro", "Ramos", "Méndez", "Gutiérrez", "Ortiz", "Silva",
+      "Morales", "Guerrero", "Herrera", "Aguilar", "Delgado", "Reyes", "Vega", "Cortés", "Flores", "Navarro",
+      "Sandoval", "Cabrera", "Valdez", "Núñez", "Espinoza", "Paredes", "Quispe", "Mamani", "Condori", "Apaza"
+    ]
+  }
+}

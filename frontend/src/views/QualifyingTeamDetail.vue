@@ -65,6 +65,14 @@
           <div class="content-tabs">
             <button 
               class="tab-btn" 
+              :class="{ active: activeTab === 'roster' }"
+              @click="activeTab = 'roster'"
+            >
+              <i class="fas fa-users"></i>
+              Team Roster
+            </button>
+            <button 
+              class="tab-btn" 
               :class="{ active: activeTab === 'matches' }"
               @click="activeTab = 'matches'"
             >
@@ -83,6 +91,26 @@
           
           <!-- Tab Content -->
           <div class="tab-content">
+            <!-- Roster Tab -->
+            <div v-if="activeTab === 'roster'" class="roster-tab">
+              <div class="content-card glass-white roster-section">
+                <TeamRoster 
+                  v-if="team"
+                  :team="rosterTeamData"
+                  :tournament-id="$route.params.tournamentId"
+                  :world-id="tournament?.worldId"
+                  :is-qualifying="true"
+                />
+                <div v-else class="placeholder-section">
+                  <div class="placeholder-icon">
+                    <i class="fas fa-user-plus"></i>
+                  </div>
+                  <h4>Loading Team Data</h4>
+                  <p>Please wait while we load the team information.</p>
+                </div>
+              </div>
+            </div>
+            
             <!-- Matches Tab -->
             <div v-if="activeTab === 'matches'" class="matches-tab">
               <div class="content-card glass-white">
@@ -233,11 +261,13 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import TeamRoster from '../components/TeamRoster.vue'
 
 export default {
   name: 'QualifyingTeamDetail',
   components: {
-    AppHeader
+    AppHeader,
+    TeamRoster
   },
   data() {
     return {
@@ -248,7 +278,7 @@ export default {
       qualificationMatches: [],
       countries: [],
       loading: false,
-      activeTab: 'matches',
+      activeTab: 'roster',
       qualificationGroup: null,
       tournamentHistory: null,
       loadingHistory: false
@@ -258,6 +288,23 @@ export default {
     countryInfo() {
       if (!this.team) return null
       return this.countries.find(c => c.code === this.team.country || c.name === this.team.name)
+    },
+
+    rosterTeamData() {
+      if (!this.team) return null
+      
+      console.log('🏆 ROSTER DATA: Team object:', this.team)
+      console.log('🏆 ROSTER DATA: Country info:', this.countryInfo)
+      
+      // Use country code from countryInfo, fallback to team data
+      const teamCode = this.countryInfo?.code || this.team.countryCode || this.team.code || this.team.country || this.team.name
+      console.log('🏆 ROSTER DATA: Using team code:', teamCode)
+      
+      return {
+        code: teamCode,
+        name: this.team.name,
+        flag: this.team.flag || this.countryInfo?.flag || '🏴'
+      }
     }
   },
   mounted() {
@@ -1101,5 +1148,15 @@ export default {
     flex-direction: column;
     gap: 8px;
   }
+}
+
+.roster-section {
+  padding: 0 !important;
+}
+
+.roster-section .content-card {
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 </style>

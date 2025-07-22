@@ -1,6 +1,7 @@
 import TournamentTeam from '../models/TournamentTeam.js'
 import Tournament from '../models/Tournament.js'
 import World from '../models/World.js'
+import PlayerGenerationService from './PlayerGenerationService.js'
 import { getCountryByCode, getCountryByName, getBest31PlusHost } from '../data/countries.js'
 
 class TeamManagementService {
@@ -79,6 +80,20 @@ class TeamManagementService {
 
       await tournamentTeam.save()
 
+      // Generate squad for the newly added team
+      try {
+        await PlayerGenerationService.generateSquad(
+          country.code,
+          tournamentId,
+          tournament.worldId ? tournament.worldId.toString() : null,
+          tournament.year || new Date().getFullYear()
+        )
+        console.log(`✓ Generated squad for ${country.name}`)
+      } catch (squadError) {
+        console.error(`Error generating squad for ${country.name}:`, squadError)
+        // Don't throw error - team addition should still succeed
+      }
+
       // Update tournament team count and activation status
       await this.updateTournamentStatus(tournamentId)
 
@@ -110,6 +125,24 @@ class TeamManagementService {
 
       if (!result) {
         throw new Error('Team not found in tournament')
+      }
+
+      // Remove players for this team
+      try {
+        const { default: Player } = await import('../models/Player.js')
+        const deleteQuery = { 
+          teamId: countryCode,
+          tournamentId: tournamentId
+        }
+        if (tournament.worldId) {
+          deleteQuery.worldId = tournament.worldId.toString()
+        }
+        
+        await Player.deleteMany(deleteQuery)
+        console.log(`✓ Removed players for ${countryCode}`)
+      } catch (playerError) {
+        console.error(`Error removing players for ${countryCode}:`, playerError)
+        // Don't throw error - team removal should still succeed
       }
 
       // Update tournament team count and activation status
@@ -154,8 +187,23 @@ class TeamManagementService {
         throw new Error('Cannot modify teams in an active tournament')
       }
 
-      // Clear existing teams
+      // Clear existing teams and their players
       await TournamentTeam.deleteMany({ tournament: tournamentId })
+      
+      // Clear existing players for this tournament
+      try {
+        const { default: Player } = await import('../models/Player.js')
+        const deleteQuery = { tournamentId: tournamentId }
+        if (tournament.worldId) {
+          deleteQuery.worldId = tournament.worldId.toString()
+        }
+        
+        await Player.deleteMany(deleteQuery)
+        console.log(`✓ Cleared all players for tournament`)
+      } catch (playerError) {
+        console.error(`Error clearing players for tournament:`, playerError)
+        // Don't throw error - team clearing should still succeed
+      }
 
       // Load world data if tournament belongs to a world
       let world = null
@@ -202,6 +250,24 @@ class TeamManagementService {
 
       await TournamentTeam.insertMany(tournamentTeams)
 
+      // Generate squads for all teams
+      console.log(`Generating squads for ${bestTeams.length} teams...`)
+      for (const country of bestTeams) {
+        try {
+          await PlayerGenerationService.generateSquad(
+            country.code,
+            tournamentId,
+            tournament.worldId ? tournament.worldId.toString() : null,
+            tournament.year || new Date().getFullYear()
+          )
+          console.log(`✓ Generated squad for ${country.name}`)
+        } catch (squadError) {
+          console.error(`Error generating squad for ${country.name}:`, squadError)
+          // Continue with other teams even if one fails
+        }
+      }
+      console.log('Squad generation completed for all teams')
+
       // Update tournament status
       await this.updateTournamentStatus(tournamentId)
 
@@ -227,6 +293,21 @@ class TeamManagementService {
 
       // Remove all teams
       await TournamentTeam.deleteMany({ tournament: tournamentId })
+      
+      // Remove all players for this tournament
+      try {
+        const { default: Player } = await import('../models/Player.js')
+        const deleteQuery = { tournamentId: tournamentId }
+        if (tournament.worldId) {
+          deleteQuery.worldId = tournament.worldId.toString()
+        }
+        
+        await Player.deleteMany(deleteQuery)
+        console.log(`✓ Cleared all players for tournament`)
+      } catch (playerError) {
+        console.error(`Error clearing players for tournament:`, playerError)
+        // Don't throw error - clearing should still succeed
+      }
 
       // Update tournament status
       await this.updateTournamentStatus(tournamentId)
