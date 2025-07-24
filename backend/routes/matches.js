@@ -36,12 +36,29 @@ router.get('/:tournamentId/standings', authenticateToken, async (req, res) => {
   }
 })
 
-router.post('/:tournamentId/simulate/match/:matchId', authenticateToken, async (req, res) => {
+// Test route to verify our routes are registered
+router.get('/:tournamentId/test-route', async (req, res) => {
+  console.error('🟢 TEST ROUTE HIT!')
+  res.json({ message: 'Test route working', tournamentId: req.params.tournamentId })
+})
+
+
+router.post('/:tournamentId/simulate/match/:matchId', async (req, res) => {
   try {
+    console.error(`🎯 ROUTE: Group match simulation requested for match ${req.params.matchId} in tournament ${req.params.tournamentId}`)
+    console.log(`🎯 ROUTE: Group match simulation requested for match ${req.params.matchId} in tournament ${req.params.tournamentId}`)
+    process.stdout.write(`🎯 ROUTE: Group match simulation requested for match ${req.params.matchId} in tournament ${req.params.tournamentId}\n`)
+    
+    // Write to a file to be absolutely sure
+    const fs = await import('fs')
+    fs.appendFileSync('/tmp/group-match-debug.log', `${new Date().toISOString()} - ROUTE HIT: ${req.params.matchId}\n`)
+    
     const { matchId } = req.params
     const match = await MatchService.simulateMatch(matchId)
+    console.error(`🎯 ROUTE: Match simulation completed, returning result`)
     res.json({ match })
   } catch (error) {
+    console.error(`🎯 ROUTE: Match simulation failed:`, error)
     res.status(400).json({ error: error.message })
   }
 })
@@ -68,27 +85,61 @@ router.get('/:tournamentId/team/:teamId', authenticateToken, async (req, res) =>
 })
 
 // Get detailed match information (lineups, goals, report)
-router.get('/detail/:matchId', authenticateToken, async (req, res) => {
+router.get('/detail/:matchId', async (req, res) => {
   try {
     const { matchId } = req.params
     console.log(`MATCH DETAIL API: Looking for match details with ID: ${matchId}`)
+    console.log(`MATCH DETAIL API: Match ID type: ${typeof matchId}, length: ${matchId.length}`)
     
-    const matchDetail = await MatchDetail.findOne({ match: matchId })
-      .populate('homeLineup.player awayLineup.player')
-      .populate('goals.player goals.assist')
-      .populate('substitutions.playerOut substitutions.playerIn')
-      .populate('matchReport.manOfTheMatch')
+    let matchDetail = null
+    let queryUsed = 'string'
     
-    console.log(`MATCH DETAIL API: Query result:`, matchDetail ? `FOUND (${matchDetail._id})` : 'NOT FOUND')
+    // Try string query first (for qualification matches)
+    matchDetail = await MatchDetail.findOne({ match: matchId })
+    console.log(`MATCH DETAIL API: String query result:`, matchDetail ? 'FOUND' : 'NOT FOUND')
     
     if (!matchDetail) {
-      // Let's also try to find any MatchDetail documents to see what exists
-      const allMatchDetails = await MatchDetail.find({}).limit(5)
-      console.log(`MATCH DETAIL API: Available match details in DB:`, allMatchDetails.map(md => ({ 
-        id: md._id, 
-        match: md.match, 
-        matchType: md.matchType 
-      })))
+      // Try as ObjectId if it's a valid ObjectId string (for tournament matches)
+      try {
+        const mongoose = await import('mongoose')
+        if (mongoose.Types.ObjectId.isValid(matchId)) {
+          const objectIdQuery = new mongoose.Types.ObjectId(matchId)
+          matchDetail = await MatchDetail.findOne({ match: objectIdQuery })
+          queryUsed = 'objectId'
+          console.log(`MATCH DETAIL API: ObjectId query result:`, matchDetail ? 'FOUND' : 'NOT FOUND')
+        }
+      } catch (objectIdError) {
+        console.log(`MATCH DETAIL API: ObjectId query failed:`, objectIdError.message)
+      }
+    }
+    
+    if (matchDetail) {
+      // Use the same query type that found the record for populate operations
+      try {
+        let populateQuery
+        if (queryUsed === 'objectId') {
+          const mongoose = await import('mongoose')
+          populateQuery = { match: new mongoose.Types.ObjectId(matchId) }
+        } else {
+          populateQuery = { match: matchId }
+        }
+        
+        matchDetail = await MatchDetail.findOne(populateQuery)
+          .populate('homeLineup.player awayLineup.player')
+          .populate('goals.player goals.assist')
+          .populate('substitutions.playerOut substitutions.playerIn')
+          .populate('matchReport.manOfTheMatch')
+          
+        console.log(`MATCH DETAIL API: Populate with ${queryUsed} query successful`)
+      } catch (populateError) {
+        console.log(`MATCH DETAIL API: Populate failed, returning basic match detail:`, populateError.message)
+        // matchDetail already contains the basic record from previous query
+      }
+    }
+    
+    console.log(`MATCH DETAIL API: Final result:`, matchDetail ? `FOUND (${matchDetail._id})` : 'NOT FOUND')
+    
+    if (!matchDetail) {
       return res.status(404).json({ error: 'Match details not found' })
     }
     

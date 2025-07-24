@@ -397,8 +397,8 @@ class TeamManagementService {
         throw new Error('Tournament not found')
       }
 
-      // Check if tournament is already active (allow draft and qualification_complete)
-      if (tournament.status !== 'draft' && tournament.status !== 'qualification_complete') {
+      // Check if tournament is already active (only allow draft)
+      if (tournament.status !== 'draft') {
         throw new Error('Cannot modify teams in an active tournament')
       }
 

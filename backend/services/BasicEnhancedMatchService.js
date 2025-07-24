@@ -217,35 +217,48 @@ class BasicEnhancedMatchService {
       logMessage = `  -> About to create/update MatchDetail for match ${match._id}\n`
       fs.appendFileSync('/tmp/backend-debug.log', logMessage)
       
-      const matchDetail = await MatchDetail.findOneAndUpdate(
-        { match: match._id },
-        {
-          match: match._id,
-          matchType: competitionType || 'tournament',
-          homeLineup: homeStartingXI,
-          awayLineup: awayStartingXI,
-          goals: goals,
-          substitutions: [],
-          possession: { home: 50, away: 50 },
-          shots: { home: 10, away: 8 },
-          shotsOnTarget: { home: 4, away: 3 },
-          corners: { home: 5, away: 3 },
-          fouls: { home: 12, away: 14 },
-          yellowCards: { home: 2, away: 1 },
-          redCards: { home: 0, away: 0 },
-          matchReport: matchReport,
-          homeFormation: '4-4-2',
-          awayFormation: '4-4-2',
-          weather: 'sunny',
-          temperature: 20,
-          attendance: 45000
-        },
-        { upsert: true, new: true }
-      )
-      
-      // Log after MatchDetail creation
-      logMessage = `  -> MatchDetail created/updated successfully\n`
-      fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+      let matchDetail
+      try {
+        matchDetail = await MatchDetail.findOneAndUpdate(
+          { match: match._id },
+          {
+            match: match._id,
+            matchType: competitionType || 'tournament',
+            homeLineup: homeStartingXI,
+            awayLineup: awayStartingXI,
+            goals: goals,
+            substitutions: [],
+            possession: { home: 50, away: 50 },
+            shots: { home: 10, away: 8 },
+            shotsOnTarget: { home: 4, away: 3 },
+            corners: { home: 5, away: 3 },
+            fouls: { home: 12, away: 14 },
+            yellowCards: { home: 2, away: 1 },
+            redCards: { home: 0, away: 0 },
+            matchReport: matchReport,
+            homeFormation: '4-4-2',
+            awayFormation: '4-4-2',
+            weather: 'sunny',
+            temperature: 20,
+            attendance: 45000
+          },
+          { upsert: true, new: true }
+        )
+        
+        // Log after MatchDetail creation with verification
+        if (matchDetail && matchDetail._id) {
+          logMessage = `  -> ✅ MatchDetail created successfully with ID: ${matchDetail._id}\n`
+        } else {
+          logMessage = `  -> ❌ MatchDetail creation returned null/empty result\n`
+        }
+        fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+        
+      } catch (matchDetailError) {
+        logMessage = `  -> ❌ MatchDetail creation FAILED: ${matchDetailError.message}\n`
+        fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+        console.error('MATCH DETAIL ERROR:', matchDetailError)
+        throw matchDetailError
+      }
       
       // Update player stats
       console.log(`📊 STATS UPDATE: Processing ${goals.length} goals and ${homeStartingXI.length + awayStartingXI.length} players`)

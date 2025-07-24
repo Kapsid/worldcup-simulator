@@ -117,16 +117,6 @@ class TournamentService {
 
   async updateTournament(tournamentId, userId, updateData) {
     try {
-      // If setting status to qualification_complete, also get qualified teams
-      if (updateData.status === 'qualification_complete') {
-        const QualificationService = await import('./QualificationService.js')
-        const qualificationData = await QualificationService.default.getQualificationData(tournamentId)
-        
-        if (qualificationData && qualificationData.qualifiedTeams) {
-          updateData.qualifiedTeams = qualificationData.qualifiedTeams
-          updateData.teamCount = qualificationData.qualifiedTeams.length
-        }
-      }
 
       const tournament = await Tournament.findOneAndUpdate(
         { _id: tournamentId, createdBy: userId },

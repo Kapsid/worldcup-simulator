@@ -33,7 +33,10 @@
       "Bash(git remote add:*)",
       "Bash(timeout:*)",
       "Bash(cp:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(/dev/null)",
+      "Bash(echo)"
     ],
     "deny": []
   }

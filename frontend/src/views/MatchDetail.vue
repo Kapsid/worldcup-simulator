@@ -30,6 +30,7 @@
                 <span class="nav-label">Previous Match</span>
                 <span class="nav-teams">{{ previousMatch.homeTeam.name }} vs {{ previousMatch.awayTeam.name }}</span>
                 <span v-if="previousMatch.confederationName" class="nav-confederation">{{ previousMatch.confederationName }} | Matchday {{ previousMatch.matchday }}</span>
+                <span v-else-if="previousMatch.groupName" class="nav-confederation">{{ previousMatch.groupName }} | Matchday {{ previousMatch.matchday }}</span>
               </div>
             </button>
             <div class="nav-divider" v-if="hasPreviousMatch && hasNextMatch"></div>
@@ -38,6 +39,7 @@
                 <span class="nav-label">Next Match</span>
                 <span class="nav-teams">{{ nextMatch.homeTeam.name }} vs {{ nextMatch.awayTeam.name }}</span>
                 <span v-if="nextMatch.confederationName" class="nav-confederation">{{ nextMatch.confederationName }} | Matchday {{ nextMatch.matchday }}</span>
+                <span v-else-if="nextMatch.groupName" class="nav-confederation">{{ nextMatch.groupName }} | Matchday {{ nextMatch.matchday }}</span>
               </div>
               <i class="fas fa-chevron-right"></i>
             </button>
@@ -84,6 +86,10 @@
                 <span v-else-if="match.round">{{ match.round }}</span>
                 <span v-else>Tournament Match</span>
                 <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
+                <span v-if="match.city" class="venue-info">
+                  <i class="fas fa-map-marker-alt"></i>
+                  {{ match.city }}
+                </span>
               </div>
             </div>
             
@@ -325,14 +331,20 @@ export default {
                 flag: groupMatch.awayTeam.countryFlag
               },
               groupId: `group_${groupMatch.group.groupLetter}`,
-              played: groupMatch.status === 'completed'
+              played: groupMatch.status === 'completed',
+              city: groupMatch.city
             }
             
-            // Store all group matches for navigation
+            // Store all group matches for navigation - navigate through all groups in matchday order
             this.allMatches = matches
-              .filter(m => m.group.groupLetter === groupMatch.group.groupLetter)
               .sort((a, b) => {
+                // Primary sort: matchday
                 if (a.matchday !== b.matchday) return a.matchday - b.matchday
+                // Secondary sort: group letter (A, B, C, etc.)
+                if (a.group.groupLetter !== b.group.groupLetter) {
+                  return a.group.groupLetter.localeCompare(b.group.groupLetter)
+                }
+                // Tertiary sort: match ID for consistency
                 return a._id.localeCompare(b._id)
               })
               .map(m => ({
@@ -344,7 +356,10 @@ export default {
                 awayTeam: {
                   name: m.awayTeam.countryName,
                   flag: m.awayTeam.countryFlag
-                }
+                },
+                groupName: `Group ${m.group.groupLetter}`,
+                matchday: m.matchday,
+                city: m.city
               }))
             this.currentMatchIndex = this.allMatches.findIndex(m => m._id === matchId)
             
@@ -387,8 +402,12 @@ export default {
               },
               round: this.getMatchLabel(knockoutMatch),
               played: knockoutMatch.status === 'completed',
-              date: knockoutMatch.date || knockoutMatch.scheduledDate
+              date: knockoutMatch.date || knockoutMatch.scheduledDate,
+              isKnockout: true
             }
+            
+            // Try to load enhanced match details for knockout matches
+            await this.loadEnhancedMatchDetails(matchId)
             this.loading = false
             return
           }
@@ -558,6 +577,13 @@ export default {
         const matchResult = await this.simulateActualMatch()
         console.log('🎮 LIVE SIM: simulateActualMatch completed')
         
+        // For group/knockout matches, we need to explicitly load enhanced details
+        if (!this.match.isQualification) {
+          console.log('🎮 LIVE SIM: Loading enhanced match details for group/knockout match')
+          await this.loadEnhancedMatchDetails(this.match._id)
+          console.log('🎮 LIVE SIM: Enhanced details loaded, goals:', this.matchDetails?.goals?.length || 0)
+        }
+        
         // Prepare goals for live display
         this.prepareGoalsForLiveDisplay(matchResult)
         
@@ -572,14 +598,36 @@ export default {
 
     async simulateActualMatch() {
       const token = localStorage.getItem('token')
-      const matchId = this.extractMatchId()
-      const url = `http://localhost:3001/api/qualification/${this.$route.params.tournamentId}/simulate-match?_=${Date.now()}`
+      const { tournamentId, matchId } = this.$route.params
+      
+      // Determine if this is a qualification match or a group/knockout match
+      let url
+      let requestBody
+      
+      if (this.match.isQualification) {
+        // For qualification matches, use the qualification endpoint
+        const actualMatchId = this.extractMatchId()
+        url = `http://localhost:3001/api/qualification/${tournamentId}/simulate-match?_=${Date.now()}`
+        requestBody = { matchId: actualMatchId }
+        console.log('🎯 FRONTEND: Using qualification endpoint')
+      } else if (this.match.isKnockout) {
+        // For knockout matches, use the knockout endpoint
+        url = `http://localhost:3001/api/knockout/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
+        requestBody = {}
+        console.log('🎯 FRONTEND: Using knockout match endpoint')
+      } else {
+        // For group stage matches, use the matches endpoint
+        url = `http://localhost:3001/api/matches/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
+        requestBody = {}
+        console.log('🎯 FRONTEND: Using group match endpoint')
+      }
       
       console.log('🎯 FRONTEND: About to simulate match', {
         url,
         matchId,
-        tournamentId: this.$route.params.tournamentId,
-        fullMatchId: this.$route.params.matchId
+        tournamentId,
+        isQualification: this.match.isQualification,
+        isKnockout: this.match.isKnockout
       })
       
       const response = await fetch(url, {
@@ -588,7 +636,7 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ matchId })
+        body: JSON.stringify(requestBody)
       })
 
       console.log('🎯 FRONTEND: Response status:', response.status)
@@ -939,6 +987,20 @@ export default {
 .matchday-info {
   font-weight: 600;
   color: var(--fifa-blue);
+}
+
+.venue-info {
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.venue-info i {
+  color: var(--fifa-gold);
+  font-size: 0.8rem;
 }
 
 .score {

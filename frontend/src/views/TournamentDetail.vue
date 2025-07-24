@@ -168,20 +168,13 @@
                       <small v-else-if="tournament.teamCount !== 32" style="display: block; font-size: 0.7rem; color: #666;">Teams: {{ tournament.teamCount }}/32</small>
                     </button>
                     
-                    <!-- Group Matches -->
-                    <button @click="toggleMatches" class="action-card" :class="{ 'action-selected': showMatches }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
-                      <i class="fas fa-futbol"></i>
-                      <span>Group Matches</span>
-                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
+                    <!-- Group Stage (Combined Matches & Standings) -->
+                    <button @click="toggleGroupStage" class="action-card" :class="{ 'action-selected': showGroupStage }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
+                      <i class="fas fa-users"></i>
+                      <span>Group Stage</span>
+                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">Matches & Standings</small>
                       <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
-                    </button>
-                    
-                    <!-- Group Standings -->
-                    <button @click="toggleStandings" class="action-card" :class="{ 'action-selected': showStandings }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
-                      <i class="fas fa-chart-bar"></i>
-                      <span>Group Standings</span>
-                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
-                      <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
+                      <small v-else style="display: block; font-size: 0.7rem; color: #666;">Matches & Standings</small>
                     </button>
                     
                     <!-- Knockout Stage -->
@@ -190,6 +183,13 @@
                       <span>Knockout Stage</span>
                       <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
                       <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
+                    </button>
+                    
+                    <!-- Tournament Stats -->
+                    <button @click="toggleStats" class="action-card" :class="{ 'action-selected': showStats }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
+                      <i class="fas fa-chart-line"></i>
+                      <span>Stats</span>
+                      <small style="display: block; font-size: 0.7rem; color: #666;">Top Scorers</small>
                     </button>
                     
                     <!-- Tournament News -->
@@ -261,39 +261,55 @@
                 </div>
               </div>
 
-              <!-- Group Matches -->
-              <div v-if="showMatches" id="matches" class="content-card glass-white full-width">
+              <!-- Group Stage (Combined Matches & Standings) -->
+              <div v-if="showGroupStage" id="group-stage" class="content-card glass-white full-width">
                 <div class="card-header">
-                  <h3>Group Matches</h3>
-                  <button @click="toggleMatches" class="close-section-btn">
+                  <h3>Group Stage</h3>
+                  <button @click="toggleGroupStage" class="close-section-btn">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
-                <div class="card-content">
-                  <GroupMatches 
-                    :tournament="tournament" 
-                    :read-only="tournament.status === 'completed'"
-                    @matches-generated="handleMatchesGenerated"
-                    @match-simulated="handleMatchSimulated"
-                    @matchday-simulated="handleMatchdaySimulated"
-                  />
-                </div>
-              </div>
-
-              <!-- Group Standings -->
-              <div v-if="showStandings" id="standings" class="content-card glass-white full-width">
-                <div class="card-header">
-                  <h3>Group Standings</h3>
-                  <button @click="toggleStandings" class="close-section-btn">
-                    <i class="fas fa-times"></i>
+                
+                <!-- Tab Navigation -->
+                <div class="tab-navigation">
+                  <button 
+                    @click="groupStageActiveTab = 'matches'" 
+                    class="tab-btn"
+                    :class="{ 'active': groupStageActiveTab === 'matches' }"
+                  >
+                    <i class="fas fa-futbol"></i>
+                    Matches
+                  </button>
+                  <button 
+                    @click="groupStageActiveTab = 'standings'" 
+                    class="tab-btn"
+                    :class="{ 'active': groupStageActiveTab === 'standings' }"
+                  >
+                    <i class="fas fa-chart-bar"></i>
+                    Standings
                   </button>
                 </div>
-                <div class="card-content">
-                  <GroupStandings 
-                    :tournament="tournament" 
-                    :read-only="tournament.status === 'completed'"
-                    ref="standings"
-                  />
+                
+                <div class="card-content tab-content">
+                  <!-- Matches Tab -->
+                  <div v-if="groupStageActiveTab === 'matches'">
+                    <GroupMatches 
+                      :tournament="tournament" 
+                      :read-only="tournament.status === 'completed'"
+                      @matches-generated="handleMatchesGenerated"
+                      @match-simulated="handleMatchSimulated"
+                      @matchday-simulated="handleMatchdaySimulated"
+                    />
+                  </div>
+                  
+                  <!-- Standings Tab -->
+                  <div v-if="groupStageActiveTab === 'standings'">
+                    <GroupStandings 
+                      :tournament="tournament" 
+                      :read-only="tournament.status === 'completed'"
+                      ref="standings"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -313,6 +329,19 @@
                     @match-simulated="handleKnockoutMatchSimulated"
                     @round-simulated="handleKnockoutRoundSimulated"
                   />
+                </div>
+              </div>
+
+              <!-- Tournament Stats -->
+              <div v-if="showStats" id="stats" class="content-card glass-white full-width">
+                <div class="card-header">
+                  <h3>Tournament Statistics</h3>
+                  <button @click="toggleStats" class="close-section-btn">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="card-content">
+                  <TournamentStats :tournament="tournament" />
                 </div>
               </div>
 
@@ -346,6 +375,7 @@ import GroupMatches from '../components/GroupMatches.vue'
 import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
 import TournamentNews from '../components/TournamentNews.vue'
+import TournamentStats from '../components/TournamentStats.vue'
 import TournamentBranding from '../components/TournamentBranding.vue'
 import { applyTournamentTheme, removeTournamentTheme } from '../styles/tournament-theme.js'
 
@@ -360,6 +390,7 @@ export default {
     GroupStandings,
     KnockoutBracket,
     TournamentNews,
+    TournamentStats,
     TournamentBranding
   },
   data() {
@@ -381,10 +412,11 @@ export default {
       showQualifying: false,
       worldId: null,
       showDraw: false,
-      showMatches: false,
-      showStandings: false,
+      showGroupStage: false,
+      groupStageActiveTab: 'matches', // 'matches' or 'standings'
       showKnockout: false,
       showNews: false,
+      showStats: false,
       unreadNewsCount: 0,
       allGroupMatchesCompleted: false,
       anyGroupMatchPlayed: false
@@ -590,10 +622,10 @@ export default {
       if (this.showTeamManagement) {
         this.showQualifying = false
         this.showDraw = false
-        this.showMatches = false
-        this.showStandings = false
+        this.showGroupStage = false
         this.showKnockout = false
         this.showNews = false
+        this.showStats = false
         this.scrollToSection('team-management')
       }
     },
@@ -603,10 +635,10 @@ export default {
       if (this.showQualifying) {
         this.showTeamManagement = false
         this.showDraw = false
-        this.showMatches = false
-        this.showStandings = false
+        this.showGroupStage = false
         this.showKnockout = false
         this.showNews = false
+        this.showStats = false
         this.scrollToSection('qualifying')
       }
     },
@@ -620,6 +652,7 @@ export default {
         this.showStandings = false
         this.showKnockout = false
         this.showNews = false
+        this.showStats = false
         this.scrollToSection('draw')
       }
     },
@@ -647,34 +680,22 @@ export default {
 
     handleProceedToMatches() {
       this.showDraw = false
-      this.showMatches = true
+      this.showGroupStage = true
+      this.groupStageActiveTab = 'matches'
       // Re-check match status
       this.checkGroupMatchesCompletion()
     },
 
-    toggleMatches() {
-      this.showMatches = !this.showMatches
-      if (this.showMatches) {
+    toggleGroupStage() {
+      this.showGroupStage = !this.showGroupStage
+      if (this.showGroupStage) {
         this.showTeamManagement = false
         this.showQualifying = false
         this.showDraw = false
-        this.showStandings = false
         this.showKnockout = false
         this.showNews = false
-        this.scrollToSection('matches')
-      }
-    },
-
-    toggleStandings() {
-      this.showStandings = !this.showStandings
-      if (this.showStandings) {
-        this.showTeamManagement = false
-        this.showQualifying = false
-        this.showDraw = false
-        this.showMatches = false
-        this.showKnockout = false
-        this.showNews = false
-        this.scrollToSection('standings')
+        this.showStats = false
+        this.scrollToSection('group-stage')
       }
     },
 
@@ -684,9 +705,9 @@ export default {
         this.showTeamManagement = false
         this.showQualifying = false
         this.showDraw = false
-        this.showMatches = false
-        this.showStandings = false
+        this.showGroupStage = false
         this.showNews = false
+        this.showStats = false
         this.scrollToSection('knockout')
       }
     },
@@ -697,10 +718,23 @@ export default {
         this.showTeamManagement = false
         this.showQualifying = false
         this.showDraw = false
-        this.showMatches = false
-        this.showStandings = false
+        this.showGroupStage = false
         this.showKnockout = false
+        this.showStats = false
         this.scrollToSection('news')
+      }
+    },
+
+    toggleStats() {
+      this.showStats = !this.showStats
+      if (this.showStats) {
+        this.showTeamManagement = false
+        this.showQualifying = false
+        this.showDraw = false
+        this.showGroupStage = false
+        this.showKnockout = false
+        this.showNews = false
+        this.scrollToSection('stats')
       }
     },
 
@@ -1439,6 +1473,52 @@ export default {
 }
 
 
+/* Tab Navigation Styles */
+.tab-navigation {
+  display: flex;
+  background: rgba(0, 102, 204, 0.05);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-bottom: 1px solid rgba(0, 102, 204, 0.1);
+  margin: 0 -24px;
+  padding: 0 24px;
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+  color: var(--fifa-blue);
+  background: rgba(0, 102, 204, 0.05);
+}
+
+.tab-btn.active {
+  color: var(--fifa-blue);
+  background: rgba(0, 102, 204, 0.1);
+  border-bottom-color: var(--fifa-blue);
+}
+
+.tab-btn i {
+  font-size: 1rem;
+}
+
+.tab-content {
+  padding-top: 1.5rem;
+}
+
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
@@ -1485,6 +1565,16 @@ export default {
   .progress-steps {
     flex-direction: column;
     gap: 16px;
+  }
+  
+  .tab-navigation {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+  
+  .tab-btn {
+    padding: 12px 16px;
+    font-size: 0.85rem;
   }
 }
 </style>

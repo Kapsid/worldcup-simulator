@@ -26,10 +26,12 @@ router.get('/:tournamentId/bracket', authenticateToken, async (req, res) => {
 
 router.post('/:tournamentId/simulate/match/:matchId', authenticateToken, async (req, res) => {
   try {
+    console.error(`🚨 KNOCKOUT ROUTE HIT: ${req.params.tournamentId}/simulate/match/${req.params.matchId}`)
     const { matchId } = req.params
     const match = await KnockoutService.simulateKnockoutMatch(matchId)
     res.json({ match })
   } catch (error) {
+    console.error(`🚨 KNOCKOUT ROUTE ERROR:`, error)
     res.status(400).json({ error: error.message })
   }
 })

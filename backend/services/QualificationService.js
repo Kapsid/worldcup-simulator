@@ -2050,15 +2050,15 @@ class QualificationService {
       
       await qualification.save()
 
-      // Update tournament status to qualification_complete and add qualified teams
+      // Update tournament with qualified teams (keep status as active)
       const TournamentService = await import('./TournamentService.js')
       await TournamentService.default.updateTournament(tournamentId, tournament.createdBy, {
-        status: 'qualification_complete',
         qualifiedTeams: qualifiedTeams,
-        teamCount: qualifiedTeams.length
+        teamCount: qualifiedTeams.length,
+        canActivate: qualifiedTeams.length === 32
       })
 
-      console.log('✅ Tournament updated to qualification_complete status')
+      console.log('✅ Tournament updated with qualified teams')
 
       return {
         success: true,
