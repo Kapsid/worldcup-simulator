@@ -91,6 +91,41 @@
           <small v-if="tournament.status === 'completed'" class="action-note status-info">View Only</small>
           <small v-else-if="tournament.status !== 'active'" class="action-note status-warning">Status: {{ tournament.status }}</small>
         </button>
+        
+        <!-- Team Rosters -->
+        <button 
+          @click="$emit('toggle-roster')" 
+          class="action-card" 
+          :class="{ 'action-selected': showRoster }" 
+          :disabled="tournament.status === 'draft' || tournament.status === 'cancelled' || tournament.teamCount === 0"
+        >
+          <i class="fas fa-id-card"></i>
+          <span>Team Rosters</span>
+          <small v-if="tournament.teamCount === 0" class="action-note status-warning">No teams added</small>
+          <small v-else-if="tournament.status !== 'active'" class="action-note status-warning">Status: {{ tournament.status }}</small>
+        </button>
+      </div>
+      
+      <!-- Debug Section -->
+      <div class="debug-section">
+        <div class="debug-header">
+          <h4>
+            <i class="fas fa-bug"></i>
+            Debug Tools
+          </h4>
+          <small>Development utilities</small>
+        </div>
+        <div class="debug-actions">
+          <button 
+            @click="handleDebugClick" 
+            class="debug-btn"
+            :disabled="tournament.teamCount === 0 || regeneratingPlayers"
+          >
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': regeneratingPlayers }"></i>
+            <span v-if="regeneratingPlayers">Regenerating...</span>
+            <span v-else>Regenerate All Players</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -128,6 +163,14 @@ export default {
       type: Boolean,
       default: false
     },
+    showRoster: {
+      type: Boolean,
+      default: false
+    },
+    regeneratingPlayers: {
+      type: Boolean,
+      default: false
+    },
     anyGroupMatchPlayed: {
       type: Boolean,
       default: false
@@ -140,8 +183,19 @@ export default {
     'toggle-draw',
     'toggle-matches',
     'toggle-standings',
-    'toggle-knockout'
-  ]
+    'toggle-knockout',
+    'toggle-roster',
+    'regenerate-players'
+  ],
+  methods: {
+    handleDebugClick() {
+      console.log('🔧 DEBUG: Debug button clicked!')
+      console.log('🔧 DEBUG: Tournament:', this.tournament)
+      console.log('🔧 DEBUG: Team count:', this.tournament.teamCount)
+      console.log('🔧 DEBUG: Regenerating players:', this.regeneratingPlayers)
+      this.$emit('regenerate-players')
+    }
+  }
 }
 </script>
 
@@ -305,5 +359,63 @@ export default {
     padding: 0.75rem;
     min-height: 80px;
   }
+}
+
+/* Debug Section Styles */
+.debug-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 69, 0, 0.1);
+  border: 1px solid rgba(255, 69, 0, 0.3);
+  border-radius: var(--radius-lg);
+}
+
+.debug-header h4 {
+  color: #ff4500;
+  font-size: 1rem;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.debug-header small {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+}
+
+.debug-actions {
+  margin-top: 1rem;
+}
+
+.debug-btn {
+  background: rgba(255, 69, 0, 0.2);
+  border: 1px solid rgba(255, 69, 0, 0.5);
+  color: #ff4500;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.debug-btn:hover:not(:disabled) {
+  background: rgba(255, 69, 0, 0.3);
+  border-color: #ff4500;
+  transform: translateY(-1px);
+}
+
+.debug-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.debug-btn i {
+  font-size: 1rem;
 }
 </style>

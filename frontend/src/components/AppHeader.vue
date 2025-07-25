@@ -71,7 +71,7 @@ export default {
 
 <style scoped>
 .header {
-  padding: 20px 40px;
+  padding: 16px 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -79,6 +79,13 @@ export default {
   position: sticky;
   top: 0;
   z-index: 100;
+  height: var(--header-height, 66px);
+  box-sizing: border-box;
+  background: rgba(0, 51, 102, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.3s ease;
+  color: white;
 }
 
 .brand-section {
@@ -234,15 +241,16 @@ export default {
   }
   
   .header {
-    padding: 16px 24px;
+    padding: 12px 24px;
   }
 }
 
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
-    gap: 16px;
-    padding: 16px 20px;
+    gap: 14px;
+    padding: 14px 18px;
+    height: var(--header-height-mobile, 132px);
   }
   
   .brand-section {

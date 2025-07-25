@@ -1,0 +1,116 @@
+{
+  "KAZ": {
+    "country": "Kazakhstan",
+    "firstNames": [
+      "Aleksandr", "Abat", "Alibek", "Aslan", "Baktiyor", "Baurzhan", "Daniyar", "Dmitri", "Eldos", "Gafurzhan",
+      "Islambek", "Kirill", "Maxim", "Nuraly", "Oralkhan", "Ramazan", "Sergey", "Temirlan", "Yan", "Zhaslan",
+      "Abzal", "Alisher", "Arman", "Bauyrzhan", "Duman", "Erkebulan", "Islam", "Marat", "Nurlan", "Pavel",
+      "Roman", "Serikzhan", "Timur", "Vladimir", "Yerkebulan", "Askhat", "Bagdat", "Dias", "Galymzhan", "Kairat",
+      "Mikhail", "Oleg", "Ruslan", "Talgat", "Yevgen", "Adilet", "Aibek", "Berik", "Damir", "Emil",
+      "Konstantin", "Maxat", "Nurbol", "Sanzhar", "Zhanibek", "Aidyn", "Azat", "Dosbol", "Ilya", "Nurzhan"
+    ],
+    "surnames": [
+      "Seidakhmet", "Bakhtiyor", "Islamkhan", "Abiken", "Fedin", "Marochkin", "Vorogovsky", "Shomko", "Pertsukh", "Logvinenko",
+      "Tagybergen", "Zhaksylykov", "Muzhikov", "Darabaev", "Shchetkin", "Chesnokov", "Maliy", "Yerlanov", "Zainutdinov", "Kuat",
+      "Aykin", "Beysebekov", "Kazakhstanov", "Murtazayev", "Orazov", "Shushenachev", "Tursunov", "Valiullin", "Zhalmukan", "Aimbetov",
+      "Bystrov", "Iskhakov", "Kalmuratov", "Nurgaliyev", "Suyumbayev", "Turysbek", "Zhumabekov", "Abdukhanov", "Grigorjev", "Khizhnichenko",
+      "Lunev", "Narynbayev", "Postnikov", "Rukavishnikov", "Startsev", "Tursynbekov", "Voronin", "Zhaksilikov", "Almaty", "Nazarbayev",
+      "Tokayev", "Massimov", "Sagintayev", "Mamin", "Umarov", "Kozybayev", "Kulibayev", "Aldabergenov", "Berdibek", "Smakov"
+    ]
+  },
+  "UZB": {
+    "country": "Uzbekistan",
+    "firstNames": [
+      "Abduvohid", "Akmal", "Bobir", "Dilshod", "Eldor", "Farrukh", "Islom", "Jasur", "Khojiakbar", "Makhmudjon",
+      "Oston", "Rustam", "Sherzod", "Utkir", "Vitaliy", "Jaloliddin", "Otabek", "Sardor", "Zabikhillo", "Abdulla",
+      "Azizbek", "Doniyor", "Hojimat", "Igor", "Javohir", "Khumoyun", "Mirjakhon", "Odiljon", "Sanat", "Umidjon",
+      "Yusuf", "Aziz", "Bekzod", "Dostonbek", "Husniddin", "Ibrokhim", "Khojiakbar", "Muzaffarkhon", "Rivoliddin", "Sukhrob",
+      "Umarbek", "Azamat", "Davronbek", "Feruz", "Iskandar", "Khasan", "Mirzabek", "Nodirbek", "Shukurullo", "Umar",
+      "Abdulaziz", "Bunyodkor", "Foziljon", "Khurshid", "Mukhammad", "Saidakbar", "Ulugbek", "Zafar", "Bakhtiyor", "Fayzullo"
+    ],
+    "surnames": [
+      "Yusupov", "Ashurmatov", "Masharipov", "Alijonov", "Ergashev", "Norchayev", "Xamrobekov", "Shomurodov", "Fayzullaev", "Krimets",
+      "Xamrobekov", "Turgunboev", "Abdukholikov", "Nazarov", "Mamatov", "Khamdamov", "Iskandarov", "Djeparov", "Khoshimov", "Bikmaev",
+      "Rashidov", "Kapadze", "Sergeev", "Kholmatov", "Nematov", "Kenjabaev", "Akramov", "Muminov", "Xamrobekov", "Igamberdieva",
+      "Tukhtasinov", "Sayfiev", "Hasanov", "Jalolov", "Khaydarov", "Nasrullaev", "Rakhmatullaev", "Xamrobekov", "Abdurakhimov", "Buriev",
+      "Erkinov", "Karimov", "Musaev", "Rajabov", "Yunusov", "Abdukarimov", "Gadoev", "Makhamadjonov", "Tashkentbaev", "Xamrobekov",
+      "Eshmuradov", "Komilov", "Ruziev", "Yuldashev", "Abduraimov", "Choriev", "Ibragimov", "Mirzaev", "Sodiqov", "Xamrobekov"
+    ]
+  },
+  "KGZ": {
+    "country": "Kyrgyzstan",
+    "firstNames": [
+      "Aizar", "Bakyt", "Chyngyz", "Dastan", "Erbol", "Farkhad", "Gulzhigit", "Izzat", "Kairat", "Mirlan",
+      "Nursultan", "Oksana", "Pavel", "Ruslan", "Talgat", "Ulan", "Viktor", "Zhyrgalbek", "Azamat", "Bekzhan",
+      "Daniyar", "Emil", "Gulmira", "Kanybek", "Meerim", "Nurdin", "Omurbek", "Parviz", "Saltanat", "Ulanbek",
+      "Zamira", "Adilbek", "Chyngyzbek", "Elmirbek", "Janysh", "Maksat", "Nurlanbek", "Salamat", "Tynychtyk", "Zhanybek",
+      "Askarbek", "Bolot", "Ernist", "Kubanych", "Nurbek", "Semetey", "Ulukbek", "Almazbek", "Eldiyar", "Kanykei",
+      "Nurgazy", "Taalaibek", "Zholdoshbek", "Adilet", "Chynara", "Erkinbek", "Nurzat", "Tilek", "Zhyldyzbek", "Bermet"
+    ],
+    "surnames": [
+      "Murzaev", "Kydyraliev", "Aitmatov", "Temirov", "Duisheev", "Mamatov", "Toktogonov", "Nazaraliev", "Ormonov", "Jumabaev",
+      "Kasymov", "Sydykov", "Abdykerimov", "Bakirov", "Elebaev", "Isaev", "Mamyrov", "Osmonov", "Sarymsakov", "Turdubaev",
+      "Usubaliev", "Zhoroev", "Akmatov", "Chynybaev", "Ismailov", "Kasybekov", "Nurmatov", "Sadykov", "Tashiev", "Zulpuev",
+      "Abdyrakhmanov", "Bekmurzaev", "Isakov", "Kachkynbaev", "Moldobaev", "Suyunbaev", "Toktosunov", "Zhanybekov", "Alymkulov", "Dzhumabekov",
+      "Kadyrbekov", "Nurbekov", "Tashbaev", "Zhanuzakov", "Botobekov", "Kylychbekov", "Omurbek", "Satarov", "Zhakypov", "Akynbekov",
+      "Jorobekov", "Mamytov", "Sydykbekov", "Tulekeev", "Abdykalykov", "Erkindiev", "Nazarbekov", "Toktogulov", "Zhunushov", "Asykeev"
+    ]
+  },
+  "TJK": {
+    "country": "Tajikistan",
+    "firstNames": [
+      "Akmal", "Bobur", "Davron", "Farkhod", "Ikhtiyor", "Jaloliddin", "Manuchehr", "Nuriddin", "Parviz", "Rustam",
+      "Shokhrukh", "Umed", "Ziyodullo", "Alisher", "Bahrom", "Daler", "Firuz", "Jahongir", "Komil", "Nasrullo",
+      "Otabek", "Ravshan", "Suhrob", "Vakhdat", "Abdulloh", "Farrukh", "Karim", "Ozod", "Saidali", "Tohir",
+      "Yusuf", "Aziz", "Firdavs", "Husniddin", "Mirzo", "Rahmon", "Sharofiddin", "Valijon", "Abdurahmon", "Islom",
+      "Muhammadali", "Safarali", "Umeda", "Azamat", "Golibjon", "Mahmadali", "Shukhrat", "Abdusattor", "Khurshed", "Sanjar",
+      "Abdurauf", "Hikmatillo", "Nosir", "Shohjahon", "Abdurashid", "Imomali", "Saidjon", "Abdullo", "Mukhtor", "Suhrob"
+    ],
+    "surnames": [
+      "Rahmonov", "Nazarov", "Kholiqov", "Sharipov", "Yusupov", "Ismoilov", "Rustamov", "Vohidov", "Sattorov", "Karimov",
+      "Abdulloev", "Fayzulloev", "Mirzoev", "Saidov", "Umarov", "Boboyev", "Ikromov", "Nurmatov", "Shokirov", "Azizov",
+      "Davlatov", "Hushkelchaev", "Makhmudov", "Rajabov", "Yunusov", "Abdukarimov", "Gulomov", "Latipov", "Qosimov", "Tohirov",
+      "Abdullaev", "Jalolov", "Nazarov", "Saidmurodov", "Yuldoshev", "Bahromov", "Iskandarov", "Pirmatov", "Safarov", "Ziyoev",
+      "Akhmedov", "Hamidov", "Murodov", "Rakhmonov", "Zaripov", "Ashurov", "Kamolzoda", "Olimjonov", "Saidkhonov", "Abdurahmoni",
+      "Kurbonov", "Nazirov", "Tursunzoda", "Abdulaev", "Khamidov", "Mukhammadev", "Sodikov", "Azimov", "Madaminov", "Sultonov"
+    ]
+  },
+  "TKM": {
+    "country": "Turkmenistan",
+    "firstNames": [
+      "Ahmet", "Begench", "Dayanch", "Gurban", "Maksat", "Ogulmurad", "Suleyman", "Yazguly", "Agageldi", "Berdy",
+      "Döwlet", "Hojamyrat", "Mekan", "Oraz", "Saparmyrat", "Yusup", "Ak", "Batyr", "Eziz", "Hudayberdi",
+      "Myrat", "Orazmurad", "Serdar", "Ziya", "Atajan", "Begmyrat", "Gahryman", "Kerim", "Nurberdy", "Rejep",
+      "Toyli", "Abdymurad", "Charymyrat", "Gulmurad", "Mahri", "Rustam", "Wekil", "Amanmurad", "Dowletmyrat", "Kakajan",
+      "Nepes", "Sohbet", "Yelaman", "Arslan", "Didar", "Hojamurad", "Merdan", "Shatlyk", "Annaguly", "Gurbanguly",
+      "Mergen", "Selim", "Bayram", "Hangeldi", "Nurberdiyew", "Wepa", "Annamurad", "Durdymurad", "Kemal", "Rowshan"
+    ],
+    "surnames": [
+      "Niyazov", "Berdymukhamedov", "Saparmuradov", "Atayev", "Rejepov", "Gurbanov", "Abdymuradov", "Charyyev", "Orazov", "Saryyev",
+      "Mamedov", "Nazarov", "Annayev", "Bayramov", "Durdyev", "Geldymukhamedov", "Hojamuradov", "Myradov", "Soyunov", "Yazmuradov",
+      "Achylov", "Amanmuradov", "Ballyyev", "Dowletov", "Gurbangeldyev", "Nepesov", "Rustamov", "Yagmyrov", "Agajanov", "Berdimuhamedow",
+      "Garayev", "Muradov", "Saparmyradov", "Yusupov", "Ashyrov", "Dovletov", "Hallyev", "Ovezov", "Saparmuradov", "Yagshymuradov",
+      "Annageldiyev", "Gurbanov", "Nurmuradov", "Serdarly", "Agamyradov", "Gundogdyev", "Ovezmuradov", "Turkmenbaşy", "Amangeldi", "Rovshenov",
+      "Wepaly", "Annamyradov", "Gurbansahatov", "Sahatmuradov", "Velayatly", "Berkarar", "Mugallymov", "Turkmen", "Gadambaev", "Hojamuhammedov"
+    ]
+  },
+  "AFG": {
+    "country": "Afghanistan",
+    "firstNames": [
+      "Ahmad", "Farid", "Haroon", "Masih", "Noor", "Omar", "Rahmat", "Wali", "Aftab", "Fawad",
+      "Hashmat", "Mohammad", "Omran", "Qaderi", "Rohullah", "Wahid", "Ajmal", "Fayaz", "Hazratullah", "Mujeeb",
+      "Oveisi", "Qais", "Sediq", "Yama", "Amir", "Fazal", "Ibrahim", "Najibullah", "Payam", "Rashid",
+      "Shafiq", "Yasir", "Asadullah", "Ghulam", "Ismail", "Nasir", "Qasim", "Sami", "Tariq", "Zubair",
+      "Bashir", "Habib", "Javid", "Nisar", "Saeed", "Waheed", "Abdullah", "Karim", "Mansoor", "Saifullah",
+      "Aziz", "Hamed", "Khalil", "Najeeb", "Shahid", "Zahir", "Daud", "Latif", "Qadir", "Yousuf"
+    ],
+    "surnames": [
+      "Ahmadi", "Karimi", "Mohammadi", "Rezai", "Hashimi", "Hosseini", "Qaderi", "Rahimi", "Sultani", "Tokhi",
+      "Yousufzai", "Barakzai", "Durrani", "Ghilzai", "Karzai", "Popalzai", "Wardak", "Achakzai", "Kakar", "Noorzai",
+      "Alizai", "Ishaqzai", "Nasiri", "Stanekzai", "Zazai", "Afridi", "Mangal", "Safi", "Waziri", "Zadran",
+      "Ahmadzai", "Babrakzai", "Hotak", "Lodhi", "Shinwari", "Taniwal", "Atmar", "Dadgar", "Haqqani", "Khalili",
+      "Massoud", "Rabbani", "Salangi", "Anwari", "Fahim", "Jalali", "Omar", "Raziq", "Spanta", "Dostum",
+      "Hekmatyar", "Khan", "Mohseni", "Rasoul", "Stanikzai", "Watanwal", "Basharyar", "Gailani", "Mojaddedi", "Sayyaf"
+    ]
+  }
+}

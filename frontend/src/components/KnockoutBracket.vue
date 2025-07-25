@@ -8,25 +8,35 @@
           View Only
         </div>
       </div>
-      <div class="bracket-actions" v-if="!readOnly">
+      <div class="bracket-actions">
+        <div v-if="!readOnly" class="simulation-actions">
+          <button 
+            @click="generateBracket" 
+            :disabled="loading || bracket.matches"
+            class="btn-primary"
+          >
+            <i v-if="loading" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-trophy"></i>
+            {{ bracket.matches ? 'Bracket Generated' : 'Generate Knockout Bracket' }}
+          </button>
+          <button 
+            v-if="bracket.matches"
+            @click="simulateAllRounds" 
+            :disabled="loading || tournamentCompleted"
+            class="btn-secondary"
+          >
+            <i v-if="loading" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-fast-forward"></i>
+            {{ tournamentCompleted ? 'Tournament Completed' : 'Simulate All Rounds' }}
+          </button>
+        </div>
         <button 
-          @click="generateBracket" 
-          :disabled="loading || bracket.matches"
-          class="btn-primary"
-        >
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-trophy"></i>
-          {{ bracket.matches ? 'Bracket Generated' : 'Generate Knockout Bracket' }}
-        </button>
-        <button 
-          v-if="bracket.matches"
-          @click="simulateAllRounds" 
-          :disabled="loading || tournamentCompleted"
+          v-if="bracket.matches && !showBracketView"
+          @click="toggleBracketView" 
           class="btn-secondary"
         >
-          <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-fast-forward"></i>
-          {{ tournamentCompleted ? 'Tournament Completed' : 'Simulate All Rounds' }}
+          <i class="fas fa-sitemap"></i>
+          View Full Bracket
         </button>
       </div>
     </div>
@@ -42,12 +52,6 @@
       
       <!-- Round by Round View -->
       <div v-else class="rounds-view">
-        <div class="view-toggle">
-          <button @click="toggleBracketView" class="btn-secondary">
-            <i class="fas fa-sitemap"></i>
-            View Full Bracket
-          </button>
-        </div>
         
         <div class="rounds-navigation">
           <button 
@@ -597,6 +601,12 @@ export default {
 }
 
 .bracket-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.simulation-actions {
   display: flex;
   gap: 16px;
 }

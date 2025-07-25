@@ -29,7 +29,14 @@
       "Bash(npm cache clean:*)",
       "Bash(npm:*)",
       "Bash(git push:*)",
-      "Bash(git filter-branch:*)"
+      "Bash(git filter-branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(timeout:*)",
+      "Bash(cp:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(/dev/null)",
+      "Bash(echo)"
     ],
     "deny": []
   }

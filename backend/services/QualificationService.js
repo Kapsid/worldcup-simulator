@@ -2,6 +2,8 @@ import Qualification from '../models/Qualification.js'
 import Tournament from '../models/Tournament.js'
 import World from '../models/World.js'
 import TournamentNewsService from './TournamentNewsService.js'
+import PlayerGenerationService from './PlayerGenerationService.js'
+import BasicEnhancedMatchService from './BasicEnhancedMatchService.js'
 import { confederations } from '../data/confederations.js'
 import { countries } from '../data/countries.js'
 
@@ -629,6 +631,38 @@ class QualificationService {
         qualification = new Qualification(qualificationData)
         await qualification.save()
       }
+
+      // Generate player squads for all qualifying teams
+      console.log('Generating player squads for all qualifying teams...')
+      let totalTeamsGenerated = 0
+      
+      for (const confederationData of qualificationData.confederations) {
+        for (const group of confederationData.groups) {
+          for (const team of group.teams) {
+            try {
+              // Extract country code from team data
+              const countryCode = countries.find(c => c.name === team.country)?.code || team.name.substring(0, 3).toUpperCase()
+              
+              await PlayerGenerationService.generateSquad(
+                countryCode,
+                tournamentId,
+                tournament.worldId ? tournament.worldId.toString() : null,
+                tournament.year || new Date().getFullYear()
+              )
+              totalTeamsGenerated++
+              
+              if (totalTeamsGenerated % 10 === 0) {
+                console.log(`✓ Generated squads for ${totalTeamsGenerated} teams...`)
+              }
+            } catch (squadError) {
+              console.error(`Error generating squad for ${team.country}:`, squadError)
+              // Continue with other teams even if one fails
+            }
+          }
+        }
+      }
+      
+      console.log(`✅ Player squad generation completed for ${totalTeamsGenerated} qualifying teams`)
 
       return qualification
     } catch (error) {
@@ -1500,6 +1534,7 @@ class QualificationService {
   // Simulate next matchday for all confederations
   async simulateNextMatchday(tournamentId) {
     try {
+      console.log(`🚀 SIMULATION CALLED: simulateNextMatchday for tournament ${tournamentId}`)
       // Load world context for ranking lookups
       await this.loadWorldContext(tournamentId)
       
@@ -1521,6 +1556,15 @@ class QualificationService {
           match.homeScore = result.homeScore
           match.awayScore = result.awayScore
           match.played = true
+          
+          // Apply enhanced simulation for qualification matches
+          try {
+            console.log(`About to run enhanced simulation for qualification match: ${match.matchId}`)
+            await this.simulateEnhancedQualificationMatch(match, tournamentId)
+            console.log(`Enhanced simulation completed for qualification match: ${match.matchId}`)
+          } catch (enhancedError) {
+            console.error('Enhanced qualification simulation failed:', enhancedError)
+          }
           
           const group = confederation.groups.find(g => g.groupId === match.groupId)
           if (group) {
@@ -1548,6 +1592,7 @@ class QualificationService {
   // Simulate next matchday for a specific confederation
   async simulateNextMatchdayForConfederation(tournamentId, confederationId) {
     try {
+      console.log(`🚀 SIMULATION CALLED: simulateNextMatchdayForConfederation for tournament ${tournamentId}, confederation ${confederationId}`)
       // Load world context for ranking lookups
       await this.loadWorldContext(tournamentId)
       
@@ -1587,6 +1632,13 @@ class QualificationService {
         match.homeScore = result.homeScore
         match.awayScore = result.awayScore
         match.played = true
+        
+        // Apply enhanced simulation for qualification matches
+        try {
+          await this.simulateEnhancedQualificationMatch(match, tournamentId)
+        } catch (enhancedError) {
+          console.error('Enhanced qualification simulation failed:', enhancedError)
+        }
         
         const group = confederation.groups.find(g => g.groupId === match.groupId)
         if (group) {
@@ -1642,6 +1694,7 @@ class QualificationService {
   // Simulate specific matchday for a specific confederation
   async simulateSpecificMatchday(tournamentId, confederationId, matchday) {
     try {
+      console.log(`🚀 SIMULATION CALLED: simulateSpecificMatchday for tournament ${tournamentId}, confederation ${confederationId}, matchday ${matchday}`)
       // Load world context for ranking lookups
       await this.loadWorldContext(tournamentId)
       
@@ -1670,6 +1723,13 @@ class QualificationService {
         match.homeScore = result.homeScore
         match.awayScore = result.awayScore
         match.played = true
+        
+        // Apply enhanced simulation for qualification matches
+        try {
+          await this.simulateEnhancedQualificationMatch(match, tournamentId)
+        } catch (enhancedError) {
+          console.error('Enhanced qualification simulation failed:', enhancedError)
+        }
         
         const group = confederation.groups.find(g => g.groupId === match.groupId)
         if (group) {
@@ -1714,6 +1774,7 @@ class QualificationService {
   // Simulate individual match
   async simulateIndividualMatch(tournamentId, matchId) {
     try {
+      console.log(`QUALIFICATION SERVICE: simulateIndividualMatch called with tournamentId: ${tournamentId}, matchId: ${matchId}`)
       // Load world context for ranking lookups
       await this.loadWorldContext(tournamentId)
       
@@ -1746,6 +1807,27 @@ class QualificationService {
       targetMatch.homeScore = result.homeScore
       targetMatch.awayScore = result.awayScore
       targetMatch.played = true
+
+      // Apply enhanced simulation for individual qualification match
+      try {
+        // Write to log file instead since console is not showing
+        const fs = await import('fs')
+        let logMessage = `  -> Starting enhanced simulation for match ${matchId}\n`
+        fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+        
+        console.log(`🚀 INDIVIDUAL MATCH: Starting enhanced simulation for match ${matchId}`)
+        console.error(`🚀 INDIVIDUAL MATCH: Starting enhanced simulation for match ${matchId}`) // Try console.error
+        process.stdout.write(`🚀 INDIVIDUAL MATCH: Starting enhanced simulation for match ${matchId}\n`) // Force stdout
+        await this.simulateEnhancedQualificationMatch(targetMatch, tournamentId)
+        
+        logMessage = `  -> Enhanced simulation completed for match ${matchId}\n`
+        fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+        console.log(`✅ INDIVIDUAL MATCH: Enhanced simulation completed for match ${matchId}`)
+        console.error(`✅ INDIVIDUAL MATCH: Enhanced simulation completed for match ${matchId}`) // Try console.error
+      } catch (enhancedError) {
+        console.error(`❌ INDIVIDUAL MATCH: Enhanced qualification simulation failed for ${matchId}:`, enhancedError.message)
+        console.error('Stack trace:', enhancedError.stack)
+      }
       
       const group = targetConfederation.groups.find(g => g.groupId === targetMatch.groupId)
       if (group) {
@@ -1782,6 +1864,7 @@ class QualificationService {
   // Simulate all matches for a confederation
   async simulateAllConfederationMatches(tournamentId, confederationId) {
     try {
+      console.log(`🚀 SIMULATION CALLED: simulateAllConfederationMatches for tournament ${tournamentId}, confederation ${confederationId}`)
       // Load world context for ranking lookups
       await this.loadWorldContext(tournamentId)
       
@@ -1803,6 +1886,13 @@ class QualificationService {
         match.homeScore = result.homeScore
         match.awayScore = result.awayScore
         match.played = true
+        
+        // Apply enhanced simulation for qualification matches
+        try {
+          await this.simulateEnhancedQualificationMatch(match, tournamentId)
+        } catch (enhancedError) {
+          console.error('Enhanced qualification simulation failed:', enhancedError)
+        }
         
         const group = confederation.groups.find(g => g.groupId === match.groupId)
         if (group) {
@@ -1960,15 +2050,15 @@ class QualificationService {
       
       await qualification.save()
 
-      // Update tournament status to qualification_complete and add qualified teams
+      // Update tournament with qualified teams (keep status as active)
       const TournamentService = await import('./TournamentService.js')
       await TournamentService.default.updateTournament(tournamentId, tournament.createdBy, {
-        status: 'qualification_complete',
         qualifiedTeams: qualifiedTeams,
-        teamCount: qualifiedTeams.length
+        teamCount: qualifiedTeams.length,
+        canActivate: qualifiedTeams.length === 32
       })
 
-      console.log('✅ Tournament updated to qualification_complete status')
+      console.log('✅ Tournament updated with qualified teams')
 
       return {
         success: true,
@@ -1985,6 +2075,7 @@ class QualificationService {
   // Simulate playoff match (OFC, CAF, AFC)
   async simulatePlayoffMatch(tournamentId, matchId) {
     try {
+      console.log(`🚀 SIMULATION CALLED: simulatePlayoffMatch for tournament ${tournamentId}, matchId ${matchId}`)
       // Load world context for ranking lookups
       await this.loadWorldContext(tournamentId)
       
@@ -2234,6 +2325,71 @@ class QualificationService {
     console.log(`${winner.name || winner.country} wins on penalties (${team1Penalties}-${team2Penalties})`)
     
     return winner
+  }
+
+  /**
+   * Extract country code from teamId (e.g., "uefa_MLT" -> "MLT")
+   */
+  extractCountryCode(teamId) {
+    if (!teamId) return teamId
+    // Handle formats like "uefa_MLT", "conmebol_BRA", etc.
+    const parts = teamId.split('_')
+    return parts.length > 1 ? parts[parts.length - 1] : teamId
+  }
+
+  /**
+   * Apply enhanced simulation to qualification matches
+   */
+  async simulateEnhancedQualificationMatch(qualificationMatch, tournamentId) {
+    try {
+      console.log(`QUALIFICATION ENHANCED: Starting simulation for match ${qualificationMatch.matchId}`)
+      
+      // Create a mock Match object for the enhanced simulation
+      const mockMatch = {
+        _id: `qualification_${tournamentId}_${qualificationMatch.matchId}`,
+        tournament: tournamentId,
+        homeTeam: {
+          countryCode: this.extractCountryCode(qualificationMatch.homeTeam.teamId || qualificationMatch.homeTeam.country),
+          name: qualificationMatch.homeTeam.name || qualificationMatch.homeTeam.country,
+          code: this.extractCountryCode(qualificationMatch.homeTeam.teamId || qualificationMatch.homeTeam.country)
+        },
+        awayTeam: {
+          countryCode: this.extractCountryCode(qualificationMatch.awayTeam.teamId || qualificationMatch.awayTeam.country),
+          name: qualificationMatch.awayTeam.name || qualificationMatch.awayTeam.country,
+          code: this.extractCountryCode(qualificationMatch.awayTeam.teamId || qualificationMatch.awayTeam.country)
+        },
+        homeScore: qualificationMatch.homeScore,
+        awayScore: qualificationMatch.awayScore,
+        status: 'completed'
+      }
+
+      console.log(`QUALIFICATION ENHANCED: Mock match created with ID: ${mockMatch._id}`)
+      console.log(`QUALIFICATION ENHANCED: Match details - ${mockMatch.homeTeam.name} ${mockMatch.homeScore}-${mockMatch.awayScore} ${mockMatch.awayTeam.name}`)
+
+      // Load world context for enhanced simulation
+      await this.loadWorldContext(tournamentId)
+      console.log(`QUALIFICATION ENHANCED: World context loaded, currentWorld exists: ${!!this.currentWorld}`)
+      
+      // Apply enhanced simulation using the BasicEnhancedMatchService
+      console.log(`QUALIFICATION ENHANCED: About to call BasicEnhancedMatchService.simulateBasicMatchDetails`)
+      
+      // Log to file since console isn't showing
+      const fs = await import('fs')
+      let logMessage = `  -> About to call BasicEnhancedMatchService.simulateBasicMatchDetails\n`
+      fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+      
+      const result = await BasicEnhancedMatchService.simulateBasicMatchDetails(mockMatch, 'qualification', this.currentWorld)
+      
+      logMessage = `  -> BasicEnhancedMatchService.simulateBasicMatchDetails returned: ${result ? 'SUCCESS' : 'NULL'}\n`
+      fs.appendFileSync('/tmp/backend-debug.log', logMessage)
+      console.log(`QUALIFICATION ENHANCED: BasicEnhancedMatchService returned:`, result ? 'SUCCESS' : 'NULL/UNDEFINED')
+      
+      console.log(`Enhanced qualification match simulation completed for ${qualificationMatch.homeTeam.country} vs ${qualificationMatch.awayTeam.country}`)
+      
+    } catch (error) {
+      console.error('Error in enhanced qualification match simulation:', error)
+      throw error
+    }
   }
 }
 

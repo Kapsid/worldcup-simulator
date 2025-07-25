@@ -4,6 +4,7 @@ import Tournament from '../models/Tournament.js'
 import TournamentGroup from '../models/TournamentGroup.js'
 import TournamentTeam from '../models/TournamentTeam.js'
 import TournamentNewsService from './TournamentNewsService.js'
+import BasicEnhancedMatchService from './BasicEnhancedMatchService.js'
 
 class MatchService {
   async generateGroupMatches(tournamentId) {
@@ -329,9 +330,23 @@ class MatchService {
   }
 
   async simulateMatch(matchId) {
+    console.error(`🎯 MATCH SERVICE: simulateMatch called with ID: ${matchId}`)
     try {
       const match = await Match.findById(matchId)
         .populate('homeTeam awayTeam')
+        .populate({
+          path: 'tournament',
+          populate: {
+            path: 'worldId'
+          }
+        })
+      
+      console.error(`🎯 MATCH SERVICE: Match found:`, {
+        id: match?._id,
+        homeTeam: match?.homeTeam?.countryName,
+        awayTeam: match?.awayTeam?.countryName,
+        status: match?.status
+      })
       
       if (!match) {
         throw new Error('Match not found')
@@ -341,6 +356,7 @@ class MatchService {
         throw new Error('Match already completed')
       }
       
+      // First simulate basic score using existing logic
       const { homeScore, awayScore } = this.simulateRealisticScore(match.homeTeam, match.awayTeam)
       
       match.homeScore = homeScore
@@ -349,6 +365,62 @@ class MatchService {
       match.simulatedAt = new Date()
       
       await match.save()
+      
+      // Now run enhanced simulation with detailed match data
+      try {
+        console.error('🎯 GROUP MATCH SIM: Starting enhanced simulation')
+        console.error(`🎯 GROUP MATCH SIM: About to call BasicEnhancedMatchService.simulateBasicMatchDetails`)
+        console.error('🎯 GROUP MATCH SIM: Match data:', {
+          matchId: match._id,
+          tournamentId: match.tournament._id,
+          worldId: match.tournament.world,
+          homeTeam: {
+            countryCode: match.homeTeam.countryCode,
+            countryName: match.homeTeam.countryName,
+            teamId: match.homeTeam._id
+          },
+          awayTeam: {
+            countryCode: match.awayTeam.countryCode,
+            countryName: match.awayTeam.countryName,
+            teamId: match.awayTeam._id
+          }
+        })
+        
+        // Create a properly structured match object for enhanced simulation
+        const enhancedMatch = {
+          _id: match._id,
+          tournament: match.tournament._id,
+          homeTeam: {
+            countryCode: match.homeTeam.countryCode,
+            name: match.homeTeam.countryName,
+            code: match.homeTeam.countryCode
+          },
+          awayTeam: {
+            countryCode: match.awayTeam.countryCode,
+            name: match.awayTeam.countryName,
+            code: match.awayTeam.countryCode
+          },
+          homeScore: match.homeScore,
+          awayScore: match.awayScore,
+          status: 'completed'
+        }
+        
+        // Get world context from tournament
+        const world = match.tournament.worldId ? { _id: match.tournament.worldId._id || match.tournament.worldId } : null
+        console.error('🎯 GROUP MATCH SIM: World context:', world)
+        
+        console.error('🎯 GROUP MATCH SIM: About to call BasicEnhancedMatchService.simulateBasicMatchDetails')
+        console.error('🎯 GROUP MATCH SIM: Enhanced match object:', JSON.stringify(enhancedMatch, null, 2))
+        
+        await BasicEnhancedMatchService.simulateBasicMatchDetails(enhancedMatch, 'tournament', world)
+        console.error(`🎯 GROUP MATCH SIM: Enhanced simulation completed for match ${matchId}`)
+      } catch (enhancedError) {
+        console.error('🎯 GROUP MATCH SIM: Enhanced simulation failed:', enhancedError)
+        console.error('🎯 GROUP MATCH SIM: Error message:', enhancedError.message)
+        console.error('🎯 GROUP MATCH SIM: Error stack:', enhancedError.stack)
+        // Don't fail the entire match - basic result is still valid
+      }
+      
       await this.updateStandings(match)
       await this.checkGroupStageCompletion(match.tournament)
       

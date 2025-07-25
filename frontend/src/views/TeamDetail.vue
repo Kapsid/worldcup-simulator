@@ -6,6 +6,11 @@
       @logout="handleLogout" 
     />
     
+    <Breadcrumbs 
+      :current-team="team" 
+      :current-tournament="tournament" 
+    />
+    
     <main class="main-content">
       <div class="team-container">
         <div v-if="loading" class="loading-state">
@@ -113,20 +118,20 @@
                 </div>
               </div>
               
-              <!-- Player Roster (Placeholder) -->
-              <div class="content-card glass-white">
-                <div class="card-header">
-                  <h3>Player Roster</h3>
-                  <i class="fas fa-users"></i>
-                </div>
-                <div class="card-content">
-                  <div class="placeholder-section">
-                    <div class="placeholder-icon">
-                      <i class="fas fa-user-plus"></i>
-                    </div>
-                    <h4>Coming Soon</h4>
-                    <p>Player roster and detailed statistics will be available in a future update.</p>
+              <!-- Player Roster -->
+              <div class="content-card glass-white full-width roster-section">
+                <TeamRoster 
+                  v-if="team"
+                  :team="rosterTeamData"
+                  :tournament-id="$route.params.tournamentId"
+                  :world-id="tournament?.worldId"
+                />
+                <div v-else class="placeholder-section">
+                  <div class="placeholder-icon">
+                    <i class="fas fa-user-plus"></i>
                   </div>
+                  <h4>Loading Team Data</h4>
+                  <p>Please wait while we load the team information.</p>
                 </div>
               </div>
               
@@ -156,11 +161,15 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
+import TeamRoster from '../components/TeamRoster.vue'
 
 export default {
   name: 'TeamDetail',
   components: {
-    AppHeader
+    AppHeader,
+    Breadcrumbs,
+    TeamRoster
   },
   data() {
     return {
@@ -179,6 +188,15 @@ export default {
     countryInfo() {
       if (!this.team) return null
       return this.countries.find(c => c.code === this.team.countryCode)
+    },
+
+    rosterTeamData() {
+      if (!this.team) return null
+      return {
+        code: this.team.countryCode,
+        name: this.team.countryName || this.team.name,
+        flag: this.countryInfo?.flag || '🏴'
+      }
     },
     
     allMatches() {
@@ -893,5 +911,15 @@ export default {
     flex-direction: column;
     gap: 8px;
   }
+}
+
+.roster-section {
+  padding: 0 !important;
+}
+
+.roster-section .content-card {
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 </style>

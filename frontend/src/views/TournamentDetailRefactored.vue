@@ -46,6 +46,8 @@
                 :show-matches="showMatches"
                 :show-standings="showStandings"
                 :show-knockout="showKnockout"
+                :show-roster="showRoster"
+                :regenerating-players="regeneratingPlayers"
                 :any-group-match-played="anyGroupMatchPlayed"
                 @toggle-team-management="toggleTeamManagement"
                 @toggle-qualifying="toggleQualifying"
@@ -54,6 +56,8 @@
                 @toggle-matches="toggleMatches"
                 @toggle-standings="toggleStandings"
                 @toggle-knockout="toggleKnockout"
+                @toggle-roster="toggleRoster"
+                @regenerate-players="regenerateAllPlayers"
               />
               
               <!-- Team Management (only for manual tournaments) -->
@@ -142,6 +146,36 @@
                   @tournament-completed="handleTournamentCompleted"
                 />
               </TournamentContentCard>
+
+              <!-- Team Roster -->
+              <TournamentContentCard 
+                v-if="showRoster" 
+                id="roster"
+                title="Team Rosters"
+                @close="toggleRoster"
+              >
+                <div v-if="selectedTeam" class="roster-container">
+                  <TeamRoster 
+                    :team="selectedTeam"
+                    :tournament-id="tournament._id"
+                    :world-id="tournament.worldId"
+                  />
+                </div>
+                <div v-else class="team-selection">
+                  <h4>Select a team to view their roster</h4>
+                  <div class="teams-grid">
+                    <div 
+                      v-for="team in tournamentTeams" 
+                      :key="team.countryCode"
+                      @click="selectTeam(team)"
+                      class="team-card"
+                    >
+                      <span class="team-flag">{{ team.countryFlag }}</span>
+                      <span class="team-name">{{ team.countryName }}</span>
+                    </div>
+                  </div>
+                </div>
+              </TournamentContentCard>
             </div>
           </div>
         </div>
@@ -161,6 +195,7 @@ import WorldCupDraw from '../components/WorldCupDraw.vue'
 import GroupMatches from '../components/GroupMatches.vue'
 import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
+import TeamRoster from '../components/TeamRoster.vue'
 
 export default {
   name: 'TournamentDetailRefactored',
@@ -174,7 +209,8 @@ export default {
     WorldCupDraw,
     GroupMatches,
     GroupStandings,
-    KnockoutBracket
+    KnockoutBracket,
+    TeamRoster
   },
   data() {
     return {
@@ -190,7 +226,12 @@ export default {
       showMatches: false,
       showStandings: false,
       showKnockout: false,
-      anyGroupMatchPlayed: false
+      showRoster: false,
+      showDebug: process.env.NODE_ENV === 'development' || window.location.search.includes('debug=true'),
+      regeneratingPlayers: false,
+      anyGroupMatchPlayed: false,
+      selectedTeam: null,
+      tournamentTeams: []
     }
   },
   computed: {
@@ -348,6 +389,15 @@ export default {
       }
     },
     
+    async toggleRoster() {
+      this.showRoster = !this.showRoster
+      this.hideOtherSections('roster')
+      if (this.showRoster) {
+        await this.loadTournamentTeams()
+        this.scrollToSection('roster')
+      }
+    },
+    
     hideOtherSections(except) {
       if (except !== 'teamManagement') this.showTeamManagement = false
       if (except !== 'qualifying') this.showQualifying = false
@@ -355,6 +405,7 @@ export default {
       if (except !== 'matches') this.showMatches = false
       if (except !== 'standings') this.showStandings = false
       if (except !== 'knockout') this.showKnockout = false
+      if (except !== 'roster') this.showRoster = false
     },
     
     scrollToSection(sectionId) {
@@ -391,6 +442,33 @@ export default {
     handleTeamsUpdated() {
       this.loadTournament()
     },
+
+    async loadTournamentTeams() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          this.tournamentTeams = await response.json()
+        } else {
+          console.error('Failed to load tournament teams')
+        }
+      } catch (error) {
+        console.error('Error loading tournament teams:', error)
+      }
+    },
+
+    selectTeam(team) {
+      this.selectedTeam = {
+        code: team.countryCode,
+        name: team.countryName,
+        flag: team.countryFlag
+      }
+    },
     
     handleQualificationStarted() {
       this.loadTournament()
@@ -421,6 +499,75 @@ export default {
     
     handleTournamentCompleted() {
       this.loadTournament()
+    },
+
+    async regenerateAllPlayers() {
+      console.log('🔧 REGENERATE: Method called!')
+      console.log('🔧 REGENERATE: Currently regenerating?', this.regeneratingPlayers)
+      console.log('🔧 REGENERATE: Tournament:', this.tournament)
+      
+      if (this.regeneratingPlayers) {
+        console.log('🔧 REGENERATE: Already regenerating, returning')
+        return
+      }
+
+      const confirmRegenerate = confirm(
+        `Are you sure you want to regenerate all players for this tournament?\n\n` +
+        `This will:\n` +
+        `• Delete all existing player data\n` +
+        `• Create new players with different stats and faces\n` +
+        `• This action cannot be undone\n\n` +
+        `Continue?`
+      )
+
+      if (!confirmRegenerate) {
+        console.log('🔧 REGENERATE: User cancelled')
+        return
+      }
+
+      console.log('🔧 REGENERATE: Starting regeneration...')
+      this.regeneratingPlayers = true
+
+      try {
+        const token = localStorage.getItem('token')
+        console.log('🔧 REGENERATE: Token:', token ? 'Present' : 'Missing')
+        
+        const payload = {
+          tournamentId: this.tournament._id
+        }
+        console.log('🔧 REGENERATE: Payload:', payload)
+        
+        const response = await fetch('http://localhost:3001/api/players/regenerate-tournament', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        })
+
+        console.log('🔧 REGENERATE: Response status:', response.status)
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log('🔧 REGENERATE: Success result:', result)
+          alert(`✅ Success!\n\nRegenerated players for ${result.teamsRegenerated} teams.\n\nRefresh any open team rosters to see the new players.`)
+          
+          // Clear any cached roster data
+          this.selectedTeam = null
+          this.tournamentTeams = []
+        } else {
+          const error = await response.json()
+          console.error('🔧 REGENERATE: API error:', error)
+          alert(`❌ Error regenerating players:\n\n${error.error || 'Unknown error occurred'}`)
+        }
+      } catch (error) {
+        console.error('🔧 REGENERATE: Network error:', error)
+        alert(`❌ Network error:\n\n${error.message}`)
+      } finally {
+        console.log('🔧 REGENERATE: Finished, setting regeneratingPlayers to false')
+        this.regeneratingPlayers = false
+      }
     }
   }
 }
@@ -508,6 +655,56 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+.team-selection {
+  padding: 2rem;
+  text-align: center;
+}
+
+.team-selection h4 {
+  color: var(--white);
+  margin-bottom: 2rem;
+  font-size: 1.3rem;
+}
+
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.team-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-card:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--fifa-gold);
+  transform: translateY(-2px);
+}
+
+.team-flag {
+  font-size: 1.5rem;
+}
+
+.team-name {
+  color: var(--white);
+  font-weight: 500;
+}
+
+.roster-container {
+  min-height: 600px;
 }
 
 @media (max-width: 768px) {

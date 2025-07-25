@@ -3,7 +3,8 @@ import World from '../models/World.js'
 import WorldRankingService from '../services/WorldRankingService.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { worldCupHistory } from '../data/worldCupHistory.js'
-import { getCountryByCode } from '../data/countries.js'
+import { getCountryByCode, countries } from '../data/countries.js'
+import PlayerGenerationService from '../services/PlayerGenerationService.js'
 
 const router = express.Router()
 
@@ -110,9 +111,83 @@ router.post('/', authenticateToken, async (req, res) => {
 
     await world.save()
 
+    // Generate players for ALL countries in this world
+    console.log('🌍 WORLD CREATION: Starting player generation checks...')
+    console.log('🌍 WORLD CREATION: Countries available?', Array.isArray(countries))
+    console.log('🌍 WORLD CREATION: Total countries:', countries?.length || 0)
+    console.log('🌍 WORLD CREATION: First few countries:', countries?.slice(0, 3)?.map(c => ({ name: c.name, code: c.code })) || [])
+    console.log('🌍 WORLD CREATION: World ID:', world._id.toString())
+    console.log('🌍 WORLD CREATION: Beginning year:', beginningYear)
+    console.log('🌍 WORLD CREATION: PlayerGenerationService available?', !!PlayerGenerationService)
+    
+    if (!countries || countries.length === 0) {
+      console.error('💥 WORLD CREATION: No countries available! Skipping player generation.')
+      return res.status(201).json({
+        success: true,
+        message: 'World created but no players generated (no countries available)',
+        data: world
+      })
+    }
+    
+    let totalPlayersGenerated = 0
+    let totalCountriesProcessed = 0
+    let errors = []
+    
+    console.log('🌍 WORLD CREATION: Starting actual player generation...')
+    
+    try {
+      for (let i = 0; i < countries.length; i++) {
+        const country = countries[i]
+        console.log(`🏴 [${i+1}/${countries.length}] Processing: ${country.name} (${country.code})`)
+        
+        try {
+          const startTime = Date.now()
+          
+          const players = await PlayerGenerationService.generateSquad(
+            country.code,
+            null, // No tournament ID for world-level players
+            world._id.toString(), // World ID
+            beginningYear
+          )
+          
+          const duration = Date.now() - startTime
+          totalPlayersGenerated += players.length
+          totalCountriesProcessed++
+          
+          console.log(`✅ Generated ${players.length} players for ${country.name} in ${duration}ms`)
+          
+          if (totalCountriesProcessed % 10 === 0) {
+            console.log(`📊 Progress: ${totalCountriesProcessed}/${countries.length} countries, ${totalPlayersGenerated} total players`)
+          }
+          
+          // Add small delay to prevent overwhelming the database
+          if (i % 50 === 0 && i > 0) {
+            console.log('⏳ Taking a short break to prevent database overload...')
+            await new Promise(resolve => setTimeout(resolve, 100))
+          }
+          
+        } catch (squadError) {
+          const errorMsg = `Error generating squad for ${country.name} (${country.code}): ${squadError.message}`
+          console.error(`❌ ${errorMsg}`)
+          errors.push(errorMsg)
+        }
+      }
+      
+      console.log(`🎉 WORLD PLAYER GENERATION COMPLETED!`)
+      console.log(`📊 Final stats: ${totalPlayersGenerated} players for ${totalCountriesProcessed}/${countries.length} countries`)
+      if (errors.length > 0) {
+        console.log(`⚠️ Errors encountered: ${errors.length}`)
+        errors.forEach((err, i) => console.log(`  ${i+1}. ${err}`))
+      }
+      
+    } catch (error) {
+      console.error('💥 Critical error during world player generation:', error)
+      console.error('💥 Error stack:', error.stack)
+    }
+
     res.status(201).json({
       success: true,
-      message: 'World created successfully',
+      message: `World created successfully with ${totalPlayersGenerated} players generated`,
       data: world
     })
   } catch (error) {

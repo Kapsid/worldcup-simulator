@@ -449,6 +449,13 @@
                   Matches
                 </button>
                 <button 
+                  @click="activeSubTab = 'statistics'"
+                  :class="['sub-tab', { active: activeSubTab === 'statistics' }]"
+                >
+                  <i class="fas fa-chart-line"></i>
+                  Statistics
+                </button>
+                <button 
                   v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)"
                   @click="activeSubTab = 'playoff'"
                   :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
@@ -858,6 +865,14 @@
                     <p>Complete the group stage to see qualified teams.</p>
                   </div>
                 </div>
+
+                <!-- Statistics Tab -->
+                <div v-else-if="activeSubTab === 'statistics'" class="statistics-tab">
+                  <QualificationStatistics 
+                    :tournamentId="tournament._id" 
+                    :confederationId="activeConfederation" 
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -956,11 +971,13 @@
 
 <script>
 import StandingsTooltip from './StandingsTooltip.vue'
+import QualificationStatistics from './QualificationStatistics.vue'
 
 export default {
   name: 'QualificationManager',
   components: {
-    StandingsTooltip
+    StandingsTooltip,
+    QualificationStatistics
   },
   props: {
     tournament: {
@@ -983,7 +1000,7 @@ export default {
       simulatingMatch: null,
       simulatingPlayoffMatch: null,
       error: '',
-      activeConfederation: 'uefa',
+      activeConfederation: 'all',
       confederations: [],
       qualificationData: null,
       qualificationStarted: false,
@@ -4947,5 +4964,11 @@ export default {
   .btn-finalize, .btn-go-tournament {
     align-self: center;
   }
+}
+
+/* Statistics Tab */
+.statistics-tab {
+  width: 100%;
+  padding: 0;
 }
 </style>
