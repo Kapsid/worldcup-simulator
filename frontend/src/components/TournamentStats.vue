@@ -102,6 +102,72 @@
       </div>
       </div>
       
+      <!-- Clean Sheets Section -->
+      <div v-if="activeTab === 'cleansheets'" class="tab-content">
+        <div class="stats-section">
+        <div class="section-header">
+          <h4>
+            <i class="fas fa-shield-alt"></i>
+            Clean Sheets
+          </h4>
+          <span class="section-meta">{{ cleanSheets.length }} goalkeepers</span>
+        </div>
+        
+        <div v-if="cleanSheets.length === 0" class="no-data">
+          <i class="fas fa-shield-alt"></i>
+          <p>No clean sheets yet</p>
+          <small>Statistics will appear once matches are played</small>
+        </div>
+        
+        <div v-else class="scorers-list">
+          <div 
+            v-for="keeper in cleanSheets" 
+            :key="keeper.player._id"
+            class="scorer-item"
+            :class="{ 'golden-boot': keeper.rank === 1 }"
+          >
+            <div class="scorer-rank">
+              <span v-if="keeper.rank === 1" class="rank-badge golden">
+                <i class="fas fa-crown"></i>
+                {{ keeper.rank }}
+              </span>
+              <span v-else class="rank-badge">
+                {{ keeper.rank }}
+              </span>
+            </div>
+            
+            <div class="scorer-info">
+              <div class="player-name">
+                {{ keeper.player.displayName }}
+                <span class="player-position">{{ keeper.player.detailedPosition }}</span>
+              </div>
+              <div class="player-country">
+                <span class="country-flag">{{ getCountryFlag(keeper.player.teamId) }}</span>
+                {{ keeper.player.teamId }}
+              </div>
+            </div>
+            
+            <div class="scorer-stats">
+              <div class="primary-stat">
+                <span class="stat-value">{{ keeper.cleanSheets }}</span>
+                <span class="stat-label">Clean Sheets</span>
+              </div>
+              <div class="secondary-stats">
+                <div class="stat-item">
+                  <span class="stat-value">{{ keeper.matchesStarted }}</span>
+                  <span class="stat-label">Starts</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">{{ keeper.cleanSheetPercentage }}%</span>
+                  <span class="stat-label">CS%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      
       <!-- All Stars XI Section -->
       <div v-if="activeTab === 'allstars'" class="tab-content">
         <AllStarsXI :tournament-id="tournament._id" />
@@ -118,10 +184,6 @@
             <div class="upcoming-item">
               <i class="fas fa-hands-helping"></i>
               <span>Top Assists</span>
-            </div>
-            <div class="upcoming-item">
-              <i class="fas fa-shield-alt"></i>
-              <span>Clean Sheets</span>
             </div>
             <div class="upcoming-item">
               <i class="fas fa-star"></i>
@@ -155,6 +217,7 @@ export default {
   data() {
     return {
       topScorers: [],
+      cleanSheets: [],
       loading: false,
       error: null,
       activeTab: 'scorers'
@@ -162,11 +225,13 @@ export default {
   },
   async mounted() {
     await this.loadTopScorers()
+    await this.loadCleanSheets()
   },
   watch: {
     tournament: {
       handler() {
         this.loadTopScorers()
+        this.loadCleanSheets()
       },
       deep: true
     }
@@ -190,6 +255,34 @@ export default {
         }
       } catch (error) {
         console.error('Error loading top scorers:', error)
+        this.error = 'Network error. Please try again.'
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    async loadCleanSheets() {
+      if (!this.tournament?._id) return
+      
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await fetch(`/api/tournaments/${this.tournament._id}/clean-sheets`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          this.cleanSheets = data.cleanSheets || []
+        } else {
+          const errorData = await response.json()
+          this.error = errorData.error || 'Failed to load clean sheets'
+        }
+      } catch (error) {
+        console.error('Error loading clean sheets:', error)
         this.error = 'Network error. Please try again.'
       } finally {
         this.loading = false

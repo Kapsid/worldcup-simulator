@@ -486,6 +486,77 @@ router.get('/:tournamentId/debug-stats', authenticateToken, async (req, res) => 
   }
 })
 
+// Get Clean Sheets for tournament
+router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId } = req.params
+    const { limit = 20 } = req.query
+    
+    console.log(`CLEAN SHEETS API: Getting clean sheets for tournament ${tournamentId}`)
+    
+    // Import models
+    const PlayerStats = (await import('../models/PlayerStats.js')).default
+    const Tournament = (await import('../models/Tournament.js')).default
+    
+    // Get tournament to check if it has a worldId
+    const tournament = await Tournament.findById(tournamentId)
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' })
+    }
+    
+    // Build query based on whether tournament has worldId
+    const query = {
+      competitionType: { $in: ['tournament', 'world_cup'] },
+      matchesPlayed: { $gte: 1 }, // At least 1 match
+      cleanSheets: { $gt: 0 } // Only players with clean sheets
+    }
+    
+    if (tournament.worldId) {
+      query.worldId = tournament.worldId
+    } else {
+      query.tournamentId = tournamentId
+    }
+    
+    console.log('Clean Sheets Query:', query)
+    
+    // Get clean sheet leaders - focusing on goalkeepers
+    const cleanSheetStats = await PlayerStats.find(query)
+      .populate('player', 'displayName nationality position teamId detailedPosition')
+      .sort({ cleanSheets: -1, matchesStarted: -1 })
+      .limit(parseInt(limit))
+    
+    console.log(`Found ${cleanSheetStats.length} players with clean sheets`)
+    
+    // Filter for goalkeepers primarily, but include any player with clean sheets
+    const cleanSheetLeaders = cleanSheetStats
+      .filter(stat => stat.player && stat.cleanSheets > 0)
+      .map((stat, index) => ({
+        rank: index + 1,
+        player: {
+          _id: stat.player._id,
+          displayName: stat.player.displayName,
+          teamId: stat.player.teamId,
+          detailedPosition: stat.player.detailedPosition || stat.player.position
+        },
+        cleanSheets: stat.cleanSheets,
+        matchesStarted: stat.matchesStarted,
+        matchesPlayed: stat.matchesPlayed,
+        cleanSheetPercentage: stat.matchesStarted > 0 
+          ? Math.round((stat.cleanSheets / stat.matchesStarted) * 100) 
+          : 0
+      }))
+    
+    res.json({
+      tournamentId,
+      cleanSheets: cleanSheetLeaders,
+      totalKeepers: cleanSheetLeaders.length
+    })
+  } catch (error) {
+    console.error('Error getting clean sheets:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // Get All Stars XI for tournament
 router.get('/:tournamentId/all-stars-xi', authenticateToken, async (req, res) => {
   console.log('All Stars XI endpoint hit for tournament:', req.params.tournamentId)
