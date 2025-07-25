@@ -85,6 +85,24 @@ router.get('/:id/top-scorers', async (req, res) => {
   }
 })
 
+// Get tournament phase detection (moved to a different route pattern)
+router.get('/phase/:id', authenticateToken, async (req, res) => {
+  try {
+    const phase = await TournamentService.getCurrentTournamentPhase(req.params.id)
+    res.json({ 
+      tournamentId: req.params.id,
+      currentPhase: phase,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error getting tournament phase:', error)
+    if (error.message === 'Tournament not found') {
+      return res.status(404).json({ error: error.message })
+    }
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // Get specific tournament by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -94,7 +112,23 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Tournament not found' })
     }
 
-    res.json(tournament)
+    // Convert to plain object for modification
+    let tournamentData = tournament.toObject ? tournament.toObject() : tournament
+
+    // If phase query parameter is present, add phase information
+    if (req.query.includePhase === 'true') {
+      console.log('Phase detection requested for tournament:', req.params.id)
+      try {
+        const phase = await TournamentService.getCurrentTournamentPhase(req.params.id)
+        console.log('Phase detected:', phase)
+        tournamentData.currentPhase = phase
+      } catch (phaseError) {
+        console.error('Error getting tournament phase:', phaseError)
+        tournamentData.currentPhase = 'unknown'
+      }
+    }
+
+    res.json(tournamentData)
   } catch (error) {
     console.error('Error getting tournament:', error)
     res.status(500).json({ error: 'Internal server error' })
@@ -363,6 +397,255 @@ router.get('/:id/top-scorers', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error getting tournament top scorers:', error)
     res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Quick test endpoint
+router.get('/:tournamentId/test-stats', async (req, res) => {
+  try {
+    const PlayerStats = (await import('../models/PlayerStats.js')).default
+    const count = await PlayerStats.countDocuments({ tournamentId: req.params.tournamentId })
+    const sample = await PlayerStats.findOne({ tournamentId: req.params.tournamentId })
+      .populate('player', 'displayName position')
+    
+    res.json({
+      count,
+      samplePlayer: sample?.player?.displayName || 'NO_PLAYER',
+      samplePosition: sample?.player?.position || 'NO_POSITION',
+      sampleRating: sample?.averageRating || 0
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Simple debug endpoint to check raw PlayerStats
+router.get('/:tournamentId/debug-raw-stats', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId } = req.params
+    const PlayerStats = (await import('../models/PlayerStats.js')).default
+    
+    const rawStats = await PlayerStats.find({ tournamentId })
+      .populate('player', 'displayName nationality position teamId')
+      .limit(10)
+      .lean()
+    
+    res.json({
+      count: rawStats.length,
+      samples: rawStats.map(stat => ({
+        playerName: stat.player?.displayName || 'NO_NAME',
+        position: stat.player?.position || 'NO_POSITION', 
+        hasPlayer: !!stat.player,
+        rating: stat.averageRating,
+        goals: stat.goals,
+        matches: stat.matchesPlayed
+      }))
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Debug endpoint to check PlayerStats in database
+router.get('/:tournamentId/debug-stats', authenticateToken, async (req, res) => {
+  try {
+    const { tournamentId } = req.params
+    
+    const PlayerStats = (await import('../models/PlayerStats.js')).default
+    const Tournament = (await import('../models/Tournament.js')).default
+    
+    // Get tournament
+    const tournament = await Tournament.findById(tournamentId)
+    
+    // Check all PlayerStats for this tournament/world
+    const allStats = await PlayerStats.find({}).limit(50).lean()
+    
+    const tournamentStats = await PlayerStats.find({
+      tournamentId: tournamentId
+    }).limit(50).lean()
+    
+    const worldStats = tournament?.worldId ? await PlayerStats.find({
+      worldId: tournament.worldId
+    }).limit(50).lean() : []
+    
+    res.json({
+      tournament: {
+        id: tournament?._id,
+        worldId: tournament?.worldId
+      },
+      allStatsCount: allStats.length,
+      tournamentStatsCount: tournamentStats.length,
+      worldStatsCount: worldStats.length,
+      sampleAllStats: allStats.slice(0, 5),
+      sampleTournamentStats: tournamentStats.slice(0, 5),
+      sampleWorldStats: worldStats.slice(0, 5)
+    })
+  } catch (error) {
+    console.error('Debug stats error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get All Stars XI for tournament
+router.get('/:tournamentId/all-stars-xi', authenticateToken, async (req, res) => {
+  console.log('All Stars XI endpoint hit for tournament:', req.params.tournamentId)
+  try {
+    const { tournamentId } = req.params
+    
+    // Import models
+    const PlayerStats = (await import('../models/PlayerStats.js')).default
+    const Tournament = (await import('../models/Tournament.js')).default
+    
+    // Get tournament to check if it has a worldId
+    const tournament = await Tournament.findById(tournamentId)
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' })
+    }
+    
+    // Build query based on whether tournament has worldId
+    const query = {
+      competitionType: { $in: ['tournament', 'world_cup'] },
+      matchesPlayed: { $gte: 1 }, // At least 1 match
+      averageRating: { $gt: 0 }
+    }
+    
+    if (tournament.worldId) {
+      query.worldId = tournament.worldId
+    } else {
+      query.tournamentId = tournamentId
+    }
+    
+    console.log('All Stars XI Query:', query)
+    
+    // First, get raw stats without population to see the player IDs
+    const rawStats = await PlayerStats.find(query).limit(5).lean()
+    console.log('Raw stats sample (before population):', rawStats.map(stat => ({
+      _id: stat._id,
+      player: stat.player,
+      competitionType: stat.competitionType,
+      matchesPlayed: stat.matchesPlayed,
+      averageRating: stat.averageRating
+    })))
+    
+    // Get all player stats for this tournament with minimum matches played
+    const playerStats = await PlayerStats.find(query)
+    .populate('player', 'displayName nationality position teamId')
+    .sort({ averageRating: -1 })
+    
+    console.log(`Found ${playerStats.length} players with stats`)
+    
+    // Debug: Log first few players to see their structure
+    console.log('Sample player stats (after population):', JSON.stringify(playerStats.slice(0, 3), null, 2))
+    
+    // If no players found, return empty response
+    if (playerStats.length === 0) {
+      return res.json({
+        formation: '4-4-2',
+        players: {
+          GK: null, LB: null, CB1: null, CB2: null, RB: null,
+          LM: null, CM1: null, CM2: null, RM: null,
+          ST1: null, ST2: null
+        },
+        bench: [],
+        teamAverageRating: 0,
+        message: 'No player statistics available yet. Play some matches first!'
+      })
+    }
+    
+    // Group players by position
+    const playersByPosition = {
+      GK: [],
+      defenders: [], // CB, LB, RB
+      midfielders: [], // CM, CDM, CAM, LM, RM
+      forwards: [] // ST, CF, LW, RW
+    }
+    
+    playerStats.forEach((stat, index) => {
+      console.log(`Processing player ${index + 1}:`, {
+        hasPlayer: !!stat.player,
+        playerId: stat.player?._id,
+        playerName: stat.player?.displayName,
+        position: stat.player?.position,
+        rating: stat.averageRating
+      })
+      
+      if (!stat.player) return
+      
+      const position = stat.player.position
+      const playerData = {
+        ...stat.player.toObject(),
+        stats: {
+          matchesPlayed: stat.matchesPlayed,
+          matchesStarted: stat.matchesStarted,
+          goals: stat.goals,
+          cleanSheets: stat.cleanSheets,
+          averageRating: stat.averageRating
+        }
+      }
+      
+      if (position === 'GK' || position === 'Goalkeeper') {
+        playersByPosition.GK.push(playerData)
+      } else if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(position) || position === 'Defender') {
+        playersByPosition.defenders.push(playerData)
+      } else if (['CM', 'CDM', 'CAM', 'LM', 'RM'].includes(position) || position === 'Midfielder') {
+        playersByPosition.midfielders.push(playerData)
+      } else if (['ST', 'CF', 'LW', 'RW'].includes(position) || position === 'Forward') {
+        playersByPosition.forwards.push(playerData)
+      }
+    })
+    
+    // Debug: Log how many players in each position group
+    console.log('Players by position:', {
+      GK: playersByPosition.GK.length,
+      defenders: playersByPosition.defenders.length,
+      midfielders: playersByPosition.midfielders.length,
+      forwards: playersByPosition.forwards.length
+    })
+    
+    // Select best XI in 4-4-2 formation
+    const allStarsXI = {
+      formation: '4-4-2',
+      players: {
+        GK: playersByPosition.GK[0] || null,
+        LB: playersByPosition.defenders.find(p => p.position === 'LB') || 
+            playersByPosition.defenders.find(p => p.position === 'LWB') ||
+            playersByPosition.defenders[0] || null,
+        CB1: playersByPosition.defenders.find(p => p.position === 'CB') || 
+             playersByPosition.defenders[1] || null,
+        CB2: playersByPosition.defenders.filter(p => p.position === 'CB')[1] || 
+             playersByPosition.defenders[2] || null,
+        RB: playersByPosition.defenders.find(p => p.position === 'RB') || 
+            playersByPosition.defenders.find(p => p.position === 'RWB') ||
+            playersByPosition.defenders[3] || null,
+        LM: playersByPosition.midfielders.find(p => ['LM', 'LW'].includes(p.position)) ||
+            playersByPosition.midfielders[0] || null,
+        CM1: playersByPosition.midfielders.find(p => ['CM', 'CDM'].includes(p.position)) ||
+             playersByPosition.midfielders[1] || null,
+        CM2: playersByPosition.midfielders.filter(p => ['CM', 'CAM'].includes(p.position))[1] ||
+             playersByPosition.midfielders[2] || null,
+        RM: playersByPosition.midfielders.find(p => ['RM', 'RW'].includes(p.position)) ||
+            playersByPosition.midfielders[3] || null,
+        ST1: playersByPosition.forwards.find(p => ['ST', 'CF'].includes(p.position)) ||
+             playersByPosition.forwards[0] || null,
+        ST2: playersByPosition.forwards.filter(p => ['ST', 'CF', 'LW', 'RW'].includes(p.position))[1] ||
+             playersByPosition.forwards[1] || null
+      },
+      // Also include bench (best players not in starting XI)
+      bench: []
+    }
+    
+    // Calculate team average rating
+    const xiPlayers = Object.values(allStarsXI.players).filter(p => p !== null)
+    const teamAverageRating = xiPlayers.length > 0
+      ? Math.round((xiPlayers.reduce((sum, p) => sum + p.stats.averageRating, 0) / xiPlayers.length) * 10) / 10
+      : 0
+    
+    allStarsXI.teamAverageRating = teamAverageRating
+    
+    res.json(allStarsXI)
+  } catch (error) {
+    console.error('Error fetching All Stars XI:', error)
+    res.status(500).json({ error: 'Failed to fetch All Stars XI' })
   }
 })
 

@@ -11,8 +11,34 @@
     </div>
     
     <div v-else class="stats-content">
+      <!-- Stats Tabs -->
+      <div class="stats-tabs">
+        <button 
+          @click="activeTab = 'scorers'"
+          :class="['tab-button', { active: activeTab === 'scorers' }]"
+        >
+          <i class="fas fa-trophy"></i>
+          Top Scorers
+        </button>
+        <button 
+          @click="activeTab = 'cleansheets'"
+          :class="['tab-button', { active: activeTab === 'cleansheets' }]"
+        >
+          <i class="fas fa-shield-alt"></i>
+          Clean Sheets
+        </button>
+        <button 
+          @click="activeTab = 'allstars'"
+          :class="['tab-button', { active: activeTab === 'allstars' }]"
+        >
+          <i class="fas fa-star"></i>
+          All Stars XI
+        </button>
+      </div>
+      
       <!-- Top Scorers Section -->
-      <div class="stats-section">
+      <div v-if="activeTab === 'scorers'" class="tab-content">
+        <div class="stats-section">
         <div class="section-header">
           <h4>
             <i class="fas fa-trophy"></i>
@@ -74,6 +100,12 @@
           </div>
         </div>
       </div>
+      </div>
+      
+      <!-- All Stars XI Section -->
+      <div v-if="activeTab === 'allstars'" class="tab-content">
+        <AllStarsXI :tournament-id="tournament._id" />
+      </div>
       
       <!-- Additional Stats Sections (Future Enhancement) -->
       <div class="upcoming-stats">
@@ -107,8 +139,13 @@
 </template>
 
 <script>
+import AllStarsXI from './AllStarsXI.vue'
+
 export default {
   name: 'TournamentStats',
+  components: {
+    AllStarsXI
+  },
   props: {
     tournament: {
       type: Object,
@@ -119,7 +156,8 @@ export default {
     return {
       topScorers: [],
       loading: false,
-      error: null
+      error: null,
+      activeTab: 'scorers'
     }
   },
   async mounted() {
@@ -204,6 +242,58 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+/* Tabs */
+.stats-tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 2rem;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab-button:hover {
+  color: #495057;
+}
+
+.tab-button.active {
+  color: var(--fifa-blue);
+  border-bottom-color: var(--fifa-blue);
+}
+
+.tab-button i {
+  font-size: 1.1rem;
+}
+
+.tab-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stats-section {

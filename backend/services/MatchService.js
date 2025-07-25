@@ -333,7 +333,13 @@ class MatchService {
     console.error(`🎯 MATCH SERVICE: simulateMatch called with ID: ${matchId}`)
     try {
       const match = await Match.findById(matchId)
-        .populate('homeTeam awayTeam tournament')
+        .populate('homeTeam awayTeam')
+        .populate({
+          path: 'tournament',
+          populate: {
+            path: 'worldId'
+          }
+        })
       
       console.error(`🎯 MATCH SERVICE: Match found:`, {
         id: match?._id,
@@ -400,13 +406,17 @@ class MatchService {
         }
         
         // Get world context from tournament
-        const world = match.tournament.world ? { _id: match.tournament.world } : null
+        const world = match.tournament.worldId ? { _id: match.tournament.worldId._id || match.tournament.worldId } : null
         console.error('🎯 GROUP MATCH SIM: World context:', world)
+        
+        console.error('🎯 GROUP MATCH SIM: About to call BasicEnhancedMatchService.simulateBasicMatchDetails')
+        console.error('🎯 GROUP MATCH SIM: Enhanced match object:', JSON.stringify(enhancedMatch, null, 2))
         
         await BasicEnhancedMatchService.simulateBasicMatchDetails(enhancedMatch, 'tournament', world)
         console.error(`🎯 GROUP MATCH SIM: Enhanced simulation completed for match ${matchId}`)
       } catch (enhancedError) {
         console.error('🎯 GROUP MATCH SIM: Enhanced simulation failed:', enhancedError)
+        console.error('🎯 GROUP MATCH SIM: Error message:', enhancedError.message)
         console.error('🎯 GROUP MATCH SIM: Error stack:', enhancedError.stack)
         // Don't fail the entire match - basic result is still valid
       }

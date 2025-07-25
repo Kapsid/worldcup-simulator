@@ -8,6 +8,128 @@ import { getCountryByCode } from '../data/countries.js'
 import { getCountryCities } from '../data/cities.js'
 
 class TournamentService {
+  
+  /**
+   * Determines the current phase of a tournament based on match data and tournament status
+   * @param {String} tournamentId - The tournament ID
+   * @returns {Promise<String>} - The current tournament phase
+   */
+  async getCurrentTournamentPhase(tournamentId) {
+    try {
+      // Get tournament data
+      const tournament = await Tournament.findById(tournamentId)
+      if (!tournament) {
+        throw new Error('Tournament not found')
+      }
+
+      // If tournament is not active, return draft phase
+      if (tournament.status !== 'active') {
+        return 'draft'
+      }
+
+      // If tournament is completed, return completed phase
+      if (tournament.status === 'completed') {
+        return 'completed'
+      }
+
+      // Check for knockout matches
+      const KnockoutMatch = await import('../models/KnockoutMatch.js')
+      const knockoutMatches = await KnockoutMatch.default.find({ 
+        tournament: tournamentId 
+      }).sort({ round: 1, matchPosition: 1 })
+
+      // If there are knockout matches, determine which knockout phase we're in
+      if (knockoutMatches.length > 0) {
+        // Check for matches that are ready or completed to determine current round
+        const completedMatches = knockoutMatches.filter(match => match.status === 'completed')
+        const readyMatches = knockoutMatches.filter(match => match.status === 'ready')
+        
+        // If we have ready matches, we're in that round
+        if (readyMatches.length > 0) {
+          const currentRound = readyMatches[0].round
+          return this.mapRoundToPhase(currentRound)
+        }
+        
+        // If all matches in a round are completed, check next round
+        const roundsWithMatches = [...new Set(knockoutMatches.map(match => match.round))]
+        const sortedRounds = this.sortKnockoutRounds(roundsWithMatches)
+        
+        for (const round of sortedRounds) {
+          const roundMatches = knockoutMatches.filter(match => match.round === round)
+          const completedRoundMatches = roundMatches.filter(match => match.status === 'completed')
+          
+          // If not all matches in this round are completed, we're in this round
+          if (completedRoundMatches.length < roundMatches.length) {
+            return this.mapRoundToPhase(round)
+          }
+        }
+        
+        // If all knockout matches are completed, tournament should be completed
+        if (completedMatches.length === knockoutMatches.length) {
+          return 'completed'
+        }
+        
+        // Default to first knockout round if we have knockout matches
+        return 'round16'
+      }
+
+      // Check for group stage matches
+      const Match = await import('../models/Match.js')
+      const groupMatches = await Match.default.find({ 
+        tournament: tournamentId 
+      })
+
+      // If there are group matches, we're in group stage
+      if (groupMatches.length > 0) {
+        const completedGroupMatches = groupMatches.filter(match => match.status === 'completed')
+        
+        // If all group matches are completed, we should be transitioning to knockout
+        if (completedGroupMatches.length === groupMatches.length && groupMatches.length > 0) {
+          // Check if knockout bracket has been generated
+          if (knockoutMatches.length > 0) {
+            return 'round16' // First knockout round
+          }
+          return 'group_completed' // Group stage completed, waiting for knockout generation
+        }
+        
+        return 'group_stage'
+      }
+
+      // If no matches exist but tournament is active, we're in preparation phase
+      return 'preparation'
+      
+    } catch (error) {
+      console.error('Error determining tournament phase:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Maps knockout round names to phase names
+   * @param {String} round - The knockout round name
+   * @returns {String} - The phase name
+   */
+  mapRoundToPhase(round) {
+    const roundMap = {
+      'round16': 'round16',
+      'quarterfinal': 'quarterfinal', 
+      'semifinal': 'semifinal',
+      'final': 'final',
+      'third_place': 'third_place'
+    }
+    return roundMap[round] || 'knockout'
+  }
+
+  /**
+   * Sorts knockout rounds in chronological order
+   * @param {Array} rounds - Array of round names
+   * @returns {Array} - Sorted rounds
+   */
+  sortKnockoutRounds(rounds) {
+    const roundOrder = ['round16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+    return rounds.sort((a, b) => roundOrder.indexOf(a) - roundOrder.indexOf(b))
+  }
+
   async createTournament(userId, tournamentData) {
     try {
       const { name, hostCountry, hostCountryCode, type, worldId, year } = tournamentData

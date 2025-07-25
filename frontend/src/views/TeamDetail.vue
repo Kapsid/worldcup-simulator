@@ -6,6 +6,11 @@
       @logout="handleLogout" 
     />
     
+    <Breadcrumbs 
+      :current-team="team" 
+      :current-tournament="tournament" 
+    />
+    
     <main class="main-content">
       <div class="team-container">
         <div v-if="loading" class="loading-state">
@@ -156,12 +161,14 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
 import TeamRoster from '../components/TeamRoster.vue'
 
 export default {
   name: 'TeamDetail',
   components: {
     AppHeader,
+    Breadcrumbs,
     TeamRoster
   },
   data() {

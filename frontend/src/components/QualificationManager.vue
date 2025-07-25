@@ -1000,7 +1000,7 @@ export default {
       simulatingMatch: null,
       simulatingPlayoffMatch: null,
       error: '',
-      activeConfederation: 'uefa',
+      activeConfederation: 'all',
       confederations: [],
       qualificationData: null,
       qualificationStarted: false,

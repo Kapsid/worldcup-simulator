@@ -6,6 +6,8 @@
       @logout="handleLogout" 
     />
     
+    <Breadcrumbs :current-tournament="tournament" />
+    
     <main class="main-content">
       <div class="tournament-container">
         <div v-if="loading" class="loading-state">
@@ -125,85 +127,119 @@
             </div>
           </div>
           
-          <!-- Tournament Branding Section -->
-          <TournamentBranding 
-            v-if="tournament.mascot || tournament.logo || tournament.anthem"
-            :tournament="tournament" 
-          />
-          
-          <!-- Tournament Content -->
-          <div class="tournament-content">
+          <!-- Floating Quick Actions Sidebar -->
+          <div class="floating-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
+            <div class="sidebar-header">
+              <button @click="toggleSidebar" class="sidebar-toggle">
+                <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
+              </button>
+              <h3 v-if="!sidebarCollapsed">Quick Actions</h3>
+            </div>
+            
+            <div class="sidebar-actions">
+              <!-- Team Selection (Manual) or Qualification Process -->
+              <button 
+                v-if="tournament.type === 'manual'" 
+                @click="toggleTeamManagement" 
+                class="sidebar-action" 
+                :class="{ 'active': showTeamManagement }" 
+                :disabled="tournament.status === 'cancelled'"
+                :title="sidebarCollapsed ? 'Team Selection' : ''"
+              >
+                <i class="fas fa-users"></i>
+                <span v-if="!sidebarCollapsed">Team Selection</span>
+              </button>
+              <button 
+                v-else 
+                @click="toggleQualifying" 
+                class="sidebar-action" 
+                :class="{ 'active': showQualifying }" 
+                :disabled="tournament.status === 'cancelled'"
+                :title="sidebarCollapsed ? 'Qualifying' : ''"
+              >
+                <i class="fas fa-flag-checkered"></i>
+                <span v-if="!sidebarCollapsed">Qualifying</span>
+              </button>
+              
+              <!-- Start Tournament -->
+              <button 
+                class="sidebar-action" 
+                :disabled="!tournament.canActivate || tournament.status !== 'draft'" 
+                @click="activateTournament"
+                :title="sidebarCollapsed ? 'Start Tournament' : ''"
+              >
+                <i class="fas fa-play"></i>
+                <span v-if="!sidebarCollapsed">Start Tournament</span>
+              </button>
+              
+              <!-- World Cup Draw -->
+              <button 
+                @click="toggleDraw" 
+                class="sidebar-action" 
+                :class="{ 'active': showDraw }" 
+                :disabled="tournament.status === 'draft' || tournament.status === 'cancelled' || (anyGroupMatchPlayed && tournament.status !== 'completed')"
+                :title="sidebarCollapsed ? 'World Cup Draw' : ''"
+              >
+                <i class="fas fa-random"></i>
+                <span v-if="!sidebarCollapsed">World Cup Draw</span>
+              </button>
+              
+              <!-- Group Stage -->
+              <button 
+                @click="toggleGroupStage" 
+                class="sidebar-action" 
+                :class="{ 'active': showGroupStage }" 
+                :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
+                :title="sidebarCollapsed ? 'Group Stage' : ''"
+              >
+                <i class="fas fa-users"></i>
+                <span v-if="!sidebarCollapsed">Group Stage</span>
+              </button>
+              
+              <!-- Knockout Stage -->
+              <button 
+                @click="toggleKnockout" 
+                class="sidebar-action" 
+                :class="{ 'active': showKnockout }" 
+                :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
+                :title="sidebarCollapsed ? 'Knockout Stage' : ''"
+              >
+                <i class="fas fa-trophy"></i>
+                <span v-if="!sidebarCollapsed">Knockout Stage</span>
+              </button>
+              
+              <!-- Tournament Stats -->
+              <button 
+                @click="toggleStats" 
+                class="sidebar-action" 
+                :class="{ 'active': showStats }" 
+                :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
+                :title="sidebarCollapsed ? 'Stats' : ''"
+              >
+                <i class="fas fa-chart-line"></i>
+                <span v-if="!sidebarCollapsed">Stats</span>
+              </button>
+              
+              <!-- Tournament News -->
+              <button 
+                @click="toggleNews" 
+                class="sidebar-action news-action" 
+                :class="{ 'active': showNews }" 
+                :disabled="tournament.status === 'cancelled'"
+                :title="sidebarCollapsed ? 'Tournament News' : ''"
+              >
+                <div class="news-icon-container">
+                  <i class="fas fa-newspaper"></i>
+                  <div v-if="unreadNewsCount > 0" class="unread-news-badge">{{ unreadNewsCount }}</div>
+                </div>
+                <span v-if="!sidebarCollapsed">Tournament News</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Tournament Content -->
+          <div class="tournament-content" :class="{ 'sidebar-open': !sidebarCollapsed }">
             <div class="content-grid">
-              <!-- Quick Actions -->
-              <div class="content-card glass-white full-width">
-                <div class="card-header">
-                  <h3>Quick Actions</h3>
-                  <i class="fas fa-bolt"></i>
-                </div>
-                <div class="card-content">
-                  <div class="action-grid-full">
-                    <!-- Team Selection (Manual) or Qualification Process -->
-                    <button v-if="tournament.type === 'manual'" @click="toggleTeamManagement" class="action-card" :class="{ 'action-selected': showTeamManagement }" :disabled="tournament.status === 'cancelled'">
-                      <i class="fas fa-users"></i>
-                      <span>Team Selection</span>
-                    </button>
-                    <button v-else @click="toggleQualifying" class="action-card" :class="{ 'action-selected': showQualifying }" :disabled="tournament.status === 'cancelled'">
-                      <i class="fas fa-flag-checkered"></i>
-                      <span>Qualifying</span>
-                    </button>
-                    
-                    <!-- Start Tournament -->
-                    <button class="action-card" :disabled="!tournament.canActivate || tournament.status !== 'draft'" @click="activateTournament">
-                      <i class="fas fa-play"></i>
-                      <span>Start Tournament</span>
-                    </button>
-                    
-                    <!-- World Cup Draw -->
-                    <button @click="toggleDraw" class="action-card" :class="{ 'action-selected': showDraw }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled' || (anyGroupMatchPlayed && tournament.status !== 'completed')">
-                      <i class="fas fa-random"></i>
-                      <span>World Cup Draw</span>
-                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
-                      <small v-else-if="anyGroupMatchPlayed" style="display: block; font-size: 0.7rem; color: #666;">Matches already played</small>
-                      <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
-                      <small v-else-if="tournament.teamCount !== 32" style="display: block; font-size: 0.7rem; color: #666;">Teams: {{ tournament.teamCount }}/32</small>
-                    </button>
-                    
-                    <!-- Group Stage (Combined Matches & Standings) -->
-                    <button @click="toggleGroupStage" class="action-card" :class="{ 'action-selected': showGroupStage }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
-                      <i class="fas fa-users"></i>
-                      <span>Group Stage</span>
-                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">Matches & Standings</small>
-                      <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
-                      <small v-else style="display: block; font-size: 0.7rem; color: #666;">Matches & Standings</small>
-                    </button>
-                    
-                    <!-- Knockout Stage -->
-                    <button @click="toggleKnockout" class="action-card" :class="{ 'action-selected': showKnockout }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
-                      <i class="fas fa-trophy"></i>
-                      <span>Knockout Stage</span>
-                      <small v-if="tournament.status === 'completed'" style="display: block; font-size: 0.7rem; color: #007bff;">View Only</small>
-                      <small v-else-if="tournament.status !== 'active'" style="display: block; font-size: 0.7rem; color: #666;">Status: {{ tournament.status }}</small>
-                    </button>
-                    
-                    <!-- Tournament Stats -->
-                    <button @click="toggleStats" class="action-card" :class="{ 'action-selected': showStats }" :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'">
-                      <i class="fas fa-chart-line"></i>
-                      <span>Stats</span>
-                      <small style="display: block; font-size: 0.7rem; color: #666;">Top Scorers</small>
-                    </button>
-                    
-                    <!-- Tournament News -->
-                    <button @click="toggleNews" class="action-card news-action-card" :class="{ 'action-selected': showNews }" :disabled="tournament.status === 'cancelled'">
-                      <div class="news-icon-container">
-                        <i class="fas fa-newspaper"></i>
-                        <div v-if="unreadNewsCount > 0" class="unread-news-badge">{{ unreadNewsCount }}</div>
-                      </div>
-                      <span>Tournament News</span>
-                      <small style="display: block; font-size: 0.7rem; color: #666;">Live Updates</small>
-                    </button>
-                  </div>
-                </div>
-              </div>
               
               <!-- Team Management (only for manual tournaments) -->
               <div v-if="showTeamManagement && tournament.type === 'manual'" id="team-management" class="content-card glass-white full-width">
@@ -316,7 +352,6 @@
               <!-- Knockout Stage -->
               <div v-if="showKnockout" id="knockout" class="content-card glass-white full-width">
                 <div class="card-header">
-                  <h3>Knockout Stage</h3>
                   <button @click="toggleKnockout" class="close-section-btn">
                     <i class="fas fa-times"></i>
                   </button>
@@ -360,6 +395,64 @@
 
             </div>
           </div>
+          
+          <!-- Tournament Information Section -->
+          <TournamentBranding 
+            v-if="tournament.mascot || tournament.logo || tournament.anthem || tournament.hostCities"
+            :tournament="tournament" 
+          />
+          
+          <!-- Tournament Settings Section (moved to bottom) -->
+          <div class="tournament-details-bottom glass-white">
+            <div class="card-header">
+              <h3>Tournament Settings</h3>
+              <i class="fas fa-cog"></i>
+            </div>
+            <div class="tournament-details-grid">
+              <div class="detail-item">
+                <i class="fas fa-calendar"></i>
+                <div>
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value" :class="`status-${tournament.status}`">{{ formatStatus(tournament.status) }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-users"></i>
+                <div>
+                  <span class="detail-label">Teams</span>
+                  <span class="detail-value">{{ tournament.teamCount || 0 }}/{{ tournament.settings?.maxTeams || 32 }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-globe"></i>
+                <div>
+                  <span class="detail-label">Type</span>
+                  <span class="detail-value">{{ formatTournamentType(tournament.type) }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                  <span class="detail-label">Host Country</span>
+                  <span class="detail-value">{{ getCountryFlag(tournament.hostCountryCode) }} {{ tournament.hostCountry }}</span>
+                </div>
+              </div>
+              <div class="detail-item" v-if="tournament.createdAt">
+                <i class="fas fa-clock"></i>
+                <div>
+                  <span class="detail-label">Created</span>
+                  <span class="detail-value">{{ formatDate(tournament.createdAt) }}</span>
+                </div>
+              </div>
+              <div class="detail-item" v-if="tournament.year">
+                <i class="fas fa-calendar-alt"></i>
+                <div>
+                  <span class="detail-label">Year</span>
+                  <span class="detail-value">{{ tournament.year }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -368,6 +461,7 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
 import TeamManagement from '../components/TeamManagement.vue'
 import QualificationManager from '../components/QualificationManager.vue'
 import WorldCupDraw from '../components/WorldCupDraw.vue'
@@ -383,6 +477,7 @@ export default {
   name: 'TournamentDetail',
   components: {
     AppHeader,
+    Breadcrumbs,
     TeamManagement,
     QualificationManager,
     WorldCupDraw,
@@ -419,7 +514,9 @@ export default {
       showStats: false,
       unreadNewsCount: 0,
       allGroupMatchesCompleted: false,
-      anyGroupMatchPlayed: false
+      anyGroupMatchPlayed: false,
+      knockoutPhaseDetected: false,
+      sidebarCollapsed: false
     }
   },
   computed: {
@@ -428,6 +525,38 @@ export default {
     },
     backButtonText() {
       return this.isWorldTournament ? 'Back to World' : 'Back to Tournaments'
+    },
+    currentTournamentPhase() {
+      if (!this.tournament) return null
+      
+      // Draft phase - show team management/qualifying
+      if (this.tournament.status === 'draft') {
+        return this.tournament.type === 'manual' ? 'team-management' : 'qualifying'
+      }
+      
+      // Completed tournament - show knockout (final results)
+      if (this.tournament.status === 'completed') {
+        return 'knockout'
+      }
+      
+      // Active tournament - need to detect current phase dynamically
+      if (this.tournament.status === 'active') {
+        // We need to check for actual knockout matches existence
+        // This will be determined by calling an API to check knockout status
+        if (this.knockoutPhaseDetected || this.allGroupMatchesCompleted) {
+          return 'knockout'
+        }
+        
+        // Check if group stage has started (draw completed)
+        if (this.tournament.drawCompleted || this.tournament.teamCount >= 16) {
+          return 'group-stage'
+        }
+        
+        // Otherwise, still in draw phase
+        return 'draw'
+      }
+      
+      return null
     }
   },
   async mounted() {
@@ -449,11 +578,15 @@ export default {
     
     // Only check group matches if tournament was loaded successfully
     if (this.tournament) {
-      this.checkGroupMatchesCompletion()
+      await this.checkGroupMatchesCompletion()
+      await this.checkKnockoutPhase()
       this.loadUnreadNewsCount()
       
       // Apply tournament theming
       this.applyTournamentTheming()
+      
+      // Auto-show current tournament phase (after checking knockout status)
+      this.showCurrentPhase()
     }
   },
   beforeUnmount() {
@@ -617,6 +750,10 @@ export default {
       return new Date(dateString).toLocaleDateString()
     },
     
+    toggleSidebar() {
+      this.sidebarCollapsed = !this.sidebarCollapsed
+    },
+    
     toggleTeamManagement() {
       this.showTeamManagement = !this.showTeamManagement
       if (this.showTeamManagement) {
@@ -735,6 +872,30 @@ export default {
         this.showKnockout = false
         this.showNews = false
         this.scrollToSection('stats')
+      }
+    },
+
+    showCurrentPhase() {
+      const currentPhase = this.currentTournamentPhase
+      if (!currentPhase) return
+      
+      // Auto-show and highlight the current tournament phase
+      switch (currentPhase) {
+        case 'team-management':
+          this.toggleTeamManagement()
+          break
+        case 'qualifying':
+          this.toggleQualifying()
+          break
+        case 'draw':
+          this.toggleDraw()
+          break
+        case 'group-stage':
+          this.toggleGroupStage()
+          break
+        case 'knockout':
+          this.toggleKnockout()
+          break
       }
     },
 
@@ -872,6 +1033,29 @@ export default {
       }
     },
 
+    async checkKnockoutPhase() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/bracket`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const bracket = await response.json()
+          // If we get a successful response with matches, knockout phase exists
+          this.knockoutPhaseDetected = !!(bracket && bracket.matches && Object.keys(bracket.matches).length > 0)
+        } else {
+          // 400 status likely means no bracket exists yet
+          this.knockoutPhaseDetected = false
+        }
+      } catch (error) {
+        console.error('Error checking knockout phase:', error)
+        this.knockoutPhaseDetected = false
+      }
+    },
+
     async loadUnreadNewsCount() {
       try {
         const token = localStorage.getItem('token')
@@ -932,13 +1116,13 @@ export default {
 }
 
 .tournament-header {
-  padding: 32px;
+  padding: 20px;
   border-radius: var(--radius-xl);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .back-navigation {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .back-btn {
@@ -961,14 +1145,14 @@ export default {
 .tournament-info {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .tournament-title-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
+  gap: 16px;
 }
 
 .title-and-host {
@@ -976,37 +1160,37 @@ export default {
 }
 
 .title-and-host h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: var(--font-weight-bold);
   color: var(--fifa-dark-blue);
-  margin: 0 0 16px 0;
+  margin: 0 0 8px 0;
 }
 
 .host-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .country-flag {
-  font-size: 2.5rem;
+  font-size: 2rem;
 }
 
 .host-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .host-label {
   color: var(--gray);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   margin: 0;
 }
 
 .tournament-type {
   color: var(--fifa-blue);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: var(--font-weight-semibold);
   margin: 0;
 }
@@ -1473,6 +1657,233 @@ export default {
 }
 
 
+/* Floating Sidebar Styles */
+.floating-sidebar {
+  position: fixed;
+  top: 50%;
+  left: 24px;
+  transform: translateY(-50%);
+  width: 220px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(0, 102, 204, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 102, 204, 0.15);
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.floating-sidebar.collapsed {
+  width: 56px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 102, 204, 0.1);
+}
+
+.sidebar-header h3 {
+  color: var(--fifa-dark-blue);
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: var(--fifa-blue);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(0, 102, 204, 0.1);
+  transform: scale(1.1);
+}
+
+.sidebar-actions {
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--fifa-blue);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.85rem;
+  text-align: left;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-action:hover {
+  background: rgba(0, 102, 204, 0.08);
+  transform: translateX(4px);
+}
+
+.sidebar-action.active {
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-dark-blue));
+  color: var(--white);
+  box-shadow: 0 4px 16px rgba(0, 102, 204, 0.3);
+}
+
+.sidebar-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sidebar-action:disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
+.sidebar-action i {
+  font-size: 1.2rem;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapsed .sidebar-action {
+  justify-content: center;
+  padding: 12px 6px;
+}
+
+.collapsed .sidebar-action span {
+  display: none;
+}
+
+.news-action .news-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.news-action .unread-news-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--fifa-red);
+  color: var(--white);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.tournament-content.sidebar-open {
+  margin-left: 0;
+}
+
+.tournament-content {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tournament Settings Bottom Section */
+.tournament-details-bottom {
+  margin-top: 32px;
+  padding: 24px;
+  border-radius: var(--radius-xl);
+}
+
+.tournament-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0, 102, 204, 0.05);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0, 102, 204, 0.1);
+  transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+  background: rgba(0, 102, 204, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+}
+
+.detail-item i {
+  color: var(--fifa-gold);
+  font-size: 1.2rem;
+  min-width: 20px;
+}
+
+.detail-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-dark-blue);
+}
+
+.detail-value.status-draft {
+  color: #6c757d;
+}
+
+.detail-value.status-active {
+  color: #28a745;
+}
+
+.detail-value.status-completed {
+  color: #007bff;
+}
+
+.detail-value.status-cancelled {
+  color: #dc3545;
+}
+
 /* Tab Navigation Styles */
 .tab-navigation {
   display: flex;
@@ -1525,7 +1936,7 @@ export default {
   }
   
   .tournament-header {
-    padding: 24px;
+    padding: 16px;
   }
   
   .host-section {
@@ -1575,6 +1986,63 @@ export default {
   .tab-btn {
     padding: 12px 16px;
     font-size: 0.85rem;
+  }
+  
+  /* Floating Sidebar Mobile */
+  .floating-sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    transform: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 60vh;
+  }
+  
+  .floating-sidebar.collapsed {
+    width: 100%;
+    max-height: 80px;
+  }
+  
+  .sidebar-header {
+    padding: 16px 20px;
+  }
+  
+  .sidebar-actions {
+    padding: 12px 16px 24px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  .sidebar-action {
+    flex: 0 0 auto;
+    min-width: 120px;
+    padding: 12px;
+    text-align: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .collapsed .sidebar-actions {
+    display: none;
+  }
+  
+  .tournament-content.sidebar-open {
+    margin-left: 0;
+    padding-bottom: 120px;
+  }
+  
+  .tournament-content {
+    margin-left: 0;
+    padding-bottom: 80px;
+  }
+  
+  .tournament-details-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

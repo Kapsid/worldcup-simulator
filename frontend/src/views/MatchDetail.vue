@@ -6,6 +6,11 @@
       @logout="handleLogout" 
     />
     
+    <Breadcrumbs 
+      :current-match="match"
+      :current-tournament="{ _id: $route.params.tournamentId }"
+    />
+    
     <main class="main-content">
       <div class="match-detail-container">
         <div class="page-header">
@@ -158,11 +163,13 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
 
 export default {
   name: 'MatchDetailPage',
   components: {
-    AppHeader
+    AppHeader,
+    Breadcrumbs
   },
   data() {
     return {

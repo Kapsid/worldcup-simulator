@@ -30,7 +30,31 @@ class BasicEnhancedMatchService {
   }
 
   /**
-   * Select proper starting XI with correct positions
+   * Get similar positions for a given position (for fallback selection)
+   */
+  static getSimilarPositions(position) {
+    const similarPositions = {
+      'GK': [],
+      'CB': ['LB', 'RB', 'CDM'],
+      'LB': ['CB', 'RB', 'LWB', 'LM'],
+      'RB': ['CB', 'LB', 'RWB', 'RM'],
+      'LWB': ['LB', 'LM', 'RWB'],
+      'RWB': ['RB', 'RM', 'LWB'],
+      'CDM': ['CM', 'CB', 'CAM'],
+      'CM': ['CDM', 'CAM', 'LM', 'RM'],
+      'CAM': ['CM', 'CDM', 'ST', 'CF'],
+      'LM': ['LB', 'LWB', 'CM', 'LW'],
+      'RM': ['RB', 'RWB', 'CM', 'RW'],
+      'LW': ['LM', 'ST', 'CF', 'RW'],
+      'RW': ['RM', 'ST', 'CF', 'LW'],
+      'CF': ['ST', 'CAM', 'LW', 'RW'],
+      'ST': ['CF', 'CAM', 'LW', 'RW']
+    }
+    return similarPositions[position] || []
+  }
+
+  /**
+   * Select proper starting XI with varied formations
    */
   static async selectStartingXI(teamCode, tournamentId = null, worldId = null) {
     const players = await BasicEnhancedMatchService.getTeamPlayers(teamCode, tournamentId, worldId)
@@ -39,64 +63,81 @@ class BasicEnhancedMatchService {
       throw new Error(`Not enough players for team ${teamCode}`)
     }
 
+    // Import formations from tactics
+    const { formations } = await import('../data/tactics.js')
+    
+    // Select random formation
+    const selectedFormation = formations[Math.floor(Math.random() * formations.length)]
+    const formationPositions = selectedFormation.positions
+    
+    console.log(`🎯 FORMATION: Team ${teamCode} using formation ${selectedFormation.name}:`, formationPositions)
+    
     // Sort players by overall rating descending
     players.sort((a, b) => (b.overallRating || 0) - (a.overallRating || 0))
 
     // Group players by position
-    const goalkeepers = players.filter(p => p.detailedPosition === 'GK')
-    const defenders = players.filter(p => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(p.detailedPosition))
-    const midfielders = players.filter(p => ['CM', 'CAM', 'CDM', 'LM', 'RM'].includes(p.detailedPosition))
-    const forwards = players.filter(p => ['ST', 'CF', 'LW', 'RW'].includes(p.detailedPosition))
+    const playersByPosition = {}
+    players.forEach(player => {
+      const pos = player.detailedPosition
+      if (!playersByPosition[pos]) {
+        playersByPosition[pos] = []
+      }
+      playersByPosition[pos].push(player)
+    })
 
     const startingXI = []
     let jerseyNumber = 1
+    const usedPlayers = new Set()
 
-    // 1 Goalkeeper
-    if (goalkeepers.length > 0) {
-      startingXI.push({
-        player: goalkeepers[0]._id,
-        position: 'GK',
-        jerseyNumber: 1,
-        isStarter: true,
-        isCaptain: goalkeepers[0].isCaptain || false
-      })
-      jerseyNumber = 2
-    } else {
-      throw new Error(`No goalkeeper available for team ${teamCode}`)
+    // Helper function to get best available player for position
+    const getBestPlayerForPosition = (position) => {
+      if (playersByPosition[position]) {
+        const available = playersByPosition[position].filter(p => !usedPlayers.has(p._id.toString()))
+        if (available.length > 0) {
+          return available[0] // Already sorted by rating
+        }
+      }
+      return null
     }
 
-    // 4 Defenders
-    for (let i = 0; i < Math.min(4, defenders.length); i++) {
-      startingXI.push({
-        player: defenders[i]._id,
-        position: defenders[i].detailedPosition,
-        jerseyNumber: jerseyNumber++,
-        isStarter: true,
-        isCaptain: defenders[i].isCaptain || false
-      })
+    // Helper function to get any available player as fallback
+    const getAnyAvailablePlayer = () => {
+      const available = players.filter(p => !usedPlayers.has(p._id.toString()))
+      return available.length > 0 ? available[0] : null
     }
 
-    // 4 Midfielders
-    for (let i = 0; i < Math.min(4, midfielders.length); i++) {
-      startingXI.push({
-        player: midfielders[i]._id,
-        position: midfielders[i].detailedPosition,
-        jerseyNumber: jerseyNumber++,
-        isStarter: true,
-        isCaptain: midfielders[i].isCaptain || false
-      })
-    }
-
-    // 2 Forwards
-    for (let i = 0; i < Math.min(2, forwards.length); i++) {
-      startingXI.push({
-        player: forwards[i]._id,
-        position: forwards[i].detailedPosition,
-        jerseyNumber: jerseyNumber++,
-        isStarter: true,
-        isCaptain: forwards[i].isCaptain || false
-      })
-    }
+    // Build lineup based on formation requirements
+    Object.entries(formationPositions).forEach(([position, count]) => {
+      for (let i = 0; i < count; i++) {
+        let selectedPlayer = getBestPlayerForPosition(position)
+        
+        // If no exact match, try similar positions
+        if (!selectedPlayer) {
+          const similarPositions = BasicEnhancedMatchService.getSimilarPositions(position)
+          for (const similarPos of similarPositions) {
+            selectedPlayer = getBestPlayerForPosition(similarPos)
+            if (selectedPlayer) break
+          }
+        }
+        
+        // If still no match, get any available player
+        if (!selectedPlayer) {
+          selectedPlayer = getAnyAvailablePlayer()
+        }
+        
+        if (selectedPlayer) {
+          startingXI.push({
+            player: selectedPlayer._id,
+            position: position,
+            jerseyNumber: position === 'GK' ? 1 : jerseyNumber++,
+            isStarter: true,
+            isCaptain: selectedPlayer.isCaptain || false
+          })
+          usedPlayers.add(selectedPlayer._id.toString())
+          if (position === 'GK') jerseyNumber = 2
+        }
+      }
+    })
 
     // If we don't have enough players in specific positions, fill with remaining players
     if (startingXI.length < 11) {
@@ -114,13 +155,21 @@ class BasicEnhancedMatchService {
       }
     }
 
-    return startingXI.slice(0, 11)
+    return {
+      lineup: startingXI.slice(0, 11),
+      formation: selectedFormation.name
+    }
   }
 
   /**
    * Generate basic match details
    */
   static async simulateBasicMatchDetails(match, competitionType = 'tournament', world = null) {
+    console.log('🔥 BASIC ENHANCED: simulateBasicMatchDetails called!')
+    console.log('🔥 BASIC ENHANCED: Match:', match.homeTeam?.name, 'vs', match.awayTeam?.name)
+    console.log('🔥 BASIC ENHANCED: Competition type:', competitionType)
+    console.log('🔥 BASIC ENHANCED: World:', world)
+    
     try {
       // Log to file since console isn't showing
       const fs = await import('fs')
@@ -135,8 +184,20 @@ class BasicEnhancedMatchService {
       const awayTeamCode = match.awayTeam.countryCode || match.awayTeam.code
       
       // Generate lineups
-      const homeStartingXI = await BasicEnhancedMatchService.selectStartingXI(homeTeamCode, match.tournament, world?._id)
-      const awayStartingXI = await BasicEnhancedMatchService.selectStartingXI(awayTeamCode, match.tournament, world?._id)
+      console.log(`🚀 BASIC ENHANCED: Generating lineups for ${homeTeamCode} vs ${awayTeamCode}`)
+      const homeResult = await BasicEnhancedMatchService.selectStartingXI(homeTeamCode, match.tournament, world?._id)
+      const awayResult = await BasicEnhancedMatchService.selectStartingXI(awayTeamCode, match.tournament, world?._id)
+      
+      console.log(`🚀 BASIC ENHANCED: Home result:`, homeResult ? 'SUCCESS' : 'FAILED')
+      console.log(`🚀 BASIC ENHANCED: Away result:`, awayResult ? 'SUCCESS' : 'FAILED')
+      
+      const homeStartingXI = homeResult.lineup
+      const awayStartingXI = awayResult.lineup
+      const homeFormation = homeResult.formation
+      const awayFormation = awayResult.formation
+      
+      console.log(`🚀 BASIC ENHANCED: Lineups - Home: ${homeStartingXI.length}, Away: ${awayStartingXI.length}`)
+      console.log(`🚀 BASIC ENHANCED: Formations - Home: ${homeFormation}, Away: ${awayFormation}`)
       
       // Simple goals generation
       const goals = []
@@ -236,8 +297,8 @@ class BasicEnhancedMatchService {
             yellowCards: { home: 2, away: 1 },
             redCards: { home: 0, away: 0 },
             matchReport: matchReport,
-            homeFormation: '4-4-2',
-            awayFormation: '4-4-2',
+            homeFormation: homeFormation,
+            awayFormation: awayFormation,
             weather: 'sunny',
             temperature: 20,
             attendance: 45000
@@ -289,28 +350,48 @@ class BasicEnhancedMatchService {
       const allPlayers = [...homeStartingXI, ...awayStartingXI]
       
       for (const playerData of allPlayers) {
-        const playerId = playerData.player
+        console.log('🔍 DEBUG: playerData structure:', playerData)
+        const playerId = playerData.player || playerData._id || playerData.id
         const playerTeam = homeStartingXI.includes(playerData) ? 'home' : 'away'
+        
+        console.log('🔍 DEBUG: extracted playerId:', playerId)
+        
+        // Verify the Player document exists
+        const actualPlayer = await Player.findById(playerId)
+        console.log('🔍 DEBUG: Player document exists:', !!actualPlayer)
+        if (!actualPlayer) {
+          console.error('❌ CRITICAL: Player document not found for ID:', playerId)
+          continue // Skip this player if document doesn't exist
+        }
+        
+        console.log('🔍 DEBUG: About to save PlayerStats with player ID:', playerId)
+        console.log('🔍 DEBUG: Actual player document ID:', actualPlayer._id)
+        
+        // Use the actual player document's _id to ensure consistency
+        const correctPlayerId = actualPlayer._id
         
         // Count goals scored by this player
         const playerGoals = goals.filter(goal => 
-          goal.player.toString() === playerId.toString() && goal.team === playerTeam
+          goal.player && goal.player.toString() === correctPlayerId.toString() && goal.team === playerTeam
         ).length
         
         // Find or create player stats
         const statsQuery = {
-          player: playerId,
+          player: correctPlayerId,
           competitionType: competitionType
         }
         
         // Add both worldId and tournamentId when available for better querying
         if (world && world._id) {
           statsQuery.worldId = world._id
+          console.log(`PLAYER STATS: Using worldId: ${world._id}`)
         }
         if (match.tournament) {
           statsQuery.tournamentId = match.tournament
+          console.log(`PLAYER STATS: Using tournamentId from match.tournament: ${match.tournament}`)
         } else if (match.tournamentId) {
           statsQuery.tournamentId = match.tournamentId
+          console.log(`PLAYER STATS: Using tournamentId from match.tournamentId: ${match.tournamentId}`)
         }
         
         // Log what we're using for debugging
@@ -341,6 +422,26 @@ class BasicEnhancedMatchService {
         }
         playerStats.goals += playerGoals
         
+        // Calculate player rating first (need to create proper player object for rating function)
+        const playerForRating = {
+          _id: correctPlayerId,
+          position: playerData.position
+        }
+        const playerRating = BasicEnhancedMatchService.calculatePlayerRating(
+          playerForRating, 
+          { homeScore: match.homeScore, awayScore: match.awayScore },
+          playerTeam,
+          goals
+        )
+        
+        // Update average rating
+        if (playerStats.averageRating === 0) {
+          playerStats.averageRating = playerRating
+        } else {
+          const totalRating = (playerStats.averageRating * (playerStats.matchesPlayed - 1)) + playerRating
+          playerStats.averageRating = Math.round((totalRating / playerStats.matchesPlayed) * 10) / 10
+        }
+        
         // For goalkeepers, track clean sheets
         if (playerData.position === 'GK') {
           const concededGoals = goals.filter(goal => goal.team !== playerTeam).length
@@ -358,6 +459,7 @@ class BasicEnhancedMatchService {
           assists: 0, // TODO: Track assists
           yellowCard: false,
           redCard: false,
+          rating: playerRating,
           date: new Date()
         })
         
@@ -368,19 +470,35 @@ class BasicEnhancedMatchService {
           logMessage += `       Query: tournamentId=${statsQuery.tournamentId}, worldId=${statsQuery.worldId}, competitionType=${statsQuery.competitionType}\n`
           fs.appendFileSync('/tmp/backend-debug.log', logMessage)
           
-          console.log(`PLAYER STATS: 💾 About to save stats for player ${playerId}`, {
+          console.log(`PLAYER STATS: 💾 About to save stats for player ${correctPlayerId}`, {
             tournamentId: statsQuery.tournamentId,
             worldId: statsQuery.worldId,
             competitionType: statsQuery.competitionType,
             goals: playerStats.goals,
-            matchesStarted: playerStats.matchesStarted
+            matchesStarted: playerStats.matchesStarted,
+            averageRating: playerStats.averageRating,
+            matchesPlayed: playerStats.matchesPlayed,
+            isNewRecord: playerStats.isNew
           })
+          
+          console.log(`PLAYER STATS: Full PlayerStats object before save:`, JSON.stringify(playerStats, null, 2))
+          
           const savedStats = await playerStats.save()
           
           // Log successful save to file
           logMessage = `    -> ✅ Successfully saved PlayerStats for player ${playerId} - Total Goals: ${savedStats.goals}\n`
           fs.appendFileSync('/tmp/backend-debug.log', logMessage)
-          console.log(`PLAYER STATS: ✅ Successfully saved stats for player ${playerId} - Goals: ${playerGoals}, Total Goals: ${savedStats.goals}, Matches Started: ${savedStats.matchesStarted}`)
+          console.log(`PLAYER STATS: ✅ Successfully saved stats for player ${playerId}`, {
+            _id: savedStats._id,
+            player: savedStats.player,
+            tournamentId: savedStats.tournamentId,
+            worldId: savedStats.worldId,
+            competitionType: savedStats.competitionType,
+            goals: savedStats.goals,
+            matchesStarted: savedStats.matchesStarted,
+            matchesPlayed: savedStats.matchesPlayed,
+            averageRating: savedStats.averageRating
+          })
         } catch (saveError) {
           // Log error to file
           const fs = await import('fs')
@@ -402,6 +520,88 @@ class BasicEnhancedMatchService {
       console.error('PLAYER STATS: Error updating player statistics:', error)
       // Don't throw - we don't want to fail the entire match simulation
     }
+  }
+
+  /**
+   * Calculate player match rating based on performance
+   * Rating scale: 1-10 (10 being the best)
+   */
+  static calculatePlayerRating(playerData, matchResult, playerTeam, goals) {
+    let baseRating = 6.5 // Starting base rating
+    
+    console.log('🔍 RATING: playerData:', playerData)
+    console.log('🔍 RATING: playerData._id:', playerData._id)
+    console.log('🔍 RATING: playerTeam:', playerTeam)
+    console.log('🔍 RATING: goals:', goals)
+    
+    // Ensure playerData has an _id
+    if (!playerData || !playerData._id) {
+      console.error('RATING ERROR: playerData or playerData._id is undefined')
+      return 6.0 // Return default rating
+    }
+    
+    // Get player's goals in this match
+    const playerGoals = goals.filter(goal => 
+      goal.player && goal.player.toString() === playerData._id.toString() && goal.team === playerTeam
+    ).length
+    
+    // Position-specific adjustments
+    const position = playerData.position
+    
+    // Goal impact (position weighted)
+    if (playerGoals > 0) {
+      if (['ST', 'CF', 'LW', 'RW'].includes(position)) {
+        baseRating += playerGoals * 1.0 // Forwards get 1.0 per goal
+      } else if (['CM', 'CAM', 'CDM', 'LM', 'RM'].includes(position)) {
+        baseRating += playerGoals * 1.3 // Midfielders get 1.3 per goal (less expected)
+      } else if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(position)) {
+        baseRating += playerGoals * 1.5 // Defenders get 1.5 per goal (rare)
+      } else if (position === 'GK') {
+        baseRating += playerGoals * 2.0 // Goalkeeper goals are extremely rare
+      }
+    }
+    
+    // Team result impact
+    const teamScore = playerTeam === 'home' ? matchResult.homeScore : matchResult.awayScore
+    const opponentScore = playerTeam === 'home' ? matchResult.awayScore : matchResult.homeScore
+    
+    if (teamScore > opponentScore) {
+      // Win bonus
+      baseRating += 0.5
+    } else if (teamScore === opponentScore) {
+      // Draw - neutral
+      baseRating += 0.1
+    } else {
+      // Loss penalty
+      baseRating -= 0.3
+    }
+    
+    // Clean sheet bonus for defenders and goalkeeper
+    if (opponentScore === 0 && ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB'].includes(position)) {
+      baseRating += 0.8
+    }
+    
+    // Heavy defeat penalty
+    if (opponentScore - teamScore >= 3) {
+      baseRating -= 0.5
+    }
+    
+    // Big win bonus
+    if (teamScore - opponentScore >= 3) {
+      baseRating += 0.3
+    }
+    
+    // Starter vs substitute (starters play full match, get slight bonus)
+    if (playerData.isStarter) {
+      baseRating += 0.2
+    }
+    
+    // Add some randomness for realism (±0.5)
+    const randomAdjustment = (Math.random() - 0.5)
+    baseRating += randomAdjustment
+    
+    // Ensure rating stays within 1-10 range
+    return Math.max(1, Math.min(10, Math.round(baseRating * 10) / 10))
   }
 }
 

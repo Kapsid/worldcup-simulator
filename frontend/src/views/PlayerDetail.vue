@@ -6,6 +6,10 @@
       @logout="handleLogout" 
     />
     
+    <Breadcrumbs 
+      :current-player="player" 
+    />
+    
     <main class="main-content">
       <div class="player-container">
         <div v-if="loading" class="loading-state">
@@ -186,12 +190,14 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
 import { getPlayerAvatarUrl } from '../utils/avatarGenerator.js'
 
 export default {
   name: 'PlayerDetail',
   components: {
-    AppHeader
+    AppHeader,
+    Breadcrumbs
   },
   data() {
     return {

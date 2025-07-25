@@ -6,6 +6,8 @@
       @logout="handleLogout" 
     />
     
+    <Breadcrumbs :current-world="world" />
+    
     <main class="main-content">
       <div class="world-container">
         <!-- World Header -->
@@ -402,11 +404,13 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
 
 export default {
   name: 'WorldDetail',
   components: {
-    AppHeader
+    AppHeader,
+    Breadcrumbs
   },
   data() {
     return {

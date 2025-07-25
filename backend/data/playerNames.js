@@ -690,15 +690,17 @@ export const playerNames = {
       "Matěj", "Michael", "Michal", "Milan", "Miroslav", "Ondřej", "Pavel", "Petr", "Radek", "Roman",
       "Stanislav", "Štefan", "Tomáš", "Václav", "Viktor", "Vladimír", "Vojtěch", "Zdeněk", "Aleš", "Antonín",
       "Bohuslav", "Břetislav", "Čeněk", "Dušan", "Eduard", "Emil", "Fanda", "Gustav", "Hynek", "Igor",
-      "Jaroslav", "Jonáš", "Kamil", "Leoš", "Matouš", "Miloš", "Norbert", "Oldřich", "Patrik", "Richard"
+      "Jaroslav", "Jonáš", "Kamil", "Leoš", "Matouš", "Miloš", "Norbert", "Oldřich", "Patrik", "Richard",
+      "Čestmír", "Teodor"
     ],
     lastNames: [
       "Novák", "Svoboda", "Novotný", "Dvořák", "Černý", "Procházka", "Krejčí", "Hrubý", "Veselý", "Marek",
       "Pokorný", "Pospíšil", "Hájek", "Jelínek", "Král", "Růžička", "Beneš", "Fiala", "Sedláček", "Doležal",
-      "Zeman", "Kolář", "Navrátil", "Čermák", "Urban", "Vaněk", "Blažek", "Krejčová", "Kratochvíl", "Bartošek",
+      "Zeman", "Kolář", "Navrátil", "Čermák", "Urban", "Vaněk", "Blažek", "Pavelek", "Kratochvíl", "Bartošek",
       "Vítek", "Kopecký", "Horák", "Šimek", "Čech", "Štěpánek", "Staněk", "Holub", "Šťastný", "Kadlec",
       "Dostál", "Nguyen", "Kudrna", "Moravec", "Liška", "Pešek", "Čížek", "Kopřiva", "Sýkora", "Pavlíček",
-      "Bureš", "Vlček", "Mašek", "Říha", "Strnad", "Svoboda", "Tomeček", "Jindra", "Kašpar", "Doskočil"
+      "Bureš", "Vlček", "Mašek", "Říha", "Strnad", "Svoboda", "Tomeček", "Jindra", "Kašpar", "Doskočil", "Poncza",
+      "Urbanczyk", "Hufnagel", "David", "Pavel", "Kellner", "Tlučhuba", "Skočdopole"
     ]
   },
 

@@ -17,6 +17,11 @@
   --dark-gray: #1D1D1F;
   --black: #000000;
   
+  /* Layout */
+  --header-height: 66px;
+  --header-height-mobile: 132px;
+  --breadcrumb-height: 45px;
+  
   /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.25);
   --glass-border: rgba(255, 255, 255, 0.18);

@@ -3,7 +3,7 @@
     <div class="branding-header" @click="toggleSection">
       <h3>
         <i class="fas fa-info-circle"></i>
-        Tournament Details
+        Tournament Information
       </h3>
       <button class="toggle-btn">
         <i :class="isOpen ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
@@ -460,6 +460,7 @@ export default {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
+  margin-top: 32px;
   margin-bottom: 24px;
 }
 
