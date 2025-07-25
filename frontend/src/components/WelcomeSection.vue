@@ -58,7 +58,8 @@
               <p class="tournament-name">{{ lastTournament.name }}</p>
               <div class="tournament-stats">
                 <span class="host-info">
-                  {{ getCountryFlag(lastTournament.hostCountryCode) }} {{ lastTournament.hostCountry }}
+                  <CountryFlag :country-code="lastTournament.hostCountryCode" :size="20" />
+                  {{ lastTournament.hostCountry }}
                 </span>
                 <span class="separator">•</span>
                 <span class="status">{{ formatStatus(lastTournament.status) }}</span>
@@ -80,8 +81,13 @@
 </template>
 
 <script>
+import CountryFlag from './CountryFlag.vue'
+
 export default {
   name: 'WelcomeSection',
+  components: {
+    CountryFlag
+  },
   props: {
     username: {
       type: String,
@@ -176,10 +182,6 @@ export default {
       }
     },
     
-    getCountryFlag(countryCode) {
-      const country = this.countries.find(c => c.code === countryCode)
-      return country ? country.flag : '🏴'
-    },
     
     formatStatus(status) {
       const statusMap = {

@@ -43,7 +43,7 @@
           >
             <div class="tournament-header-card">
               <div class="host-info">
-                <span class="country-flag">{{ getCountryFlag(tournament.hostCountryCode) }}</span>
+                <CountryFlag :country-code="tournament.hostCountryCode" :size="28" />
                 <span class="country-name">{{ tournament.hostCountry }}</span>
               </div>
               <div class="tournament-status">
@@ -222,11 +222,13 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import CountryFlag from '../components/CountryFlag.vue'
 
 export default {
   name: 'Tournament',
   components: {
-    AppHeader
+    AppHeader,
+    CountryFlag
   },
   data() {
     return {
@@ -410,10 +412,6 @@ export default {
       this.createError = ''
     },
     
-    getCountryFlag(countryCode) {
-      const country = this.countries.find(c => c.code === countryCode)
-      return country ? country.flag : '🏴'
-    },
     
     formatStatus(status) {
       const statusMap = {

@@ -21,7 +21,7 @@
         <tbody>
           <tr v-for="(team, index) in sortedTeams" :key="team.teamId" :class="getPositionClass(index)">
             <td class="team-name">
-              <span class="team-flag">{{ team.flag }}</span>
+              <CountryFlag :country-code="team.country || team.countryCode" :size="20" />
               <router-link 
                 :to="`/tournament/${tournamentId}/qualifying-team/${team.teamId}`" 
                 class="team-text clickable-team"
@@ -47,8 +47,13 @@
 </template>
 
 <script>
+import CountryFlag from '../CountryFlag.vue'
+
 export default {
   name: 'GroupStandingsTable',
+  components: {
+    CountryFlag
+  },
   props: {
     group: {
       type: Object,

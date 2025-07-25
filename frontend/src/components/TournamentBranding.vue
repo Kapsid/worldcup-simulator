@@ -243,26 +243,6 @@ export default {
       return null // Will be populated by parent component or API call
     },
     
-    getCountryFlag(countryCode) {
-      // Basic flag mapping - should be expanded or fetched from API
-      const flagMap = {
-        'USA': '🇺🇸',
-        'GER': '🇩🇪',
-        'FRA': '🇫🇷',
-        'BRA': '🇧🇷',
-        'ESP': '🇪🇸',
-        'ITA': '🇮🇹',
-        'ENG': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-        'ARG': '🇦🇷',
-        'RUS': '🇷🇺',
-        'CHN': '🇨🇳',
-        'JPN': '🇯🇵',
-        'AUS': '🇦🇺',
-        'CAN': '🇨🇦',
-        'MEX': '🇲🇽'
-      }
-      return flagMap[countryCode] || '🏴'
-    },
     
     getConfederationName(confederation) {
       const confederationNames = {

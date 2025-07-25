@@ -54,7 +54,7 @@
           <div class="match-score-section">
             <!-- Home Team with Goals -->
             <div class="team-info home-team">
-              <div class="team-flag">{{ match.homeTeam.flag }}</div>
+              <CountryFlag :country-code="match.homeTeam.countryCode" :size="32" />
               <div class="team-name clickable-team" @click="navigateToTeam('home')">{{ match.homeTeam.name }}</div>
               <!-- Home Team Goals (Live or Final) -->
               <div v-if="(liveSimulation.isRunning && getLiveTeamGoals('home').length > 0) || (!liveSimulation.isRunning && matchDetails && getTeamGoals('home').length > 0)" class="team-goals">
@@ -100,7 +100,7 @@
             
             <!-- Away Team with Goals -->
             <div class="team-info away-team">
-              <div class="team-flag">{{ match.awayTeam.flag }}</div>
+              <CountryFlag :country-code="match.awayTeam.countryCode" :size="32" />
               <div class="team-name clickable-team" @click="navigateToTeam('away')">{{ match.awayTeam.name }}</div>
               <!-- Away Team Goals (Live or Final) -->
               <div v-if="(liveSimulation.isRunning && getLiveTeamGoals('away').length > 0) || (!liveSimulation.isRunning && matchDetails && getTeamGoals('away').length > 0)" class="team-goals">
@@ -164,12 +164,14 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
+import CountryFlag from '../components/CountryFlag.vue'
 
 export default {
   name: 'MatchDetailPage',
   components: {
     AppHeader,
-    Breadcrumbs
+    Breadcrumbs,
+    CountryFlag
   },
   data() {
     return {
@@ -291,11 +293,13 @@ export default {
               _id: qualMatch.matchId,
               homeTeam: {
                 name: qualMatch.homeTeam.name,
-                flag: qualMatch.homeTeam.flag
+                flag: qualMatch.homeTeam.flag,
+                countryCode: qualMatch.homeTeam.country
               },
               awayTeam: {
                 name: qualMatch.awayTeam.name,
-                flag: qualMatch.awayTeam.flag
+                flag: qualMatch.awayTeam.flag,
+                countryCode: qualMatch.awayTeam.country
               },
               homeScore: qualMatch.homeScore,
               awayScore: qualMatch.awayScore,
@@ -331,11 +335,13 @@ export default {
               ...groupMatch,
               homeTeam: {
                 name: groupMatch.homeTeam.countryName,
-                flag: groupMatch.homeTeam.countryFlag
+                flag: groupMatch.homeTeam.countryFlag,
+                countryCode: groupMatch.homeTeam.countryCode
               },
               awayTeam: {
                 name: groupMatch.awayTeam.countryName,
-                flag: groupMatch.awayTeam.countryFlag
+                flag: groupMatch.awayTeam.countryFlag,
+                countryCode: groupMatch.awayTeam.countryCode
               },
               groupId: `group_${groupMatch.group.groupLetter}`,
               played: groupMatch.status === 'completed',
@@ -401,11 +407,13 @@ export default {
               ...knockoutMatch,
               homeTeam: {
                 name: knockoutMatch.homeTeam?.countryName || 'TBD',
-                flag: knockoutMatch.homeTeam?.countryFlag || '?'
+                flag: knockoutMatch.homeTeam?.countryFlag || '?',
+                countryCode: knockoutMatch.homeTeam?.countryCode
               },
               awayTeam: {
                 name: knockoutMatch.awayTeam?.countryName || 'TBD',
-                flag: knockoutMatch.awayTeam?.countryFlag || '?'
+                flag: knockoutMatch.awayTeam?.countryFlag || '?',
+                countryCode: knockoutMatch.awayTeam?.countryCode
               },
               round: this.getMatchLabel(knockoutMatch),
               played: knockoutMatch.status === 'completed',

@@ -42,7 +42,7 @@
             
             <div class="team-info">
               <div class="team-display">
-                <span class="team-flag">{{ countryInfo?.flag || '🏴' }}</span>
+                <CountryFlag :country-code="team.countryCode" :size="32" />
                 <div class="team-details">
                   <h1>{{ team.countryName || team.name }}</h1>
                   <p class="team-subtitle">{{ tournament?.name || 'World Cup' }}</p>
@@ -88,11 +88,13 @@
                       <div class="match-info">
                         <div class="match-teams">
                           <span class="team-name" :class="{ 'current-team': match.homeTeam.name === team.name }">
-                            {{ getCountryFlag(match.homeTeam.countryCode) }} {{ match.homeTeam.name }}
+                            <CountryFlag :country-code="match.homeTeam.countryCode" :size="24" />
+                            {{ match.homeTeam.name }}
                           </span>
                           <span class="vs">vs</span>
                           <span class="team-name" :class="{ 'current-team': match.awayTeam.name === team.name }">
-                            {{ getCountryFlag(match.awayTeam.countryCode) }} {{ match.awayTeam.name }}
+                            <CountryFlag :country-code="match.awayTeam.countryCode" :size="24" />
+                            {{ match.awayTeam.name }}
                           </span>
                         </div>
                         <div class="match-details">
@@ -162,6 +164,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
+import CountryFlag from '../components/CountryFlag.vue'
 import TeamRoster from '../components/TeamRoster.vue'
 
 export default {
@@ -169,6 +172,7 @@ export default {
   components: {
     AppHeader,
     Breadcrumbs,
+    CountryFlag,
     TeamRoster
   },
   data() {
@@ -512,10 +516,6 @@ export default {
       return 'Tournament Match'
     },
     
-    getCountryFlag(countryCode) {
-      const country = this.countries.find(c => c.code === countryCode)
-      return country ? country.flag : '🏴'
-    },
     
     formatDate(dateString) {
       return new Date(dateString).toLocaleDateString()

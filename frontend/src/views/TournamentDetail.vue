@@ -43,7 +43,7 @@
                 <div class="title-and-host">
                   <h1>{{ tournament.name }}</h1>
                   <div class="host-info">
-                    <span class="country-flag">{{ getCountryFlag(tournament.hostCountryCode) }}</span>
+                    <CountryFlag :country-code="tournament.hostCountryCode" :size="32" />
                     <div class="host-details">
                       <p class="host-label">Hosted by {{ tournament.hostCountry }}</p>
                       <p class="tournament-type">{{ formatTournamentType(tournament.type) }}</p>
@@ -100,7 +100,10 @@
                   
                   <div class="form-info">
                     <p class="info-label">Host Country</p>
-                    <p class="info-value">{{ getCountryFlag(tournament.hostCountryCode) }} {{ tournament.hostCountry }}</p>
+                    <p class="info-value">
+                      <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
+                      {{ tournament.hostCountry }}
+                    </p>
                   </div>
                   
                   <div class="form-info">
@@ -434,7 +437,10 @@
                 <i class="fas fa-map-marker-alt"></i>
                 <div>
                   <span class="detail-label">Host Country</span>
-                  <span class="detail-value">{{ getCountryFlag(tournament.hostCountryCode) }} {{ tournament.hostCountry }}</span>
+                  <span class="detail-value">
+                    <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
+                    {{ tournament.hostCountry }}
+                  </span>
                 </div>
               </div>
               <div class="detail-item" v-if="tournament.createdAt">
@@ -462,6 +468,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
+import CountryFlag from '../components/CountryFlag.vue'
 import TeamManagement from '../components/TeamManagement.vue'
 import QualificationManager from '../components/QualificationManager.vue'
 import WorldCupDraw from '../components/WorldCupDraw.vue'
@@ -478,6 +485,7 @@ export default {
   components: {
     AppHeader,
     Breadcrumbs,
+    CountryFlag,
     TeamManagement,
     QualificationManager,
     WorldCupDraw,
@@ -723,10 +731,6 @@ export default {
       }
     },
     
-    getCountryFlag(countryCode) {
-      const country = this.countries.find(c => c.code === countryCode)
-      return country ? country.flag : '🏴'
-    },
     
     formatStatus(status) {
       const statusMap = {

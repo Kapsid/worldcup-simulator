@@ -3,7 +3,7 @@
     <div class="roster-header">
       <div class="header-info">
         <h3>
-          <span class="team-flag">{{ team.flag }}</span>
+          <CountryFlag :country-code="team.code || team.countryCode" :size="32" />
           {{ team.name }} Squad
         </h3>
         <div class="squad-stats">
@@ -118,9 +118,13 @@
 
 <script>
 import { getPlayerAvatarUrl } from '../utils/avatarGenerator.js'
+import CountryFlag from './CountryFlag.vue'
 
 export default {
   name: 'TeamRoster',
+  components: {
+    CountryFlag
+  },
   props: {
     team: {
       type: Object,

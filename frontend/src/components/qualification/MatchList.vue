@@ -15,7 +15,7 @@
       >
         <div class="match-teams">
           <div class="team home-team">
-            <span class="team-flag">{{ match.homeTeam.flag }}</span>
+            <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" />
             <router-link 
               :to="`/tournament/${tournamentId}/qualifying-team/${match.homeTeam.teamId}`" 
               class="team-name clickable-team"
@@ -40,7 +40,7 @@
             >
               {{ match.awayTeam.name }}
             </router-link>
-            <span class="team-flag">{{ match.awayTeam.flag }}</span>
+            <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" />
           </div>
         </div>
         
@@ -70,8 +70,13 @@
 </template>
 
 <script>
+import CountryFlag from '../CountryFlag.vue'
+
 export default {
   name: 'MatchList',
+  components: {
+    CountryFlag
+  },
   props: {
     matches: {
       type: Array,

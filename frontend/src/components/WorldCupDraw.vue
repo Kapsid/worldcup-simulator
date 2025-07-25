@@ -59,7 +59,7 @@
               class="team-item"
               :class="{ 'host-team': team.isHost }"
             >
-              <div class="team-flag">{{ team.countryFlag }}</div>
+              <CountryFlag :country-code="team.countryCode" :size="24" />
               <div class="team-info">
                 <span class="team-name">{{ team.countryName }}</span>
                 <span class="team-ranking">FIFA #{{ team.worldRanking || team.fifaRanking || team.ranking || '?' }}</span>
@@ -146,7 +146,7 @@
                     <div class="ball-bottom"></div>
                   </div>
                   <div v-if="ballOpened" class="team-reveal">
-                    <div class="team-flag">{{ currentDrawnTeam?.countryFlag }}</div>
+                    <CountryFlag :country-code="currentDrawnTeam?.countryCode" :size="32" />
                     <div class="team-name">{{ currentDrawnTeam?.countryName }}</div>
                   </div>
                 </div>
@@ -226,7 +226,7 @@
                   class="group-team"
                   :class="{ 'host-team': team.isHost }"
                 >
-                  <span class="team-flag">{{ team.countryFlag }}</span>
+                  <CountryFlag :country-code="team.countryCode" :size="20" />
                   <span class="team-name">{{ team.countryName }}</span>
                   <span class="team-pot">P{{ getTeamPot(team) }}</span>
                 </div>
@@ -263,7 +263,7 @@
                 class="group-team"
                 :class="{ 'host-team': team.isHost }"
               >
-                <span class="team-flag">{{ team.countryFlag }}</span>
+                <CountryFlag :country-code="team.countryCode" :size="20" />
                 <span class="team-name">{{ team.countryName }}</span>
                 <span class="team-pot">P{{ getTeamPot(team) }}</span>
               </div>
@@ -320,7 +320,7 @@
                 :class="{ 'host-team': team.isHost }"
               >
                 <span class="team-position">{{ index + 1 }}.</span>
-                <span class="team-flag">{{ team.countryFlag }}</span>
+                <CountryFlag :country-code="team.countryCode" :size="20" />
                 <span class="team-name">{{ team.countryName }}</span>
                 <span class="team-pot">Pot {{ getTeamPot(team) }}</span>
                 <span class="team-ranking">FIFA #{{ team.worldRanking || team.fifaRanking || team.ranking || '?' }}</span>
@@ -336,8 +336,13 @@
 </template>
 
 <script>
+import CountryFlag from './CountryFlag.vue'
+
 export default {
   name: 'WorldCupDraw',
+  components: {
+    CountryFlag
+  },
   props: {
     tournament: {
       type: Object,

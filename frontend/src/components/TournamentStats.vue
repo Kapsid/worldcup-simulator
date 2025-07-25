@@ -76,7 +76,7 @@
                 <span class="player-position">{{ scorer.player.detailedPosition }}</span>
               </div>
               <div class="player-country">
-                <span class="country-flag">{{ getCountryFlag(scorer.player.teamId) }}</span>
+                <CountryFlag :country-code="scorer.player.teamId" :size="28" />
                 {{ scorer.player.teamId }}
               </div>
             </div>
@@ -142,7 +142,7 @@
                 <span class="player-position">{{ keeper.player.detailedPosition }}</span>
               </div>
               <div class="player-country">
-                <span class="country-flag">{{ getCountryFlag(keeper.player.teamId) }}</span>
+                <CountryFlag :country-code="keeper.player.teamId" :size="28" />
                 {{ keeper.player.teamId }}
               </div>
             </div>
@@ -202,11 +202,13 @@
 
 <script>
 import AllStarsXI from './AllStarsXI.vue'
+import CountryFlag from './CountryFlag.vue'
 
 export default {
   name: 'TournamentStats',
   components: {
-    AllStarsXI
+    AllStarsXI,
+    CountryFlag
   },
   props: {
     tournament: {
@@ -287,20 +289,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-    
-    getCountryFlag(countryCode) {
-      // Simple mapping of country codes to flags
-      const flagMap = {
-        'ARG': '🇦🇷', 'BRA': '🇧🇷', 'ESP': '🇪🇸', 'FRA': '🇫🇷', 'GER': '🇩🇪',
-        'ITA': '🇮🇹', 'POR': '🇵🇹', 'ENG': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'NED': '🇳🇱', 'BEL': '🇧🇪',
-        'COL': '🇨🇴', 'URU': '🇺🇾', 'MEX': '🇲🇽', 'USA': '🇺🇸', 'CAN': '🇨🇦',
-        'CHI': '🇨🇱', 'PER': '🇵🇪', 'ECU': '🇪🇨', 'PAR': '🇵🇾', 'BOL': '🇧🇴',
-        'VEN': '🇻🇪', 'CRC': '🇨🇷', 'HON': '🇭🇳', 'GTM': '🇬🇹', 'SLV': '🇸🇻',
-        'NIC': '🇳🇮', 'PAN': '🇵🇦', 'JAM': '🇯🇲', 'TTO': '🇹🇹', 'CUB': '🇨🇺'
-      }
-      
-      return flagMap[countryCode] || '🏴'
     }
   }
 }
@@ -550,6 +538,7 @@ export default {
 
 .country-flag {
   font-size: 1.1rem;
+  margin-right: 0.5rem;
 }
 
 .scorer-stats {

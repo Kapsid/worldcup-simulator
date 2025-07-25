@@ -70,7 +70,7 @@
               </div>
               
               <div class="team-col">
-                <span class="team-flag">{{ standing.team.countryFlag }}</span>
+                <CountryFlag :country-code="standing.team.countryCode" :size="20" />
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${standing.team._id}`"
                   class="team-name clickable-team"
@@ -108,8 +108,13 @@
 </template>
 
 <script>
+import CountryFlag from './CountryFlag.vue'
+
 export default {
   name: 'GroupStandings',
+  components: {
+    CountryFlag
+  },
   props: {
     tournament: {
       type: Object,

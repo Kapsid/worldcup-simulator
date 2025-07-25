@@ -76,7 +76,7 @@
             
             <div class="match-teams">
               <div class="team home-team">
-                <div class="team-flag">{{ match.homeTeam.countryFlag }}</div>
+                <CountryFlag :country-code="match.homeTeam.countryCode || match.homeTeam.code" :size="24" />
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
                   class="team-name clickable-team"
@@ -112,7 +112,7 @@
               </div>
               
               <div class="team away-team">
-                <div class="team-flag">{{ match.awayTeam.countryFlag }}</div>
+                <CountryFlag :country-code="match.awayTeam.countryCode || match.awayTeam.code" :size="24" />
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
                   class="team-name clickable-team"
@@ -153,11 +153,13 @@
 <script>
 
 import StandingsTooltip from './StandingsTooltip.vue'
+import CountryFlag from './CountryFlag.vue'
 
 export default {
   name: 'GroupMatches',
   components: {
-    StandingsTooltip
+    StandingsTooltip,
+    CountryFlag
   },
 
   props: {

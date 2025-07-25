@@ -168,14 +168,14 @@
               <div v-if="simulationProgress.currentMatch" class="current-match">
                 <span class="match-teams">
                   <span class="team">
-                    <span class="team-flag">{{ simulationProgress.currentMatch.homeFlag }}</span>
+                    <CountryFlag :country-code="simulationProgress.currentMatch.homeTeam?.country || simulationProgress.currentMatch.homeTeam?.countryCode" :size="16" class="team-flag" />
                     {{ simulationProgress.currentMatch.homeTeam }}
                   </span>
                   <span v-if="!simulationProgress.lastResult" class="vs">vs</span>
                   <span v-else class="result-in-vs">{{ simulationProgress.lastResult }}</span>
                   <span class="team">
                     {{ simulationProgress.currentMatch.awayTeam }}
-                    <span class="team-flag">{{ simulationProgress.currentMatch.awayFlag }}</span>
+                    <CountryFlag :country-code="simulationProgress.currentMatch.awayTeam?.country || simulationProgress.currentMatch.awayTeam?.countryCode" :size="16" class="team-flag" />
                   </span>
                 </span>
               </div>
@@ -223,7 +223,7 @@
                 
                 <div class="tie-teams">
                   <div class="tie-team">
-                    <span class="team-flag">{{ tie.team1.flag }}</span>
+                    <CountryFlag :country-code="tie.team1.country || tie.team1.countryCode" :size="20" class="team-flag" />
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${tie.team1.teamId}`" 
                       class="team-name clickable-team"
@@ -245,7 +245,7 @@
                     >
                       {{ tie.team2.name }}
                     </router-link>
-                    <span class="team-flag">{{ tie.team2.flag }}</span>
+                    <CountryFlag :country-code="tie.team2.country || tie.team2.countryCode" :size="20" class="team-flag" />
                   </div>
                 </div>
                 
@@ -255,7 +255,7 @@
                     <div class="leg-match-display">
                       <div v-if="tie.firstLeg.played" class="leg-result">
                         <div class="leg-team home-team">
-                          <span class="team-flag">{{ tie.team1.flag }}</span>
+                          <CountryFlag :country-code="tie.team1.country || tie.team1.countryCode" :size="16" class="team-flag" />
                           <span class="team-name">{{ tie.team1.name }}</span>
                           <span class="team-score">{{ tie.firstLeg.homeScore }}</span>
                         </div>
@@ -263,7 +263,7 @@
                         <div class="leg-team away-team">
                           <span class="team-score">{{ tie.firstLeg.awayScore }}</span>
                           <span class="team-name">{{ tie.team2.name }}</span>
-                          <span class="team-flag">{{ tie.team2.flag }}</span>
+                          <CountryFlag :country-code="tie.team2.country || tie.team2.countryCode" :size="16" class="team-flag" />
                         </div>
                       </div>
                       <button 
@@ -283,7 +283,7 @@
                     <div class="leg-match-display">
                       <div v-if="tie.secondLeg.played" class="leg-result">
                         <div class="leg-team home-team">
-                          <span class="team-flag">{{ tie.team2.flag }}</span>
+                          <CountryFlag :country-code="tie.team2.country || tie.team2.countryCode" :size="16" class="team-flag" />
                           <span class="team-name">{{ tie.team2.name }}</span>
                           <span class="team-score">{{ tie.secondLeg.homeScore }}</span>
                         </div>
@@ -291,7 +291,7 @@
                         <div class="leg-team away-team">
                           <span class="team-score">{{ tie.secondLeg.awayScore }}</span>
                           <span class="team-name">{{ tie.team1.name }}</span>
-                          <span class="team-flag">{{ tie.team1.flag }}</span>
+                          <CountryFlag :country-code="tie.team1.country || tie.team1.countryCode" :size="16" class="team-flag" />
                         </div>
                       </div>
                       <button 
@@ -309,7 +309,7 @@
                 
                 <div v-if="tie.winner" class="tie-winner">
                   <i class="fas fa-arrow-right"></i>
-                  <span class="winner-flag">{{ tie.winner.flag }}</span>
+                  <CountryFlag :country-code="tie.winner.country || tie.winner.countryCode" :size="20" class="winner-flag" />
                   <span class="winner-name">{{ tie.winner.name }}</span>
                   <span class="progresses">progresses</span>
                 </div>
@@ -325,7 +325,7 @@
                 </h5>
               </div>
               <div class="winner-team">
-                <span class="team-flag">{{ conf.playoffWinner.flag }}</span>
+                <CountryFlag :country-code="conf.playoffWinner.country || conf.playoffWinner.countryCode" :size="20" class="team-flag" />
                 <span class="team-name">{{ conf.playoffWinner.name }}</span>
                 <span class="qualification-badge">World Cup Qualified</span>
               </div>
@@ -360,7 +360,7 @@
                 
                 <div class="qual-match-teams">
                   <div class="team home-team">
-                    <div class="team-flag">{{ match.homeTeam.flag }}</div>
+                    <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                       class="team-name clickable-team"
@@ -397,7 +397,7 @@
                   </div>
                   
                   <div class="team away-team">
-                    <div class="team-flag">{{ match.awayTeam.flag }}</div>
+                    <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                       class="team-name clickable-team"
@@ -499,7 +499,7 @@
                           <tbody>
                             <tr v-for="(team, index) in group.teams" :key="team.teamId" :class="getTeamQualificationClass(team, index, group)">
                               <td class="team-cell">
-                                <span class="team-flag">{{ team.flag }}</span>
+                                <CountryFlag :country-code="team.country || team.countryCode" :size="16" class="team-flag" />
                                 <router-link 
                                   :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                                   class="team-name clickable-team"
@@ -546,7 +546,7 @@
                         <tr v-for="(team, index) in getUEFARunnersUp()" :key="team.teamId" :class="{ 'qualified': index < 5 }">
                           <td>{{ index + 1 }}</td>
                           <td class="team-cell">
-                            <span class="team-flag">{{ team.flag }}</span>
+                            <CountryFlag :country-code="team.country || team.countryCode" :size="16" class="team-flag" />
                             <router-link 
                               :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                               class="team-name clickable-team"
@@ -620,7 +620,7 @@
                           
                           <div class="qual-match-teams">
                             <div class="team home-team">
-                              <div class="team-flag">{{ match.homeTeam.flag }}</div>
+                              <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                                 class="team-name clickable-team"
@@ -657,7 +657,7 @@
                             </div>
                             
                             <div class="team away-team">
-                              <div class="team-flag">{{ match.awayTeam.flag }}</div>
+                              <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                                 class="team-name clickable-team"
@@ -703,7 +703,7 @@
                             <!-- Main team vs team display -->
                             <div class="playoff-teams-main">
                               <div class="team-info">
-                                <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                                <CountryFlag :country-code="match.homeTeam?.country || match.homeTeam?.countryCode" :size="20" class="team-flag" />
                                 <router-link 
                                   v-if="match.homeTeam?.teamId"
                                   :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
@@ -727,7 +727,7 @@
                                   {{ match.awayTeam.name }}
                                 </router-link>
                                 <span v-else class="team-name">TBD</span>
-                                <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                                <CountryFlag :country-code="match.awayTeam?.country || match.awayTeam?.countryCode" :size="20" class="team-flag" />
                               </div>
                             </div>
                             
@@ -740,7 +740,7 @@
                                 </div>
                                 <div class="leg-match-display">
                                   <div class="leg-team home">
-                                    <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                                    <CountryFlag :country-code="match.homeTeam?.country || match.homeTeam?.countryCode" :size="16" class="team-flag" />
                                     <span class="team-short">{{ match.homeTeam?.name || 'TBD' }}</span>
                                   </div>
                                   <div class="leg-score">
@@ -761,7 +761,7 @@
                                   </div>
                                   <div class="leg-team away">
                                     <span class="team-short">{{ match.awayTeam?.name || 'TBD' }}</span>
-                                    <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                                    <CountryFlag :country-code="match.awayTeam?.country || match.awayTeam?.countryCode" :size="16" class="team-flag" />
                                   </div>
                                 </div>
                               </div>
@@ -773,7 +773,7 @@
                                 </div>
                                 <div class="leg-match-display">
                                   <div class="leg-team home">
-                                    <span class="team-flag">{{ match.awayTeam?.flag || '🏴' }}</span>
+                                    <CountryFlag :country-code="match.awayTeam?.country || match.awayTeam?.countryCode" :size="16" class="team-flag" />
                                     <span class="team-short">{{ match.awayTeam?.name || 'TBD' }}</span>
                                   </div>
                                   <div class="leg-score">
@@ -794,7 +794,7 @@
                                   </div>
                                   <div class="leg-team away">
                                     <span class="team-short">{{ match.homeTeam?.name || 'TBD' }}</span>
-                                    <span class="team-flag">{{ match.homeTeam?.flag || '🏴' }}</span>
+                                    <CountryFlag :country-code="match.homeTeam?.country || match.homeTeam?.countryCode" :size="16" class="team-flag" />
                                   </div>
                                 </div>
                               </div>
@@ -822,7 +822,7 @@
                             </h5>
                           </div>
                           <div class="winner-team">
-                            <span class="team-flag">{{ getConfederationPlayoffWinner().flag }}</span>
+                            <CountryFlag :country-code="getConfederationPlayoffWinner().country || getConfederationPlayoffWinner().countryCode" :size="20" class="team-flag" />
                             <span class="team-name">{{ getConfederationPlayoffWinner().name }}</span>
                             <span class="qualification-badge">World Cup Qualified</span>
                           </div>
@@ -843,7 +843,7 @@
                     <div class="qualified-teams-grid">
                       <div v-for="team in getQualifiedFromConfederation(activeConfederation)" :key="team.teamId" class="qualified-team-card">
                         <div class="team-info">
-                          <span class="team-flag">{{ team.flag }}</span>
+                          <CountryFlag :country-code="team.country || team.countryCode" :size="20" class="team-flag" />
                           <router-link 
                             :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
                             class="team-name clickable-team"
@@ -885,7 +885,7 @@
         <p>{{ allQualifiedTeams.length }} teams have qualified for the World Cup:</p>
         <div class="final-qualified-teams">
           <div v-for="team in allQualifiedTeams" :key="team.teamId || team.name" class="final-team-card">
-            <span class="team-flag">{{ team.flag }}</span>
+            <CountryFlag :country-code="team.country || team.countryCode" :size="20" class="team-flag" />
             <router-link 
               v-if="team.teamId"
               :to="`/tournament/${tournament._id}/qualifying-team/${team.teamId}`" 
@@ -972,12 +972,14 @@
 <script>
 import StandingsTooltip from './StandingsTooltip.vue'
 import QualificationStatistics from './QualificationStatistics.vue'
+import CountryFlag from './CountryFlag.vue'
 
 export default {
   name: 'QualificationManager',
   components: {
     StandingsTooltip,
-    QualificationStatistics
+    QualificationStatistics,
+    CountryFlag
   },
   props: {
     tournament: {

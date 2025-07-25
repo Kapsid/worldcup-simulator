@@ -10,7 +10,7 @@
     <div class="tournament-info">
       <div class="host-section">
         <div class="country-display">
-          <span class="country-flag">{{ getCountryFlag(tournament.hostCountryCode) }}</span>
+          <CountryFlag :country-code="tournament.hostCountryCode" :size="32" />
           <div class="country-info">
             <h1>{{ tournament.name }}</h1>
             <p class="host-label">Hosted by {{ tournament.hostCountry }}</p>
@@ -65,7 +65,10 @@
           
           <div class="form-info">
             <p class="info-label">Host Country</p>
-            <p class="info-value">{{ getCountryFlag(tournament.hostCountryCode) }} {{ tournament.hostCountry }}</p>
+            <p class="info-value">
+              <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
+              {{ tournament.hostCountry }}
+            </p>
           </div>
           
           <div class="form-info">
@@ -93,8 +96,13 @@
 </template>
 
 <script>
+import CountryFlag from '../CountryFlag.vue'
+
 export default {
   name: 'TournamentHeader',
+  components: {
+    CountryFlag
+  },
   props: {
     tournament: {
       type: Object,
@@ -178,10 +186,6 @@ export default {
       }
     },
     
-    getCountryFlag(countryCode) {
-      const country = this.countries.find(c => c.code === countryCode)
-      return country ? country.flag : '🏴'
-    },
     
     formatStatus(status) {
       const statusMap = {

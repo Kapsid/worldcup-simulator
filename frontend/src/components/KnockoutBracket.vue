@@ -99,7 +99,7 @@
               <div class="match-teams">
                 <div class="team" :class="{ winner: match.winner && match.winner._id === match.homeTeam?._id }">
                   <div class="team-info">
-                    <span class="team-flag">{{ match.homeTeam?.countryFlag || '?' }}</span>
+                    <CountryFlag :country-code="match.homeTeam?.countryCode || match.homeTeam?.code" :size="24" />
                     <router-link 
                       v-if="match.homeTeam"
                       :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
@@ -142,7 +142,7 @@
                 
                 <div class="team" :class="{ winner: match.winner && match.winner._id === match.awayTeam?._id }">
                   <div class="team-info">
-                    <span class="team-flag">{{ match.awayTeam?.countryFlag || '?' }}</span>
+                    <CountryFlag :country-code="match.awayTeam?.countryCode || match.awayTeam?.code" :size="24" />
                     <router-link 
                       v-if="match.awayTeam"
                       :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
@@ -193,7 +193,7 @@
           <div class="podium-position second">
             <div class="position-number">2</div>
             <div class="team-card">
-              <div class="team-flag">{{ finalResults.runnerUp?.countryFlag }}</div>
+              <CountryFlag :country-code="finalResults.runnerUp?.countryCode || finalResults.runnerUp?.code" :size="32" />
               <router-link 
                 v-if="finalResults.runnerUp"
                 :to="`/tournament/${tournament._id}/team/${finalResults.runnerUp._id}`"
@@ -209,7 +209,7 @@
           <div class="podium-position first">
             <div class="position-number">1</div>
             <div class="team-card champion">
-              <div class="team-flag">{{ finalResults.champion?.countryFlag }}</div>
+              <CountryFlag :country-code="finalResults.champion?.countryCode || finalResults.champion?.code" :size="32" />
               <router-link 
                 v-if="finalResults.champion"
                 :to="`/tournament/${tournament._id}/team/${finalResults.champion._id}`"
@@ -225,7 +225,7 @@
           <div class="podium-position third">
             <div class="position-number">3</div>
             <div class="team-card">
-              <div class="team-flag">{{ finalResults.thirdPlace?.countryFlag }}</div>
+              <CountryFlag :country-code="finalResults.thirdPlace?.countryCode || finalResults.thirdPlace?.code" :size="32" />
               <router-link 
                 v-if="finalResults.thirdPlace"
                 :to="`/tournament/${tournament._id}/team/${finalResults.thirdPlace._id}`"
@@ -263,11 +263,13 @@
 
 <script>
 import BracketVisualization from './BracketVisualization.vue'
+import CountryFlag from './CountryFlag.vue'
 
 export default {
   name: 'KnockoutBracket',
   components: {
-    BracketVisualization
+    BracketVisualization,
+    CountryFlag
   },
   props: {
     tournament: {

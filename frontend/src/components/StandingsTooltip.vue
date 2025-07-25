@@ -24,7 +24,7 @@
         >
           <td class="position">{{ index + 1 }}</td>
           <td class="team-name">
-            <span class="team-flag">{{ team.flag }}</span>
+            <CountryFlag :country-code="team.country || team.countryCode" :size="16" />
             <span class="team-code">{{ getTeamCode(team.name) }}</span>
           </td>
           <td class="played">{{ team.played }}</td>
@@ -36,8 +36,13 @@
 </template>
 
 <script>
+import CountryFlag from './CountryFlag.vue'
+
 export default {
   name: 'StandingsTooltip',
+  components: {
+    CountryFlag
+  },
   props: {
     visible: {
       type: Boolean,

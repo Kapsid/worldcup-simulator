@@ -2,7 +2,7 @@ export const countries = [
   {
     "name": "Argentina",
     "code": "ARG",
-    "flag": "🇦🇷",
+    "flag": "ARG",
     "worldRanking": 1,
     "capital": "Buenos Aires",
     "population": "45,376,763",

@@ -67,7 +67,7 @@
             
             <div class="candidates-grid">
               <div v-for="candidate in candidates" :key="candidate.code" class="candidate-card glass-white">
-                <div class="candidate-flag">{{ candidate.flag }}</div>
+                <div class="candidate-flag"><CountryFlag :country-code="candidate.code" :size="32" /></div>
                 <div class="candidate-info">
                   <h4>{{ candidate.name }}</h4>
                   <div class="candidate-stats">
@@ -95,7 +95,7 @@
 
             <div class="winner-announcement">
               <div class="winner-card glass-white">
-                <div class="winner-flag">{{ selectedHost.flag }}</div>
+                <div class="winner-flag"><CountryFlag :country-code="selectedHost.code" :size="48" /></div>
                 <div class="winner-info">
                   <h2>{{ selectedHost.name }}</h2>
                   <p>Will host the {{ world.beginningYear }} FIFA World Cup</p>
@@ -163,7 +163,7 @@
                   <div class="tournament-header">
                     <div class="tournament-title">
                       <h4>{{ currentTournament.name }}</h4>
-                      <span class="host-country">{{ currentTournament.hostCountry.flag }} {{ currentTournament.hostCountry.name }}</span>
+                      <span class="host-country"><CountryFlag :country-code="currentTournament.hostCountry.code" :size="20" /> {{ currentTournament.hostCountry.name }}</span>
                     </div>
                     <div class="tournament-status">
                       <span :class="`status-badge status-${currentTournament.status}`">
@@ -215,7 +215,7 @@
                   <div class="tournament-header">
                     <div class="tournament-title">
                       <h4>{{ tournament.name }}</h4>
-                      <span class="host-country">{{ tournament.hostCountry.flag }} {{ tournament.hostCountry.name }}</span>
+                      <span class="host-country"><CountryFlag :country-code="tournament.hostCountry.code" :size="20" /> {{ tournament.hostCountry.name }}</span>
                     </div>
                     <div class="tournament-status">
                       <span :class="`status-badge status-${tournament.status}`">
@@ -260,19 +260,19 @@
                   <div class="history-details">
                     <div class="history-main">
                       <div class="winner-section">
-                        <span class="winner-flag">{{ entry.winner?.flag || '🏆' }}</span>
+                        <span class="winner-flag"><CountryFlag v-if="entry.winner?.code" :country-code="entry.winner.code" :size="24" /><span v-else>🏆</span></span>
                         <span class="winner-name">{{ entry.winner?.name || 'Unknown Winner' }}</span>
                         <span class="champion-badge">Champion</span>
                       </div>
                       <div class="host-section">
-                        <span class="host-flag">{{ entry.host?.flag || '🏴' }}</span>
+                        <span class="host-flag"><CountryFlag v-if="entry.host?.code" :country-code="entry.host.code" :size="20" /><span v-else>🏴</span></span>
                         <span class="host-name">{{ entry.host?.name || 'Unknown Host' }}</span>
                       </div>
                     </div>
                     <div class="history-meta" v-if="entry.final">
                       <span class="final-score">{{ entry.final.score }}</span>
                       <span class="vs-separator">vs</span>
-                      <span class="runner-up" v-if="entry.runnerUp">{{ entry.runnerUp?.flag || '🥈' }} {{ entry.runnerUp?.name || 'Unknown Runner-up' }}</span>
+                      <span class="runner-up" v-if="entry.runnerUp"><CountryFlag v-if="entry.runnerUp?.code" :country-code="entry.runnerUp.code" :size="20" /><span v-else>🥈</span> {{ entry.runnerUp?.name || 'Unknown Runner-up' }}</span>
                     </div>
                   </div>
                 </div>
@@ -302,7 +302,7 @@
                   <h4>Most Successful Nations</h4>
                   <div class="champions-grid">
                     <div v-for="champion in championshipStats" :key="champion.code" class="champion-card glass-white">
-                      <div class="champion-flag">{{ champion.flag }}</div>
+                      <div class="champion-flag"><CountryFlag :country-code="champion.code" :size="32" /></div>
                       <div class="champion-info">
                         <h5>{{ champion.name }}</h5>
                         <div class="champion-stats">
@@ -352,7 +352,7 @@
                   <div class="stat-card glass-white" v-if="mostSuccessfulCountry">
                     <i class="fas fa-star"></i>
                     <div class="stat-info">
-                      <span class="stat-number">{{ mostSuccessfulCountry.flag }}</span>
+                      <span class="stat-number"><CountryFlag :country-code="mostSuccessfulCountry.code" :size="24" /></span>
                       <span class="stat-text">Most Titles</span>
                     </div>
                   </div>
@@ -383,7 +383,7 @@
                   <div v-for="(country, index) in countryRankings" :key="country.code" class="ranking-item">
                     <span class="rank-position">{{ country.rank || (index + 1) }}</span>
                     <div class="rank-country">
-                      <span class="country-flag">{{ country.flag }}</span>
+                      <span class="country-flag"><CountryFlag :country-code="country.code" :size="20" /></span>
                       <span class="country-name">{{ country.name }}</span>
                     </div>
                     <span class="rank-points">{{ country.points || 1500 }}</span>
@@ -405,12 +405,14 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
+import CountryFlag from '../components/CountryFlag.vue'
 
 export default {
   name: 'WorldDetail',
   components: {
     AppHeader,
-    Breadcrumbs
+    Breadcrumbs,
+    CountryFlag
   },
   data() {
     return {
@@ -1237,8 +1239,9 @@ export default {
 }
 
 .candidate-flag {
-  font-size: 3rem;
   margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
 }
 
 .candidate-info h4 {
@@ -1286,8 +1289,9 @@ export default {
 }
 
 .winner-flag {
-  font-size: 4rem;
   margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
 }
 
 .winner-info h2 {
@@ -1557,7 +1561,8 @@ export default {
 }
 
 .winner-flag {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
 }
 
 .winner-name {
@@ -1586,7 +1591,8 @@ export default {
 }
 
 .host-flag {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .history-meta {
@@ -1666,7 +1672,8 @@ export default {
 }
 
 .country-flag {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
 }
 
 .rank-points {
@@ -1726,9 +1733,10 @@ export default {
 }
 
 .champion-flag {
-  font-size: 2.5rem;
   min-width: 60px;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .champion-info {

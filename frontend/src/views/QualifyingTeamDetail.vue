@@ -37,7 +37,7 @@
             
             <div class="team-info">
               <div class="team-display">
-                <span class="team-flag">{{ team.flag || countryInfo?.flag || '🏴' }}</span>
+                <CountryFlag :country-code="team.country || team.countryCode || team.code" :size="64" />
                 <div class="team-details">
                   <h1>{{ team.name }}</h1>
                   <p class="team-subtitle">{{ tournament?.name || 'World Cup' }} Qualification</p>
@@ -134,11 +134,13 @@
                       <div class="match-info">
                         <div class="match-teams">
                           <span class="team-name" :class="{ 'current-team': match.homeTeam.name === team.name }">
-                            {{ match.homeTeam.flag }} {{ match.homeTeam.name }}
+                            <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" />
+                            {{ match.homeTeam.name }}
                           </span>
                           <span class="vs">vs</span>
                           <span class="team-name" :class="{ 'current-team': match.awayTeam.name === team.name }">
-                            {{ match.awayTeam.flag }} {{ match.awayTeam.name }}
+                            <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" />
+                            {{ match.awayTeam.name }}
                           </span>
                         </div>
                         <div class="match-details">
@@ -225,7 +227,10 @@
                             <div class="tournament-year">{{ tournament.year }}</div>
                             <div class="tournament-details">
                               <div class="tournament-name">{{ tournament.name }}</div>
-                              <div class="tournament-host">{{ getCountryFlag(tournament.hostCountryCode) }} {{ tournament.hostCountry }}</div>
+                              <div class="tournament-host">
+                                <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
+                                {{ tournament.hostCountry }}
+                              </div>
                               <div v-if="tournament.isWorldTournament" class="world-badge">
                                 <i class="fas fa-globe"></i>
                                 {{ tournament.worldName }}
@@ -261,12 +266,14 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import CountryFlag from '../components/CountryFlag.vue'
 import TeamRoster from '../components/TeamRoster.vue'
 
 export default {
   name: 'QualifyingTeamDetail',
   components: {
     AppHeader,
+    CountryFlag,
     TeamRoster
   },
   data() {
@@ -293,12 +300,8 @@ export default {
     rosterTeamData() {
       if (!this.team) return null
       
-      console.log('🏆 ROSTER DATA: Team object:', this.team)
-      console.log('🏆 ROSTER DATA: Country info:', this.countryInfo)
-      
       // Use country code from countryInfo, fallback to team data
       const teamCode = this.countryInfo?.code || this.team.countryCode || this.team.code || this.team.country || this.team.name
-      console.log('🏆 ROSTER DATA: Using team code:', teamCode)
       
       return {
         code: teamCode,
@@ -513,9 +516,6 @@ export default {
           countryCode = this.team.name
         }
         
-        console.log('Loading tournament history for team:', this.team)
-        console.log('Using country code:', countryCode)
-        console.log('API URL:', `http://localhost:3001/api/teams/history/${countryCode}`)
         
         const response = await fetch(`http://localhost:3001/api/teams/history/${countryCode}`, {
           headers: {
@@ -523,12 +523,8 @@ export default {
           }
         })
         
-        console.log('Response status:', response.status)
-        console.log('Response ok:', response.ok)
-        
         if (response.ok) {
           this.tournamentHistory = await response.json()
-          console.log('Tournament history loaded:', this.tournamentHistory)
         } else {
           const errorData = await response.json()
           console.error('API Error:', errorData)
@@ -559,10 +555,6 @@ export default {
       return `${position}th`
     },
     
-    getCountryFlag(countryCode) {
-      const country = this.countries.find(c => c.code === countryCode)
-      return country ? country.flag : '🏴'
-    }
   },
   
   watch: {
