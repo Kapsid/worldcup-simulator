@@ -34,7 +34,7 @@
         </div>
 
         <div class="standings-table">
-          <div class="table-header">
+          <div class="table-header standings-table-header">
             <div class="pos-col">Pos</div>
             <div class="team-col">Team</div>
             <div class="stat-col">P</div>
@@ -54,7 +54,8 @@
               class="table-row"
               :class="{ 
                 'qualified': standing.qualifiedFor === 'round16',
-                'eliminated': standing.played === 3 && standing.qualifiedFor === 'none'
+                'eliminated': standing.played === 3 && standing.qualifiedFor === 'none',
+                [`position-${standing.position}`]: true
               }"
             >
               <div class="pos-col">

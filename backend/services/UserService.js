@@ -17,7 +17,6 @@ class UserService {
           password: 'admin123'
         })
         await adminUser.save()
-        console.log('Admin user created successfully')
       }
     } catch (error) {
       console.error('Error initializing users:', error)

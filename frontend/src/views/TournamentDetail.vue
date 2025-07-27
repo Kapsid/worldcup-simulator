@@ -400,7 +400,7 @@
           </div>
           
           <!-- Tournament Information Section -->
-          <TournamentBranding 
+          <TournamentBrandingSimplified 
             v-if="tournament.mascot || tournament.logo || tournament.anthem || tournament.hostCities"
             :tournament="tournament" 
           />
@@ -477,7 +477,7 @@ import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
 import TournamentNews from '../components/TournamentNews.vue'
 import TournamentStats from '../components/TournamentStats.vue'
-import TournamentBranding from '../components/TournamentBranding.vue'
+import TournamentBrandingSimplified from '../components/TournamentBrandingSimplified.vue'
 import { applyTournamentTheme, removeTournamentTheme } from '../styles/tournament-theme.js'
 
 export default {
@@ -494,7 +494,7 @@ export default {
     KnockoutBracket,
     TournamentNews,
     TournamentStats,
-    TournamentBranding
+    TournamentBrandingSimplified
   },
   data() {
     return {
@@ -615,7 +615,46 @@ export default {
     applyTournamentTheming() {
       if (this.tournament?.logo?.colorScheme) {
         applyTournamentTheme(this.tournament)
+      } else if (this.tournament?.hostCountryCode) {
+        // Generate color scheme based on country code for tournaments without color schemes
+        const colorScheme = this.generateColorSchemeForCountry(this.tournament.hostCountryCode)
+        if (colorScheme) {
+          const mockTournament = {
+            ...this.tournament,
+            logo: {
+              ...this.tournament.logo,
+              colorScheme
+            }
+          }
+          applyTournamentTheme(mockTournament)
+        }
       }
+    },
+    
+    generateColorSchemeForCountry(countryCode) {
+      const schemes = {
+        KSA: { primary: '#006C35', secondary: '#006C35', accent: '#FFFFFF', description: 'Saudi green' },
+        NGA: { primary: '#008751', secondary: '#008751', accent: '#FFFFFF', description: 'Nigerian green' },
+        BRA: { primary: '#009739', secondary: '#FEDD00', accent: '#002776', description: 'Brazilian flag colors' },
+        ARG: { primary: '#74ACDF', secondary: '#F6B40E', accent: '#74ACDF', description: 'Argentine sky blue and sun' },
+        GER: { primary: '#000000', secondary: '#DD0000', accent: '#FFCE00', description: 'German tricolor' },
+        FRA: { primary: '#002395', secondary: '#ED2939', accent: '#002395', description: 'French blue and red' },
+        ESP: { primary: '#AA151B', secondary: '#F1BF00', accent: '#AA151B', description: 'Spanish red and gold' },
+        ITA: { primary: '#009246', secondary: '#CE2B37', accent: '#009246', description: 'Italian green and red' },
+        ENG: { primary: '#CF142B', secondary: '#00247D', accent: '#CF142B', description: 'English red and blue' },
+        POR: { primary: '#006600', secondary: '#FF0000', accent: '#FFCC00', description: 'Portuguese green and red' },
+        NED: { primary: '#FF6600', secondary: '#0033CC', accent: '#FF6600', description: 'Dutch orange and blue' },
+        USA: { primary: '#002868', secondary: '#BF0A30', accent: '#002868', description: 'American blue and red' },
+        MEX: { primary: '#006847', secondary: '#CE1126', accent: '#006847', description: 'Mexican green and red' },
+        JPN: { primary: '#BC002D', secondary: '#BC002D', accent: '#FFFFFF', description: 'Japanese red' },
+        AUS: { primary: '#002868', secondary: '#FFCD00', accent: '#002868', description: 'Australian blue and gold' },
+        MAR: { primary: '#C1272D', secondary: '#006233', accent: '#C1272D', description: 'Moroccan red and green' },
+        EGY: { primary: '#CE1126', secondary: '#000000', accent: '#CE1126', description: 'Egyptian red and black' },
+        RSA: { primary: '#007749', secondary: '#FFB612', accent: '#DE3831', description: 'South African flag colors' },
+        DEFAULT: { primary: '#1E88E5', secondary: '#FFC107', accent: '#4CAF50', description: 'vibrant international colors' }
+      }
+      
+      return schemes[countryCode] || schemes.DEFAULT
     },
     
     goBack() {
@@ -2049,4 +2088,9 @@ export default {
     grid-template-columns: 1fr;
   }
 }
+</style>
+
+<style>
+/* Import tournament theme styles */
+@import '../styles/tournament-theme.css';
 </style>
