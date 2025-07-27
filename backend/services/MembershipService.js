@@ -48,12 +48,26 @@ class MembershipService {
   // Get membership for a user
   async getMembership(userId) {
     try {
+      if (!userId) {
+        throw new Error('User ID is required')
+      }
+      
       let membership = await Membership.findOne({ user: userId }).populate('user', 'username name')
       
-      // If no membership exists, create a free one
+      // If no membership exists, create one
       if (!membership) {
-        membership = await this.createMembership(userId)
+        // Check if user is admin to create admin membership
+        const User = (await import('../models/User.js')).default
+        const user = await User.findById(userId)
+        const plan = user && user.username === 'admin' ? 'admin' : 'free'
+        membership = await this.createMembership(userId, plan)
         membership = await Membership.findById(membership._id).populate('user', 'username name')
+      }
+      
+      // Upgrade admin users to admin plan if they have a different plan
+      if (membership.user && membership.user.username === 'admin' && membership.plan !== 'admin') {
+        membership.plan = 'admin'
+        await membership.save()
       }
 
       return membership
@@ -66,7 +80,7 @@ class MembershipService {
   // Update membership plan
   async updateMembershipPlan(userId, newPlan) {
     try {
-      const validPlans = ['free', 'pro', 'football_maniac']
+      const validPlans = ['free', 'pro', 'football_maniac', 'admin']
       if (!validPlans.includes(newPlan)) {
         throw new Error('Invalid membership plan')
       }

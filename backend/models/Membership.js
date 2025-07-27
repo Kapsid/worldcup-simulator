@@ -9,7 +9,7 @@ const membershipSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['free', 'pro', 'football_maniac'],
+    enum: ['free', 'pro', 'football_maniac', 'admin'],
     default: 'free',
     required: true
   },
@@ -76,6 +76,11 @@ membershipSchema.virtual('isActive').get(function() {
 
 // Method to check if user can create tournaments
 membershipSchema.methods.canCreateTournament = function() {
+  // Admin users have unlimited access (check populated user or via virtual)
+  if ((this.user && this.user.username === 'admin') || this.plan === 'admin') {
+    return true;
+  }
+  
   if (!this.isActive) return false;
   
   switch (this.plan) {
@@ -84,6 +89,7 @@ membershipSchema.methods.canCreateTournament = function() {
     case 'pro':
       return this.tournamentsCreated < 5;
     case 'football_maniac':
+    case 'admin':
       return true; // Unlimited
     default:
       return false;
@@ -92,6 +98,11 @@ membershipSchema.methods.canCreateTournament = function() {
 
 // Method to check if user can create worlds
 membershipSchema.methods.canCreateWorld = function() {
+  // Admin users have unlimited access (check populated user or via virtual)
+  if ((this.user && this.user.username === 'admin') || this.plan === 'admin') {
+    return true;
+  }
+  
   if (!this.isActive) return false;
   
   switch (this.plan) {
@@ -100,6 +111,7 @@ membershipSchema.methods.canCreateWorld = function() {
     case 'pro':
       return this.worldsCreated < 3;
     case 'football_maniac':
+    case 'admin':
       return true; // Unlimited
     default:
       return false;
@@ -108,7 +120,12 @@ membershipSchema.methods.canCreateWorld = function() {
 
 // Method to check if user can modify stats/players
 membershipSchema.methods.canModifyStats = function() {
-  return this.isActive && this.plan === 'football_maniac';
+  // Admin users have unlimited access (check populated user or via virtual)
+  if ((this.user && this.user.username === 'admin') || this.plan === 'admin') {
+    return true;
+  }
+  
+  return this.isActive && (this.plan === 'football_maniac' || this.plan === 'admin');
 };
 
 // Method to get plan limits
@@ -134,6 +151,13 @@ membershipSchema.methods.getPlanLimits = function() {
       canModifyStats: true,
       price: 19.99,
       name: 'Football Maniac'
+    },
+    admin: {
+      tournaments: -1, // Unlimited
+      worlds: -1, // Unlimited
+      canModifyStats: true,
+      price: 0,
+      name: 'Admin'
     }
   };
   

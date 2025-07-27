@@ -9,22 +9,22 @@ export const countries = [
     "confederation": "conmebol"
   },
   {
-    "name": "France",
-    "code": "FRA",
-    "flag": "🇫🇷",
+    "name": "Spain",
+    "code": "ESP",
+    "flag": "🇪🇸",
     "worldRanking": 2,
-    "capital": "Paris",
-    "population": "68,084,217",
+    "capital": "Madrid",
+    "population": "47,558,630",
     "confederation": "uefa"
   },
   {
-    "name": "Brazil",
-    "code": "BRA",
-    "flag": "🇧🇷",
+    "name": "France",
+    "code": "FRA",
+    "flag": "🇫🇷",
     "worldRanking": 3,
-    "capital": "Brasília",
-    "population": "215,313,498",
-    "confederation": "conmebol"
+    "capital": "Paris",
+    "population": "68,084,217",
+    "confederation": "uefa"
   },
   {
     "name": "England",
@@ -36,13 +36,13 @@ export const countries = [
     "confederation": "uefa"
   },
   {
-    "name": "Belgium",
-    "code": "BEL",
-    "flag": "🇧🇪",
+    "name": "Brazil",
+    "code": "BRA",
+    "flag": "🇧🇷",
     "worldRanking": 5,
-    "capital": "Brussels",
-    "population": "11,589,623",
-    "confederation": "uefa"
+    "capital": "Brasília",
+    "population": "215,313,498",
+    "confederation": "conmebol"
   },
   {
     "name": "Netherlands",
@@ -81,12 +81,12 @@ export const countries = [
     "confederation": "uefa"
   },
   {
-    "name": "Spain",
-    "code": "ESP",
-    "flag": "🇪🇸",
+    "name": "Belgium",
+    "code": "BEL",
+    "flag": "🇧🇪",
     "worldRanking": 10,
-    "capital": "Madrid",
-    "population": "47,558,630",
+    "capital": "Brussels",
+    "population": "11,589,623",
     "confederation": "uefa"
   },
   {
@@ -1521,22 +1521,24 @@ export const countries = [
   }
 ]
 
-export function getCountryByCode(code) {
-  return countries.find(country => country.code === code)
+export function getCountryByCode(countryCode) {
+  return countries.find(country => country.code === countryCode) || null
 }
 
-export function getCountryByName(name) {
-  return countries.find(country => country.name === name)
+export function getCountryByName(countryName) {
+  return countries.find(country => country.name === countryName) || null
 }
 
 export function getBest31PlusHost(hostCountryCode) {
-  // Get the best 31 teams by world ranking
+  // Get the best 31 countries based on world ranking, plus the host country
   const sortedCountries = [...countries].sort((a, b) => (a.worldRanking || 999) - (b.worldRanking || 999))
+  
+  // Get top 31 countries
   const best31 = sortedCountries.slice(0, 31)
   
-  // Add host country if it's not already in the best 31
+  // Add host country if not already in top 31
   const hostCountry = getCountryByCode(hostCountryCode)
-  if (hostCountry && !best31.find(country => country.code === hostCountryCode)) {
+  if (hostCountry && !best31.find(c => c.code === hostCountryCode)) {
     best31.push(hostCountry)
   }
   

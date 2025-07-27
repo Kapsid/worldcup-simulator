@@ -3,7 +3,7 @@ import MembershipService from '../services/MembershipService.js'
 // Middleware to check if user can create tournaments
 export const checkTournamentCreation = async (req, res, next) => {
   try {
-    const userId = req.user.id || req.user._id
+    const userId = req.user.userId || req.user.id || req.user._id
     
     const canCreate = await MembershipService.canCreateTournament(userId)
     
@@ -29,7 +29,7 @@ export const checkTournamentCreation = async (req, res, next) => {
 // Middleware to check if user can create worlds
 export const checkWorldCreation = async (req, res, next) => {
   try {
-    const userId = req.user.id || req.user._id
+    const userId = req.user.userId || req.user.id || req.user._id
     
     const canCreate = await MembershipService.canCreateWorld(userId)
     
