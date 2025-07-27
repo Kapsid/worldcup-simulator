@@ -1,7 +1,9 @@
 import express from 'express'
 import World from '../models/World.js'
 import WorldRankingService from '../services/WorldRankingService.js'
+import MembershipService from '../services/MembershipService.js'
 import { authenticateToken } from '../middleware/auth.js'
+import { checkWorldCreation, incrementWorldUsage } from '../middleware/membershipMiddleware.js'
 import { worldCupHistory } from '../data/worldCupHistory.js'
 import { getCountryByCode, countries } from '../data/countries.js'
 import PlayerGenerationService from '../services/PlayerGenerationService.js'
@@ -63,7 +65,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 })
 
 // Create a new world
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, checkWorldCreation, async (req, res) => {
   try {
     console.log('Creating world with data:', req.body)
     console.log('User:', req.user)
@@ -110,6 +112,14 @@ router.post('/', authenticateToken, async (req, res) => {
     })
 
     await world.save()
+
+    // Increment world usage after successful creation
+    try {
+      await incrementWorldUsage(req, res, () => {})
+    } catch (usageError) {
+      console.error('Error incrementing world usage:', usageError)
+      // Don't fail the world creation if usage tracking fails
+    }
 
     // Generate players for ALL countries in this world
     console.log('🌍 WORLD CREATION: Starting player generation checks...')
@@ -291,6 +301,18 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // Soft delete
     world.isActive = false
     await world.save()
+
+    // Decrement world usage counter after successful deletion
+    try {
+      const membership = await MembershipService.getMembership(req.user.userId)
+      if (membership && membership.worldsCreated > 0) {
+        membership.worldsCreated -= 1
+        await membership.save()
+      }
+    } catch (membershipError) {
+      console.error('Error updating membership usage after world deletion:', membershipError)
+      // Don't fail the deletion if membership update fails
+    }
 
     res.json({
       success: true,

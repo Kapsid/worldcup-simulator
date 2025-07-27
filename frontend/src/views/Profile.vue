@@ -31,8 +31,8 @@
                 <h1>{{ user.name }}</h1>
                 <p class="username">@{{ user.username }}</p>
                 <div class="subscription-badge">
-                  <span :class="`tier-badge tier-${user.subscriptionTier}`">
-                    {{ formatSubscriptionTier(user.subscriptionTier) }}
+                  <span :class="`tier-badge tier-${membershipStatus?.plan || 'free'}`">
+                    {{ membershipStatus?.limits?.name || 'Free' }}
                   </span>
                 </div>
               </div>
@@ -178,57 +178,120 @@
                     <div class="subscription-info">
                       <h4>Current Plan</h4>
                       <div class="plan-display">
-                        <span :class="`tier-badge tier-${user.subscriptionTier}`">
-                          {{ formatSubscriptionTier(user.subscriptionTier) }}
+                        <span :class="`tier-badge tier-${membershipStatus?.plan || 'free'}`">
+                          {{ membershipStatus?.limits?.name || 'Free' }}
                         </span>
                         <span class="plan-price">
-                          {{ getSubscriptionPrice(user.subscriptionTier) }}
+                          {{ membershipStatus?.limits?.price === 0 ? 'Free' : '$' + (membershipStatus?.limits?.price || 0) + '/month' }}
                         </span>
                       </div>
-                      <p v-if="user.subscriptionExpiresAt" class="expiration-info">
-                        Expires on {{ formatDate(user.subscriptionExpiresAt) }}
+                      <p v-if="membershipStatus?.endDate" class="expiration-info">
+                        Expires on {{ formatDate(membershipStatus.endDate) }}
                       </p>
                     </div>
                   </div>
                   
+                  <!-- Membership Status -->
+                  <div class="membership-status">
+                    <h4>Membership Status</h4>
+                    <div v-if="membershipStatus" class="membership-details">
+                      <div class="usage-grid">
+                        <div class="usage-item">
+                          <h5>Tournaments</h5>
+                          <div class="usage-bar">
+                            <div class="usage-progress" :style="{ width: getTournamentUsagePercentage() + '%' }"></div>
+                          </div>
+                          <span class="usage-text">
+                            {{ membershipStatus.usage.tournaments }} / {{ membershipStatus.limits.tournaments === -1 ? '∞' : membershipStatus.limits.tournaments }}
+                          </span>
+                        </div>
+                        <div class="usage-item">
+                          <h5>Worlds</h5>
+                          <div class="usage-bar">
+                            <div class="usage-progress" :style="{ width: getWorldUsagePercentage() + '%' }"></div>
+                          </div>
+                          <span class="usage-text">
+                            {{ membershipStatus.usage.worlds }} / {{ membershipStatus.limits.worlds === -1 ? '∞' : membershipStatus.limits.worlds }}
+                          </span>
+                        </div>
+                      </div>
+                      <div v-if="membershipStatus.endDate" class="expiration-warning">
+                        <i class="fas fa-clock"></i>
+                        Your {{ membershipStatus.limits.name }} plan expires on {{ formatDate(membershipStatus.endDate) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Available Plans -->
                   <div class="subscription-tiers">
                     <h4>Available Plans</h4>
                     <div class="tiers-grid">
                       <div 
-                        v-for="tier in subscriptionTiers" 
-                        :key="tier.id"
+                        v-for="(plan, planKey) in availablePlans" 
+                        :key="planKey"
                         class="tier-card"
-                        :class="{ 'current': tier.id === user.subscriptionTier }"
+                        :class="{ 
+                          'current': planKey === (membershipStatus?.plan || 'free'),
+                          'premium': planKey === 'football_maniac'
+                        }"
                       >
                         <div class="tier-header">
-                          <h5>{{ tier.name }}</h5>
+                          <h5>{{ plan.name }}</h5>
                           <div class="tier-price">
-                            <span class="price">${{ tier.price }}</span>
-                            <span class="interval">{{ tier.price > 0 ? '/month' : '' }}</span>
+                            <span class="price">${{ plan.price }}</span>
+                            <span class="interval">{{ plan.price > 0 ? '/month' : '' }}</span>
                           </div>
                         </div>
-                        <div v-if="tier.features && tier.features.length > 0" class="tier-features">
+                        <div class="tier-features">
+                          <div v-if="plan.highlight" class="plan-highlight">
+                            <i class="fas fa-star"></i>
+                            {{ plan.highlight }}
+                          </div>
                           <ul>
-                            <li v-for="feature in tier.features" :key="feature">
+                            <li v-for="feature in plan.features" :key="feature">
+                              <i class="fas fa-check"></i>
                               {{ feature }}
                             </li>
                           </ul>
+                          <p class="plan-description">{{ plan.description }}</p>
                         </div>
                         <div class="tier-actions">
                           <button 
-                            v-if="tier.id !== user.subscriptionTier"
-                            @click="updateSubscription(tier.id)"
+                            v-if="planKey !== (membershipStatus?.plan || 'free')"
+                            @click="updateMembershipPlan(planKey)"
                             :disabled="updatingSubscription"
                             class="btn-primary tier-btn"
                           >
                             <i v-if="updatingSubscription" class="fas fa-spinner fa-spin"></i>
                             <span v-else>
-                              {{ tier.price > 0 ? 'Upgrade' : 'Downgrade' }}
+                              {{ plan.price > getCurrentPlanPrice() ? 'Upgrade' : (plan.price < getCurrentPlanPrice() ? 'Downgrade' : 'Switch') }}
                             </span>
                           </button>
-                          <span v-else class="current-plan-label">Current Plan</span>
+                          <span v-else class="current-plan-label">
+                            <i class="fas fa-check"></i>
+                            Current Plan
+                          </span>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  <!-- Debug Controls (Admin Only) -->
+                  <div v-if="isAdmin" class="debug-controls">
+                    <h4>Debug Controls</h4>
+                    <div class="debug-buttons">
+                      <button @click="debugSetPlan('free')" class="btn-secondary debug-btn">
+                        Set Free Plan
+                      </button>
+                      <button @click="debugSetPlan('pro')" class="btn-secondary debug-btn">
+                        Set Pro Plan
+                      </button>
+                      <button @click="debugSetPlan('football_maniac')" class="btn-secondary debug-btn">
+                        Set Football Maniac
+                      </button>
+                      <button @click="debugResetUsage()" class="btn-secondary debug-btn">
+                        Reset Usage Counters
+                      </button>
                     </div>
                   </div>
                   
@@ -256,7 +319,9 @@ export default {
     return {
       username: '',
       user: {},
-      subscriptionTiers: [],
+      membershipStatus: null,
+      availablePlans: {},
+      isAdmin: false,
       loading: false,
       updatingProfile: false,
       updatingPassword: false,
@@ -299,8 +364,15 @@ export default {
       try {
         await Promise.all([
           this.loadUserProfile(),
-          this.loadSubscriptionTiers()
+          this.loadMembershipStatus(),
+          this.loadAvailablePlans()
         ])
+        console.log('📊 Profile data loaded:', {
+          user: this.user,
+          membershipStatus: this.membershipStatus,
+          availablePlans: this.availablePlans,
+          isAdmin: this.isAdmin
+        })
       } catch (error) {
         console.error('Error loading profile data:', error)
       } finally {
@@ -319,6 +391,8 @@ export default {
         
         if (response.ok) {
           this.user = await response.json()
+          this.isAdmin = this.user.username === 'admin'
+          console.log('👤 User loaded:', this.user, 'isAdmin:', this.isAdmin)
           this.profileForm = {
             name: this.user.name || '',
             username: this.user.username || '',
@@ -330,14 +404,38 @@ export default {
       }
     },
     
-    async loadSubscriptionTiers() {
+    async loadMembershipStatus() {
       try {
-        const response = await fetch('http://localhost:3001/api/profile/subscription-tiers')
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:3001/api/membership/status', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
         if (response.ok) {
-          this.subscriptionTiers = await response.json()
+          const data = await response.json()
+          this.membershipStatus = data.data
         }
       } catch (error) {
-        console.error('Error loading subscription tiers:', error)
+        console.error('Error loading membership status:', error)
+      }
+    },
+
+    async loadAvailablePlans() {
+      try {
+        console.log('🔄 Loading available plans...')
+        const response = await fetch('http://localhost:3001/api/membership/plans')
+        console.log('📡 Plans API response:', response.status, response.ok)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📋 Plans data received:', data)
+          this.availablePlans = data.data
+          console.log('✅ Plans loaded:', this.availablePlans)
+        } else {
+          console.error('❌ Plans API failed:', response.status, await response.text())
+        }
+      } catch (error) {
+        console.error('Error loading available plans:', error)
       }
     },
     
@@ -462,37 +560,110 @@ export default {
       }
     },
     
-    async updateSubscription(tier) {
+    async updateMembershipPlan(plan) {
       this.updatingSubscription = true
       this.subscriptionError = ''
       this.subscriptionSuccess = ''
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile/subscription', {
-          method: 'PUT',
+        const response = await fetch('http://localhost:3001/api/membership/upgrade', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            subscriptionTier: tier
+            plan: plan
           })
         })
         
         const data = await response.json()
         
         if (response.ok) {
-          this.user = data.user
           this.subscriptionSuccess = data.message
+          await this.loadMembershipStatus() // Reload membership status
         } else {
-          this.subscriptionError = data.error || 'Failed to update subscription'
+          this.subscriptionError = data.message || 'Failed to update membership'
         }
       } catch (error) {
         this.subscriptionError = 'Network error. Please try again.'
       } finally {
         this.updatingSubscription = false
       }
+    },
+
+    async debugSetPlan(plan) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:3001/api/membership/debug/set-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId: this.user._id,
+            plan: plan
+          })
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok) {
+          this.subscriptionSuccess = data.message
+          await this.loadMembershipStatus()
+        } else {
+          this.subscriptionError = data.message || 'Failed to set debug plan'
+        }
+      } catch (error) {
+        this.subscriptionError = 'Network error. Please try again.'
+      }
+    },
+
+    async debugResetUsage() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:3001/api/membership/debug/reset-usage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId: this.user._id
+          })
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok) {
+          this.subscriptionSuccess = data.message
+          await this.loadMembershipStatus()
+        } else {
+          this.subscriptionError = data.message || 'Failed to reset usage'
+        }
+      } catch (error) {
+        this.subscriptionError = 'Network error. Please try again.'
+      }
+    },
+
+    getTournamentUsagePercentage() {
+      if (!this.membershipStatus) return 0
+      if (this.membershipStatus.limits.tournaments === -1) return 0 // Unlimited
+      return Math.min(100, (this.membershipStatus.usage.tournaments / this.membershipStatus.limits.tournaments) * 100)
+    },
+
+    getWorldUsagePercentage() {
+      if (!this.membershipStatus) return 0
+      if (this.membershipStatus.limits.worlds === -1) return 0 // Unlimited
+      return Math.min(100, (this.membershipStatus.usage.worlds / this.membershipStatus.limits.worlds) * 100)
+    },
+
+    getCurrentPlanPrice() {
+      if (!this.membershipStatus || !this.availablePlans) return 0
+      const currentPlan = this.availablePlans[this.membershipStatus.plan]
+      return currentPlan ? currentPlan.price : 0
     },
     
     formatSubscriptionTier(tier) {
@@ -630,6 +801,11 @@ export default {
 .tier-badge.tier-football_maniac {
   background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
+}
+
+.tier-badge.tier-free {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
 }
 
 .profile-sections {
@@ -847,6 +1023,158 @@ export default {
   border-radius: var(--radius-md);
   border: 1px solid rgba(40, 167, 69, 0.2);
   font-weight: var(--font-weight-medium);
+}
+
+/* Membership-specific styles */
+.membership-status {
+  margin-bottom: 32px;
+}
+
+.membership-details {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.usage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.usage-item h5 {
+  color: var(--fifa-dark-blue);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.usage-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.usage-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--fifa-blue), var(--fifa-green));
+  transition: width 0.3s ease;
+}
+
+.usage-text {
+  font-size: 0.8rem;
+  color: var(--gray);
+  font-weight: var(--font-weight-medium);
+}
+
+.expiration-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+  border-radius: var(--radius-md);
+  color: #ffc107;
+  font-weight: var(--font-weight-medium);
+  font-size: 0.9rem;
+}
+
+.tier-card.premium {
+  border-color: #ffc107;
+  background: rgba(255, 193, 7, 0.05);
+}
+
+.tier-features li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--fifa-dark-blue);
+  font-size: 0.9rem;
+}
+
+.tier-features li i {
+  width: 16px;
+  font-size: 0.8rem;
+}
+
+.tier-features li i.fa-check {
+  color: var(--fifa-green);
+}
+
+.tier-features li i.fa-times {
+  color: var(--fifa-red);
+}
+
+.plan-description {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--gray);
+  font-style: italic;
+}
+
+.plan-highlight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 12px;
+  text-align: center;
+  justify-content: center;
+}
+
+.plan-highlight i {
+  font-size: 0.7rem;
+}
+
+.debug-controls {
+  margin-top: 32px;
+  padding: 20px;
+  background: rgba(255, 68, 68, 0.05);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+}
+
+.debug-controls h4 {
+  color: var(--fifa-red);
+  margin-bottom: 16px;
+  font-size: 1rem;
+}
+
+.debug-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.debug-btn {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-md);
+}
+
+.btn-secondary {
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(108, 117, 125, 0.2);
+  border-color: rgba(108, 117, 125, 0.5);
 }
 
 @media (max-width: 768px) {

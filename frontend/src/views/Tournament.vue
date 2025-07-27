@@ -10,10 +10,30 @@
       <div class="tournament-container">
         <div class="tournament-header">
           <h1>My Tournaments</h1>
-          <button @click="openCreateModal" class="btn-primary create-btn">
+          <button 
+            @click="openCreateModal" 
+            class="btn-primary create-btn"
+            :disabled="!canCreateTournament"
+            :class="{ 'disabled': !canCreateTournament }"
+          >
             <i class="fas fa-plus"></i>
             Create Tournament
           </button>
+        </div>
+        
+        <!-- Membership Limit Warning -->
+        <div v-if="membershipStatus && !canCreateTournament" class="limit-warning glass-white">
+          <div class="warning-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div class="warning-text">
+              <h4>Tournament Creation Limit Reached</h4>
+              <p>Your {{ membershipStatus.limits.name }} plan allows {{ membershipStatus.limits.tournaments === -1 ? 'unlimited' : membershipStatus.limits.tournaments }} tournament(s). You have created {{ membershipStatus.usage.tournaments }}.</p>
+            </div>
+            <button @click="goToUpgrade" class="btn-primary upgrade-btn">
+              <i class="fas fa-arrow-up"></i>
+              Upgrade Plan
+            </button>
+          </div>
         </div>
         
         <div v-if="loading" class="loading-state">
@@ -27,7 +47,12 @@
           </div>
           <h3>No tournaments yet</h3>
           <p>Create your first World Cup tournament to get started!</p>
-          <button @click="openCreateModal" class="btn-primary">
+          <button 
+            @click="openCreateModal" 
+            class="btn-primary"
+            :disabled="!canCreateTournament"
+            :class="{ 'disabled': !canCreateTournament }"
+          >
             <i class="fas fa-plus"></i>
             Create Your First Tournament
           </button>
@@ -234,6 +259,7 @@ export default {
     return {
       username: '',
       subscriptionTier: 'basic',
+      membershipStatus: null,
       tournaments: [],
       countries: [],
       loading: false,
@@ -252,6 +278,11 @@ export default {
       deleteError: ''
     }
   },
+  computed: {
+    canCreateTournament() {
+      return this.membershipStatus?.permissions?.canCreateTournament ?? true
+    }
+  },
   mounted() {
     this.username = localStorage.getItem('username') || 'User'
     
@@ -265,6 +296,7 @@ export default {
     this.loadTournaments()
     this.loadCountries()
     this.loadUserProfile()
+    this.loadMembershipStatus()
   },
   methods: {
     async loadTournaments() {
@@ -394,11 +426,37 @@ export default {
     },
     
     async openCreateModal() {
+      if (!this.canCreateTournament) {
+        // Show upgrade prompt instead of modal
+        this.goToUpgrade()
+        return
+      }
       // Ensure countries are loaded
       if (this.countries.length === 0) {
         await this.loadCountries()
       }
       this.showCreateModal = true
+    },
+
+    goToUpgrade() {
+      this.$router.push('/profile')
+    },
+
+    async loadMembershipStatus() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:3001/api/membership/status', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          this.membershipStatus = data.data
+        }
+      } catch (error) {
+        console.error('Error loading membership status:', error)
+      }
     },
     
     closeCreateModal() {
@@ -481,6 +539,7 @@ export default {
         if (response.ok) {
           this.closeDeleteModal()
           this.loadTournaments()
+          this.loadMembershipStatus() // Refresh membership status after deletion
         } else {
           const data = await response.json()
           this.deleteError = data.error || 'Failed to delete tournament'
@@ -893,6 +952,71 @@ export default {
   border-radius: var(--radius-md);
   border-left: 3px solid var(--fifa-blue);
   margin: 0;
+}
+
+/* Membership limit warning styles */
+.limit-warning {
+  margin-bottom: 24px;
+  padding: 20px;
+  border-left: 4px solid #ffc107;
+  background: white;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.warning-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.warning-content i {
+  color: #ffc107;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  flex-grow: 1;
+}
+
+.warning-text h4 {
+  color: var(--fifa-dark-blue);
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.warning-text p {
+  color: var(--fifa-dark-blue);
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.upgrade-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #ffc107;
+  color: #000;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.upgrade-btn:hover {
+  background: #e6ac00;
+  transform: translateY(-1px);
+}
+
+.btn-primary.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {

@@ -4,6 +4,7 @@ import WorldRankingService from './WorldRankingService.js'
 import MascotService from './MascotService.js'
 import BrandingService from './BrandingService.js'
 import PlayerGenerationService from './PlayerGenerationService.js'
+import MembershipService from './MembershipService.js'
 import { getCountryByCode } from '../data/countries.js'
 import { getCountryCities } from '../data/cities.js'
 
@@ -134,6 +135,13 @@ class TournamentService {
     try {
       const { name, hostCountry, hostCountryCode, type, worldId, year } = tournamentData
 
+      // Check membership permissions
+      const canCreate = await MembershipService.canCreateTournament(userId)
+      if (!canCreate) {
+        const membershipStatus = await MembershipService.getMembershipStatus(userId)
+        throw new Error(`Tournament creation limit reached. Your ${membershipStatus.limits.name} plan allows ${membershipStatus.limits.tournaments === -1 ? 'unlimited' : membershipStatus.limits.tournaments} tournament(s). You have created ${membershipStatus.usage.tournaments}. Please upgrade your plan.`)
+      }
+
       // Validate host country
       const country = getCountryByCode(hostCountryCode)
       if (!country) {
@@ -181,6 +189,9 @@ class TournamentService {
       })
 
       await tournament.save()
+
+      // Increment tournament usage counter
+      await MembershipService.incrementTournamentUsage(userId)
 
       // If tournament is linked to a world, add it to the world's tournaments array
       if (worldId) {

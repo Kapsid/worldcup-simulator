@@ -12,6 +12,7 @@ import qualificationRoutes from './routes/qualification.js'
 import worldsRoutes from './routes/worlds.js'
 import newsRoutes from './routes/news.js'
 import playersRoutes from './routes/players.js'
+import membershipRoutes from './routes/membership.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -38,6 +39,7 @@ app.use('/api/profile', profileRoutes)
 app.use('/api/qualification', qualificationRoutes)
 app.use('/api/news', newsRoutes)
 app.use('/api/players', playersRoutes)
+app.use('/api/membership', membershipRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

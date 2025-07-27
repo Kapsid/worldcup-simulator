@@ -1,5 +1,6 @@
 import express from 'express'
 import TournamentService from '../services/TournamentService.js'
+import MembershipService from '../services/MembershipService.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { countries } from '../data/countries.js'
 import TournamentTeam from '../models/TournamentTeam.js'
@@ -727,6 +728,18 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     
     if (!tournament) {
       return res.status(404).json({ error: 'Tournament not found' })
+    }
+
+    // Decrement tournament usage counter after successful deletion
+    try {
+      const membership = await MembershipService.getMembership(req.user.userId)
+      if (membership && membership.tournamentsCreated > 0) {
+        membership.tournamentsCreated -= 1
+        await membership.save()
+      }
+    } catch (membershipError) {
+      console.error('Error updating membership usage after tournament deletion:', membershipError)
+      // Don't fail the deletion if membership update fails
     }
 
     res.json({ message: 'Tournament deleted successfully' })
