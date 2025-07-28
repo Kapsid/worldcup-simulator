@@ -203,6 +203,7 @@
 <script>
 import AllStarsXI from './AllStarsXI.vue'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TournamentStats',
@@ -246,7 +247,7 @@ export default {
       this.error = null
       
       try {
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}/top-scorers`)
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}/top-scorers`)
         
         if (response.ok) {
           const data = await response.json()

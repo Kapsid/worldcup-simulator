@@ -479,6 +479,7 @@ import TournamentNews from '../components/TournamentNews.vue'
 import TournamentStats from '../components/TournamentStats.vue'
 import TournamentBrandingSimplified from '../components/TournamentBrandingSimplified.vue'
 import { applyTournamentTheme, removeTournamentTheme } from '../styles/tournament-theme.js'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TournamentDetail',
@@ -670,7 +671,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.$route.params.id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.$route.params.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -696,7 +697,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -743,7 +744,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -996,7 +997,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1023,7 +1024,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1056,7 +1057,7 @@ export default {
     async checkGroupMatchesCompletion() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/matches`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1079,7 +1080,7 @@ export default {
     async checkKnockoutPhase() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/bracket`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/bracket`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1102,7 +1103,7 @@ export default {
     async loadUnreadNewsCount() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/news/${this.tournament._id}/unread-count`, {
+        const response = await fetch(`${API_URL}/news/${this.tournament._id}/unread-count`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

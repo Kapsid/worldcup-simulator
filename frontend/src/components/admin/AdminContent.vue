@@ -192,6 +192,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../config/api.js'
+
 export default {
   name: 'AdminContent',
   data() {
@@ -239,7 +241,7 @@ export default {
           status: this.tournamentStatus
         })
 
-        const response = await fetch(`http://localhost:3001/api/admin/tournaments?${params}`, {
+        const response = await fetch(`${API_URL}/admin/tournaments?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -267,7 +269,7 @@ export default {
           search: this.worldSearch
         })
 
-        const response = await fetch(`http://localhost:3001/api/admin/worlds?${params}`, {
+        const response = await fetch(`${API_URL}/admin/worlds?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -355,7 +357,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/tournaments/${tournament._id}`, {
+        const response = await fetch(`${API_URL}/admin/tournaments/${tournament._id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -375,7 +377,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/worlds/${world._id}`, {
+        const response = await fetch(`${API_URL}/admin/worlds/${world._id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

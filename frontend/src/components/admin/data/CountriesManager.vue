@@ -161,6 +161,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'CountriesManager',
   data() {
@@ -206,7 +208,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/countries', {
+        const response = await fetch(`${API_URL}/admin/data/countries`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -227,7 +229,7 @@ export default {
     async loadConfederations() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/confederations', {
+        const response = await fetch(`${API_URL}/admin/data/confederations`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -309,7 +311,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/data/countries/${country.code}`, {
+        const response = await fetch(`${API_URL}/admin/data/countries/${country.code}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -330,8 +332,8 @@ export default {
       try {
         const token = localStorage.getItem('token')
         const url = this.showAddForm 
-          ? 'http://localhost:3001/api/admin/data/countries'
-          : `http://localhost:3001/api/admin/data/countries/${this.editingCountry.code}`
+          ? '${API_URL}/admin/data/countries'
+          : `${API_URL}/admin/data/countries/${this.editingCountry.code}`
         
         const method = this.showAddForm ? 'POST' : 'PUT'
 

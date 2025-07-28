@@ -126,6 +126,8 @@
 </template>
 
 <script>
+import { API_URL } from '../config/api.js'
+
 export default {
   name: 'TeamManagement',
   props: {
@@ -170,7 +172,7 @@ export default {
     async loadTeams() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -188,7 +190,7 @@ export default {
 
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -200,7 +202,7 @@ export default {
     async loadTeamStats() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/stats`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -222,7 +224,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/add`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -256,7 +258,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/remove/${countryCode}`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/remove/${countryCode}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -284,7 +286,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/auto-fill`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/auto-fill`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -317,7 +319,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/clear`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/clear`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

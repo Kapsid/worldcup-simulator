@@ -95,6 +95,8 @@
 </template>
 
 <script>
+import { API_URL } from '../config/api.js'
+
 export default {
   name: 'TournamentNews',
   props: {
@@ -141,7 +143,7 @@ export default {
           params.append('category', this.selectedCategory)
         }
         
-        const response = await fetch(`http://localhost:3001/api/news/${this.tournament._id}?${params}`, {
+        const response = await fetch(`${API_URL}/news/${this.tournament._id}?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -175,7 +177,7 @@ export default {
     async loadUnreadCount() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/news/${this.tournament._id}/unread-count`, {
+        const response = await fetch(`${API_URL}/news/${this.tournament._id}/unread-count`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -195,7 +197,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/news/${newsItem._id}/read`, {
+        const response = await fetch(`${API_URL}/news/${newsItem._id}/read`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -217,7 +219,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/news/${this.tournament._id}/mark-all-read`, {
+        const response = await fetch(`${API_URL}/news/${this.tournament._id}/mark-all-read`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`

@@ -248,6 +248,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import CountryFlag from '../components/CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'Tournament',
@@ -303,7 +304,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/tournaments', {
+        const response = await fetch(`${API_URL}/tournaments`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -323,7 +324,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch(`${API_URL}/tournaments/countries`)
         if (response.ok) {
           this.countries = await response.json()
         } else {
@@ -368,7 +369,7 @@ export default {
         const selectedCountry = this.countries.find(c => c.code === this.createForm.selectedCountryCode)
         
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/tournaments', {
+        const response = await fetch(`${API_URL}/tournaments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -409,7 +410,7 @@ export default {
     async updateLastOpened(tournamentId) {
       try {
         const token = localStorage.getItem('token')
-        await fetch(`http://localhost:3001/api/tournaments/${tournamentId}/open`, {
+        await fetch(`${API_URL}/tournaments/${tournamentId}/open`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -445,7 +446,7 @@ export default {
     async loadMembershipStatus() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/membership/status', {
+        const response = await fetch(`${API_URL}/membership/status`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -488,7 +489,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -529,7 +530,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournamentToDelete._id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournamentToDelete._id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

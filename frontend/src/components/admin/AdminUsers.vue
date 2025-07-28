@@ -198,6 +198,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../config/api.js'
+
 export default {
   name: 'AdminUsers',
   data() {
@@ -264,7 +266,7 @@ export default {
           sortBy: this.sortBy
         })
 
-        const response = await fetch(`http://localhost:3001/api/admin/users?${params}`, {
+        const response = await fetch(`${API_URL}/admin/users?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -313,7 +315,7 @@ export default {
       this.updating = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/users/${this.editingUser._id}/membership`, {
+        const response = await fetch(`${API_URL}/admin/users/${this.editingUser._id}/membership`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -338,7 +340,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/users/${user._id}/reset-usage`, {
+        const response = await fetch(`${API_URL}/admin/users/${user._id}/reset-usage`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

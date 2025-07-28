@@ -337,6 +337,7 @@
 
 <script>
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'WorldCupDraw',
@@ -404,7 +405,7 @@ export default {
     async loadPots() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/pots`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/pots`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -421,7 +422,7 @@ export default {
     async loadGroups() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/groups`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/groups`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -441,7 +442,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/pots/generate`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/pots/generate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -471,7 +472,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/all`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/all`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -503,7 +504,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/pot/${potNumber}`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/pot/${potNumber}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -539,7 +540,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/clear`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/clear`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -567,7 +568,7 @@ export default {
         this.error = ''
 
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/all`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/all`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

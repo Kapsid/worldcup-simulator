@@ -122,6 +122,7 @@ import AdminContent from '../components/admin/AdminContent.vue'
 import AdminDataManagement from '../components/admin/AdminDataManagement.vue'
 import AdminAnalytics from '../components/admin/AdminAnalytics.vue'
 import AdminSystem from '../components/admin/AdminSystem.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'AdminDashboard',
@@ -167,7 +168,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/dashboard', {
+        const response = await fetch(`${API_URL}/admin/dashboard`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

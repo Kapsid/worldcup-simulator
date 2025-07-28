@@ -123,6 +123,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'TacticsManager',
   data() {
@@ -154,7 +156,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/tactics', {
+        const response = await fetch(`${API_URL}/admin/data/tactics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -202,7 +204,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/data/tactics/${formation.name}`, {
+        const response = await fetch(`${API_URL}/admin/data/tactics/${formation.name}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -238,8 +240,8 @@ export default {
         }
 
         const url = this.showAddForm 
-          ? 'http://localhost:3001/api/admin/data/tactics'
-          : `http://localhost:3001/api/admin/data/tactics/${this.editingFormation.name}`
+          ? '${API_URL}/admin/data/tactics'
+          : `${API_URL}/admin/data/tactics/${this.editingFormation.name}`
         
         const method = this.showAddForm ? 'POST' : 'PUT'
 

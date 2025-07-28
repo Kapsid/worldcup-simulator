@@ -309,6 +309,7 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'Profile',
@@ -383,7 +384,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -407,7 +408,7 @@ export default {
     async loadMembershipStatus() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/membership/status', {
+        const response = await fetch(`${API_URL}/membership/status`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -424,7 +425,7 @@ export default {
     async loadAvailablePlans() {
       try {
         console.log('🔄 Loading available plans...')
-        const response = await fetch('http://localhost:3001/api/membership/plans')
+        const response = await fetch('${API_URL}/membership/plans')
         console.log('📡 Plans API response:', response.status, response.ok)
         if (response.ok) {
           const data = await response.json()
@@ -489,7 +490,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -529,7 +530,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile/password', {
+        const response = await fetch(`${API_URL}/profile/password`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -567,7 +568,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/membership/upgrade', {
+        const response = await fetch(`${API_URL}/membership/upgrade`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -596,7 +597,7 @@ export default {
     async debugSetPlan(plan) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/membership/debug/set-plan', {
+        const response = await fetch(`${API_URL}/membership/debug/set-plan`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -624,7 +625,7 @@ export default {
     async debugResetUsage() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/membership/debug/reset-usage', {
+        const response = await fetch(`${API_URL}/membership/debug/reset-usage`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

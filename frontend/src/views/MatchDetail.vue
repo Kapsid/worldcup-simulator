@@ -165,6 +165,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import CountryFlag from '../components/CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'MatchDetailPage',
@@ -220,7 +221,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Try to load from qualification matches first
-        let response = await fetch(`http://localhost:3001/api/qualification/${tournamentId}`, {
+        let response = await fetch(`${API_URL}/qualification/${tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -320,7 +321,7 @@ export default {
         }
         
         // Try to load from group stage matches
-        response = await fetch(`http://localhost:3001/api/matches/${tournamentId}/matches`, {
+        response = await fetch(`${API_URL}/matches/${tournamentId}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -384,7 +385,7 @@ export default {
         }
         
         // If not found in group stage, try knockout stage
-        response = await fetch(`http://localhost:3001/api/knockout/${tournamentId}/bracket`, {
+        response = await fetch(`${API_URL}/knockout/${tournamentId}/bracket`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -482,7 +483,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -510,7 +511,7 @@ export default {
     async loadEnhancedMatchDetails(enhancedMatchId) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/detail/${enhancedMatchId}`, {
+        const response = await fetch(`${API_URL}/matches/detail/${enhancedMatchId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -622,17 +623,17 @@ export default {
       if (this.match.isQualification) {
         // For qualification matches, use the qualification endpoint
         const actualMatchId = this.extractMatchId()
-        url = `http://localhost:3001/api/qualification/${tournamentId}/simulate-match?_=${Date.now()}`
+        url = `${API_URL}/qualification/${tournamentId}/simulate-match?_=${Date.now()}`
         requestBody = { matchId: actualMatchId }
         console.log('🎯 FRONTEND: Using qualification endpoint')
       } else if (this.match.isKnockout) {
         // For knockout matches, use the knockout endpoint
-        url = `http://localhost:3001/api/knockout/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
+        url = `${API_URL}/knockout/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
         requestBody = {}
         console.log('🎯 FRONTEND: Using knockout match endpoint')
       } else {
         // For group stage matches, use the matches endpoint
-        url = `http://localhost:3001/api/matches/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
+        url = `${API_URL}/matches/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
         requestBody = {}
         console.log('🎯 FRONTEND: Using group match endpoint')
       }

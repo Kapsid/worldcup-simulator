@@ -219,6 +219,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../config/api.js'
+
 export default {
   name: 'AdminSystem',
   data() {
@@ -299,7 +301,7 @@ export default {
       this.operations.cleanup = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/system/cleanup-expired', {
+        const response = await fetch(`${API_URL}/admin/system/cleanup-expired`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

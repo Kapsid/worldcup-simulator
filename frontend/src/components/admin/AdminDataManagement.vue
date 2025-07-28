@@ -115,6 +115,7 @@ import TacticsManager from './data/TacticsManager.vue'
 import HistoryManager from './data/HistoryManager.vue'
 import PlayerNamesManager from './data/PlayerNamesManager.vue'
 import BackupManager from './data/BackupManager.vue'
+import { API_URL } from '../../config/api.js'
 
 export default {
   name: 'AdminDataManagement',
@@ -151,7 +152,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/overview', {
+        const response = await fetch(`${API_URL}/admin/data/overview`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

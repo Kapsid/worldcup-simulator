@@ -196,6 +196,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'HistoryManager',
   data() {
@@ -233,7 +235,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/history', {
+        const response = await fetch(`${API_URL}/admin/data/history`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -279,7 +281,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/data/history/${entry.year}`, {
+        const response = await fetch(`${API_URL}/admin/data/history/${entry.year}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -330,8 +332,8 @@ export default {
         }
 
         const url = this.showAddForm 
-          ? 'http://localhost:3001/api/admin/data/history'
-          : `http://localhost:3001/api/admin/data/history/${this.editingEntry.year}`
+          ? '${API_URL}/admin/data/history'
+          : `${API_URL}/admin/data/history/${this.editingEntry.year}`
         
         const method = this.showAddForm ? 'POST' : 'PUT'
 

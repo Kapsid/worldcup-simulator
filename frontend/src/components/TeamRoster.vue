@@ -119,6 +119,7 @@
 <script>
 import { getPlayerAvatarUrl } from '../utils/avatarGenerator.js'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TeamRoster',
@@ -220,7 +221,7 @@ export default {
         if (this.tournamentId) params.append('tournamentId', this.tournamentId)
         if (this.worldId) params.append('worldId', this.worldId)
 
-        const apiUrl = `http://localhost:3001/api/players/team?${params}`
+        const apiUrl = `${API_URL}/players/team?${params}`
         console.log('🏆 ROSTER: API URL:', apiUrl)
 
         const response = await fetch(apiUrl, {

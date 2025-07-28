@@ -973,6 +973,7 @@
 import StandingsTooltip from './StandingsTooltip.vue'
 import QualificationStatistics from './QualificationStatistics.vue'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'QualificationManager',
@@ -1165,14 +1166,14 @@ export default {
       this.loading = true
       try {
         // Load confederation data
-        const response = await fetch('http://localhost:3001/api/qualification/confederations')
+        const response = await fetch('${API_URL}/qualification/confederations')
         if (response.ok) {
           this.confederations = await response.json()
         }
         
         // Load qualification status for this tournament
         const token = localStorage.getItem('token')
-        const qualResponse = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+        const qualResponse = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1201,7 +1202,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/start`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/start`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1228,7 +1229,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-matchday`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-matchday`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1255,7 +1256,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-confederation-matchday/${this.activeConfederation}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-confederation-matchday/${this.activeConfederation}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1289,7 +1290,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/finalize`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/finalize`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1324,7 +1325,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Add qualified teams to tournament
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/add-qualified`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/add-qualified`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1508,7 +1509,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/regenerate`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/regenerate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1536,7 +1537,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1647,7 +1648,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1677,7 +1678,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-confederation/${this.activeConfederation}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-confederation/${this.activeConfederation}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1781,7 +1782,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-matchday/${this.activeConfederation}/${matchday}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-matchday/${this.activeConfederation}/${matchday}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1913,7 +1914,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2290,7 +2291,7 @@ export default {
     async simulateMatchWithResult(matchId) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -2365,7 +2366,7 @@ export default {
       if (this.areAllGroupMatchesComplete()) {
         // Trigger a partial data refresh to generate playoffs
         try {
-          const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+          const response = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
           })
           
@@ -2493,7 +2494,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -2544,7 +2545,7 @@ export default {
     // Refresh only completion status without full data reload
     async refreshCompletionStatus() {
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         

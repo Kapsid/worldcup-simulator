@@ -82,6 +82,7 @@
 
 <script>
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'WelcomeSection',
@@ -110,7 +111,7 @@ export default {
     async loadLastTournament() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/tournaments/last-opened', {
+        const response = await fetch(`${API_URL}/tournaments/last-opened`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -127,7 +128,7 @@ export default {
     async loadLastWorld() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/worlds', {
+        const response = await fetch(`${API_URL}/worlds`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -147,7 +148,7 @@ export default {
 
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }

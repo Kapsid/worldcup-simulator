@@ -172,6 +172,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'ConfederationsManager',
   data() {
@@ -206,7 +208,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/confederations', {
+        const response = await fetch(`${API_URL}/admin/data/confederations`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -237,7 +239,7 @@ export default {
       this.saving = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/data/confederations/${this.editingConfederation.id}`, {
+        const response = await fetch(`${API_URL}/admin/data/confederations/${this.editingConfederation.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

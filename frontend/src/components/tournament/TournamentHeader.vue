@@ -97,6 +97,7 @@
 
 <script>
 import CountryFlag from '../CountryFlag.vue'
+import { API_URL } from '../../config/api.js'
 
 export default {
   name: 'TournamentHeader',
@@ -162,7 +163,7 @@ export default {
       this.updateError = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

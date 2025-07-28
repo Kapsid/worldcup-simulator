@@ -196,6 +196,7 @@ import GroupMatches from '../components/GroupMatches.vue'
 import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
 import TeamRoster from '../components/TeamRoster.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TournamentDetailRefactored',
@@ -260,7 +261,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournamentId}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -283,7 +284,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -295,7 +296,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -315,7 +316,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/group-status`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/group-status`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -421,7 +422,7 @@ export default {
     async activateTournament() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}/activate`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}/activate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -446,7 +447,7 @@ export default {
     async loadTournamentTeams() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -537,7 +538,7 @@ export default {
         }
         console.log('🔧 REGENERATE: Payload:', payload)
         
-        const response = await fetch('http://localhost:3001/api/players/regenerate-tournament', {
+        const response = await fetch(`${API_URL}/players/regenerate-tournament`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

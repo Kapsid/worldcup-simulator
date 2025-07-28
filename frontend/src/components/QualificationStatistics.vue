@@ -62,6 +62,8 @@
 </template>
 
 <script>
+import { API_URL } from '../config/api.js'
+
 export default {
   name: 'QualificationStatistics',
   props: {
@@ -94,7 +96,7 @@ export default {
         this.loading = true
         const token = localStorage.getItem('token')
         
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournamentId}/top-scorers/${this.confederationId.toLowerCase()}?limit=20`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournamentId}/top-scorers/${this.confederationId.toLowerCase()}?limit=20`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

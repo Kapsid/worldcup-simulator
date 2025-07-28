@@ -159,6 +159,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'PlayerNamesManager',
   data() {
@@ -193,7 +195,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/player-names', {
+        const response = await fetch(`${API_URL}/admin/data/player-names`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -239,7 +241,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/data/player-names/${region}`, {
+        const response = await fetch(`${API_URL}/admin/data/player-names/${region}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -267,8 +269,8 @@ export default {
 
         const region = this.showAddForm ? this.formData.regionName : this.editingRegion
         const url = this.showAddForm 
-          ? `http://localhost:3001/api/admin/data/player-names/${region}`
-          : `http://localhost:3001/api/admin/data/player-names/${region}`
+          ? `${API_URL}/admin/data/player-names/${region}`
+          : `${API_URL}/admin/data/player-names/${region}`
         
         const method = this.showAddForm ? 'POST' : 'PUT'
 

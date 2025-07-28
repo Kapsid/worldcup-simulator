@@ -154,6 +154,7 @@
 
 import StandingsTooltip from './StandingsTooltip.vue'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'GroupMatches',
@@ -209,7 +210,7 @@ export default {
     async loadMatches() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/matches`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -236,7 +237,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/generate`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/generate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -264,7 +265,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/simulate/match/${matchId}`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/simulate/match/${matchId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -295,7 +296,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/simulate/matchday/${matchday}`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/simulate/matchday/${matchday}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -407,7 +408,7 @@ export default {
         
         // Fetch group standings from API
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/standings`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/standings`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

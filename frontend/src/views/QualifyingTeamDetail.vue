@@ -268,6 +268,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import CountryFlag from '../components/CountryFlag.vue'
 import TeamRoster from '../components/TeamRoster.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'QualifyingTeamDetail',
@@ -342,7 +343,7 @@ export default {
     async loadTournament() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.$route.params.tournamentId}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.$route.params.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -359,7 +360,7 @@ export default {
     async loadQualificationData() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.$route.params.tournamentId}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.$route.params.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -415,7 +416,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -469,7 +470,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -517,7 +518,7 @@ export default {
         }
         
         
-        const response = await fetch(`http://localhost:3001/api/teams/history/${countryCode}`, {
+        const response = await fetch(`${API_URL}/teams/history/${countryCode}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

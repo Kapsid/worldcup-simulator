@@ -406,6 +406,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import CountryFlag from '../components/CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'WorldDetail',
@@ -563,7 +564,7 @@ export default {
         const worldId = this.$route.params.id
         const token = localStorage.getItem('token')
         
-        const response = await fetch(`http://localhost:3001/api/worlds/${worldId}`, {
+        const response = await fetch(`${API_URL}/worlds/${worldId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -594,7 +595,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -613,7 +614,7 @@ export default {
       try {
         console.log('Loading world-specific rankings for world:', this.world._id)
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/worlds/${this.world._id}/rankings`, {
+        const response = await fetch(`${API_URL}/worlds/${this.world._id}/rankings`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -626,7 +627,7 @@ export default {
         } else {
           console.error('Failed to load world rankings, falling back to FIFA rankings')
           // Fallback to FIFA rankings
-          const fallbackResponse = await fetch('http://localhost:3001/api/tournaments/countries')
+          const fallbackResponse = await fetch('${API_URL}/tournaments/countries')
           if (fallbackResponse.ok) {
             const countries = await fallbackResponse.json()
             this.countryRankings = countries
@@ -640,7 +641,7 @@ export default {
 
     async checkExcludedConfederation() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           const countries = await response.json()
           this.excludedConfederation = this.getLastHostConfederation(countries)
@@ -731,7 +732,7 @@ export default {
         // Simulate delay
         await new Promise(resolve => setTimeout(resolve, 1500))
         
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           const countries = await response.json()
           
@@ -830,7 +831,7 @@ export default {
         // Create the tournament via API
         const token = localStorage.getItem('token')
         const tournamentYear = this.world.beginningYear
-        const response = await fetch('http://localhost:3001/api/tournaments', {
+        const response = await fetch(`${API_URL}/tournaments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -908,7 +909,7 @@ export default {
       try {
         console.log('Loading World Cup history for world:', this.world._id)
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/worlds/${this.world._id}/history`, {
+        const response = await fetch(`${API_URL}/worlds/${this.world._id}/history`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -963,7 +964,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Update last opened timestamp
-        await fetch(`http://localhost:3001/api/tournaments/${tournament.id}/open`, {
+        await fetch(`${API_URL}/tournaments/${tournament.id}/open`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -993,7 +994,7 @@ export default {
         const finalScore = `${Math.floor(Math.random() * 3) + 1}-${Math.floor(Math.random() * 3)}`
         
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${tournament.id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${tournament.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

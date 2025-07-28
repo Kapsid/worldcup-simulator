@@ -264,6 +264,7 @@
 <script>
 import BracketVisualization from './BracketVisualization.vue'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'KnockoutBracket',
@@ -309,7 +310,7 @@ export default {
     async loadBracket() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/bracket`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/bracket`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -336,7 +337,7 @@ export default {
     async loadFinalResults() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/results`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/results`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -356,7 +357,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/generate`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/generate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -384,7 +385,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/simulate/match/${matchId}`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/simulate/match/${matchId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -427,7 +428,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/simulate/round/${round}`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/simulate/round/${round}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -523,7 +524,7 @@ export default {
     async checkGroupStageCompletion() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/matches`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

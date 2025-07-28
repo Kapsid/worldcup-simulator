@@ -110,6 +110,7 @@
 
 <script>
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'GroupStandings',
@@ -161,7 +162,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/standings`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/standings`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

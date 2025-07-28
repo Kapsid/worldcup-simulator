@@ -194,6 +194,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'BackupManager',
   data() {
@@ -228,7 +230,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/overview', {
+        const response = await fetch(`${API_URL}/admin/data/overview`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -251,7 +253,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/backup', {
+        const response = await fetch(`${API_URL}/admin/data/backup`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -281,7 +283,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Get the latest backup data
-        const response = await fetch('http://localhost:3001/api/admin/data/overview', {
+        const response = await fetch(`${API_URL}/admin/data/overview`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -359,7 +361,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/restore', {
+        const response = await fetch(`${API_URL}/admin/data/restore`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

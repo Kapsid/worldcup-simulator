@@ -166,6 +166,7 @@ import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import CountryFlag from '../components/CountryFlag.vue'
 import TeamRoster from '../components/TeamRoster.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TeamDetail',
@@ -286,7 +287,7 @@ export default {
     async loadTournament() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.$route.params.tournamentId}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.$route.params.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -303,7 +304,7 @@ export default {
     async loadTeam() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/teams/${this.$route.params.tournamentId}/${this.$route.params.teamId}`, {
+        const response = await fetch(`${API_URL}/teams/${this.$route.params.tournamentId}/${this.$route.params.teamId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -319,7 +320,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -331,7 +332,7 @@ export default {
     async loadTeamMatches() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.$route.params.tournamentId}/team/${this.$route.params.teamId}`, {
+        const response = await fetch(`${API_URL}/matches/${this.$route.params.tournamentId}/team/${this.$route.params.teamId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -348,7 +349,7 @@ export default {
     async loadQualificationMatches() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.$route.params.tournamentId}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.$route.params.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -414,7 +415,7 @@ export default {
     async loadKnockoutMatches() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.$route.params.tournamentId}/bracket`, {
+        const response = await fetch(`${API_URL}/knockout/${this.$route.params.tournamentId}/bracket`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -528,7 +529,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

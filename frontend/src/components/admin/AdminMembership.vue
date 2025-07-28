@@ -153,6 +153,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../config/api.js'
+
 export default {
   name: 'AdminMembership',
   data() {
@@ -169,7 +171,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/membership/analytics', {
+        const response = await fetch(`${API_URL}/admin/membership/analytics`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -191,7 +193,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/admin/users/${membership.user}/membership`, {
+        const response = await fetch(`${API_URL}/admin/users/${membership.user}/membership`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

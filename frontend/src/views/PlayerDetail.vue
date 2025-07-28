@@ -192,6 +192,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import { getPlayerAvatarUrl } from '../utils/avatarGenerator.js'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'PlayerDetail',
@@ -250,7 +251,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/players/${this.playerId}`, {
+        const response = await fetch(`${API_URL}/players/${this.playerId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -273,7 +274,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -294,7 +295,7 @@ export default {
         
         // Load all player stats across all tournaments
         const response = await fetch(
-          `http://localhost:3001/api/players/${this.playerId}/tournament-history`,
+          `${API_URL}/players/${this.playerId}/tournament-history`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -349,7 +350,7 @@ export default {
         
         // Load qualification stats
         const qualResponse = await fetch(
-          `http://localhost:3001/api/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=qualification`,
+          `${API_URL}/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=qualification`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
@@ -368,7 +369,7 @@ export default {
         
         // Load tournament stats
         const tournResponse = await fetch(
-          `http://localhost:3001/api/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=tournament`,
+          `${API_URL}/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=tournament`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }

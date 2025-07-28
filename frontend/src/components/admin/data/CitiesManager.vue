@@ -145,6 +145,8 @@
 </template>
 
 <script>
+import { API_URL } from '../../../config/api.js'
+
 export default {
   name: 'CitiesManager',
   data() {
@@ -182,7 +184,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/cities', {
+        const response = await fetch(`${API_URL}/admin/data/cities`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 
@@ -229,7 +231,7 @@ export default {
     async loadCountryNames() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/admin/data/countries', {
+        const response = await fetch(`${API_URL}/admin/data/countries`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
 

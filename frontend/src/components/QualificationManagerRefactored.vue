@@ -202,6 +202,7 @@ import QualificationSubTabs from './qualification/QualificationSubTabs.vue'
 import GroupStandingsTable from './qualification/GroupStandingsTable.vue'
 import MatchdaySelector from './qualification/MatchdaySelector.vue'
 import MatchList from './qualification/MatchList.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'QualificationManagerRefactored',
@@ -333,7 +334,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/generate-matchday`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/generate-matchday`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -363,7 +364,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-all`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-all`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -391,7 +392,7 @@ export default {
       this.simulatingMatch = matchId
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -417,7 +418,7 @@ export default {
       this.simulatingPlayoffMatch = matchId
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -447,7 +448,7 @@ export default {
       this.loading = true
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -476,7 +477,7 @@ export default {
     
     async loadConfederations() {
       try {
-        const response = await fetch('http://localhost:3001/api/confederations')
+        const response = await fetch('${API_URL}/confederations')
         if (response.ok) {
           this.confederations = await response.json()
         }
