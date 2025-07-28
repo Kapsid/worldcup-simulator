@@ -12,6 +12,7 @@
     "preview": "cd frontend && npm run preview"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10",
     "concurrently": "^8.2.0"
   },
   "dependencies": {
