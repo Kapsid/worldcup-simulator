@@ -1,0 +1,25 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+
+[[services]]
+name = "backend"
+buildCommand = "cd backend && npm install"
+startCommand = "cd backend && npm start"
+
+[services.backend.healthcheck]
+path = "/health"
+port = 3001
+
+[[services]]
+name = "frontend"
+buildCommand = "cd frontend && npm install && npm run build"
+startCommand = "cd frontend && npm run preview -- --port $PORT --host"
+
+[services.frontend.healthcheck]
+path = "/"
+port = 5173

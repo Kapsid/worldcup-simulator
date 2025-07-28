@@ -119,6 +119,8 @@
 </template>
 
 <script>
+import api from '../services/api.js'
+
 export default {
   name: 'RegisterForm',
   data() {
@@ -145,8 +147,7 @@ export default {
   methods: {
     async refreshCaptcha() {
       try {
-        const response = await fetch('http://localhost:3001/api/captcha')
-        const data = await response.json()
+        const { data } = await api.auth.getCaptcha()
         
         if (response.ok) {
           this.captcha = data
@@ -195,33 +196,21 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch('http://localhost:3001/api/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            username: this.formData.username,
-            name: this.formData.name,
-            password: this.formData.password,
-            confirmPassword: this.formData.confirmPassword,
-            captchaId: this.captcha.captchaId,
-            captchaAnswer: this.formData.captchaAnswer
-          })
+        const { data } = await api.auth.register({
+          username: this.formData.username,
+          name: this.formData.name,
+          password: this.formData.password,
+          confirmPassword: this.formData.confirmPassword,
+          captchaId: this.captcha.captchaId,
+          captchaAnswer: this.formData.captchaAnswer
         })
         
-        const data = await response.json()
-        
-        if (response.ok) {
-          this.$emit('register-success', data)
-        } else {
-          this.error = data.error || 'Registration failed'
-          if (data.error === 'Invalid captcha answer') {
-            this.refreshCaptcha()
-          }
-        }
+        this.$emit('register-success', data)
       } catch (error) {
-        this.error = 'Network error. Please try again.'
+        this.error = error.data?.error || 'Registration failed'
+        if (error.data?.error === 'Invalid captcha answer') {
+          this.refreshCaptcha()
+        }
       } finally {
         this.loading = false
       }

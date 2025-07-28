@@ -55,6 +55,8 @@
 </template>
 
 <script>
+import apiClient from '../utils/apiClient.js'
+
 export default {
   name: 'LoginForm',
   data() {
@@ -71,26 +73,14 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch('http://localhost:3001/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            username: this.username,
-            password: this.password
-          })
+        const { data } = await apiClient.post('/login', {
+          username: this.username,
+          password: this.password
         })
         
-        const data = await response.json()
-        
-        if (response.ok) {
-          this.$emit('login-success', data)
-        } else {
-          this.error = data.error || 'Login failed'
-        }
+        this.$emit('login-success', data)
       } catch (error) {
-        this.error = 'Network error. Please try again.'
+        this.error = error.data?.error || 'Login failed'
       } finally {
         this.loading = false
       }

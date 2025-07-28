@@ -286,6 +286,7 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import api from '../services/api.js'
 
 export default {
   name: 'Worlds',
@@ -341,19 +342,8 @@ export default {
     async loadWorlds() {
       this.loading = true
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/worlds', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          this.worlds = data.data
-        } else {
-          console.error('Failed to load worlds')
-        }
+        const { data } = await api.worlds.getAll()
+        this.worlds = data.data || []
       } catch (error) {
         console.error('Error loading worlds:', error)
       } finally {
@@ -393,32 +383,16 @@ export default {
       this.createError = ''
       
       try {
-        const url = this.editingWorld 
-          ? `http://localhost:3001/api/worlds/${this.editingWorld._id}`
-          : 'http://localhost:3001/api/worlds'
-        
-        const method = this.editingWorld ? 'PUT' : 'POST'
-        
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(this.createForm)
-        })
-        
-        const data = await response.json()
-        
-        if (response.ok) {
-          this.closeCreateModal()
-          this.loadWorlds()
+        if (this.editingWorld) {
+          await api.worlds.update(this.editingWorld._id, this.createForm)
         } else {
-          this.createError = data.message || 'Failed to save world'
+          await api.worlds.create(this.createForm)
         }
+        
+        this.closeCreateModal()
+        this.loadWorlds()
       } catch (error) {
-        this.createError = 'Network error. Please try again.'
+        this.createError = error.data?.message || 'Failed to save world'
       } finally {
         this.creating = false
       }
@@ -482,17 +456,8 @@ export default {
     
     async loadUserProfile() {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          const user = await response.json()
-          this.subscriptionTier = user.subscriptionTier || 'basic'
-        }
+        const { data: user } = await api.profile.get()
+        this.subscriptionTier = user.subscriptionTier || 'basic'
       } catch (error) {
         console.error('Error loading user profile:', error)
       }
@@ -500,16 +465,8 @@ export default {
 
     async loadMembershipStatus() {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/membership/status', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        if (response.ok) {
-          const data = await response.json()
-          this.membershipStatus = data.data
-        }
+        const { data } = await api.membership.getStatus()
+        this.membershipStatus = data.data
       } catch (error) {
         console.error('Error loading membership status:', error)
       }
@@ -540,24 +497,12 @@ export default {
       this.deleteError = ''
       
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/worlds/${this.worldToDelete._id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          this.closeDeleteModal()
-          this.loadWorlds()
-          this.loadMembershipStatus() // Refresh membership status after deletion
-        } else {
-          const data = await response.json()
-          this.deleteError = data.message || 'Failed to delete world'
-        }
+        await api.worlds.delete(this.worldToDelete._id)
+        this.closeDeleteModal()
+        this.loadWorlds()
+        this.loadMembershipStatus() // Refresh membership status after deletion
       } catch (error) {
-        this.deleteError = 'Network error. Please try again.'
+        this.deleteError = error.data?.message || 'Failed to delete world'
       } finally {
         this.deleting = false
       }
