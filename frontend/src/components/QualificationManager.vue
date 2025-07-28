@@ -7,27 +7,44 @@
     
     <div v-else class="qualification-content">
 
-      <!-- Confederation Tabs -->
-      <div class="confederation-tabs">
-        <button 
-          @click="activeConfederation = 'all'"
-          :class="['tab-button', { active: activeConfederation === 'all' }]"
-          :style="{ '--conf-color': '#2c3e50' }"
-        >
-          <span class="tab-flag">🌍</span>
-          <span class="tab-name">All Confederations</span>
-        </button>
-        <button 
-          v-for="confederation in confederations" 
-          :key="confederation.id"
-          @click="activeConfederation = confederation.id"
-          :class="['tab-button', { active: activeConfederation === confederation.id }]"
-          :style="{ '--conf-color': confederation.color }"
-        >
-          <span class="tab-flag">{{ confederation.flag }}</span>
-          <span class="tab-name">{{ confederation.name }}</span>
-          <span class="tab-slots">{{ Math.floor(confederation.qualificationSlots) }} slots</span>
-        </button>
+      <!-- Confederation Selection -->
+      <div class="confederation-selector">
+        <!-- Desktop Tabs -->
+        <div class="confederation-tabs desktop-tabs">
+          <button 
+            @click="activeConfederation = 'all'"
+            :class="['tab-button', { active: activeConfederation === 'all' }]"
+            :style="{ '--conf-color': '#2c3e50' }"
+          >
+            <span class="tab-flag">🌍</span>
+            <span class="tab-name">All</span>
+          </button>
+          <button 
+            v-for="confederation in confederations" 
+            :key="confederation.id"
+            @click="activeConfederation = confederation.id"
+            :class="['tab-button', { active: activeConfederation === confederation.id }]"
+            :style="{ '--conf-color': confederation.color }"
+          >
+            <span class="tab-flag">{{ confederation.flag }}</span>
+            <span class="tab-name">{{ confederation.shortName || confederation.name }}</span>
+            <span class="tab-slots">{{ Math.floor(confederation.qualificationSlots) }}</span>
+          </button>
+        </div>
+        
+        <!-- Mobile Dropdown -->
+        <div class="confederation-dropdown mobile-dropdown">
+          <select v-model="activeConfederation" class="confederation-select">
+            <option value="all">🌍 All Confederations</option>
+            <option 
+              v-for="confederation in confederations" 
+              :key="confederation.id"
+              :value="confederation.id"
+            >
+              {{ confederation.flag }} {{ confederation.name }} ({{ Math.floor(confederation.qualificationSlots) }} slots)
+            </option>
+          </select>
+        </div>
       </div>
 
       <!-- Finalization Status Box - Always Visible -->
@@ -434,42 +451,54 @@
               
               <!-- Sub-navigation tabs -->
               <div class="sub-navigation">
-                <button 
-                  @click="activeSubTab = 'groups'"
-                  :class="['sub-tab', { active: activeSubTab === 'groups' }]"
-                >
-                  <i class="fas fa-layer-group"></i>
-                  Groups & Standings
-                </button>
-                <button 
-                  @click="activeSubTab = 'matches'"
-                  :class="['sub-tab', { active: activeSubTab === 'matches' }]"
-                >
-                  <i class="fas fa-futbol"></i>
-                  Matches
-                </button>
-                <button 
-                  @click="activeSubTab = 'statistics'"
-                  :class="['sub-tab', { active: activeSubTab === 'statistics' }]"
-                >
-                  <i class="fas fa-chart-line"></i>
-                  Statistics
-                </button>
-                <button 
-                  v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)"
-                  @click="activeSubTab = 'playoff'"
-                  :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
-                >
-                  <i class="fas fa-medal"></i>
-                  Play off
-                </button>
-                <button 
-                  @click="activeSubTab = 'qualified'"
-                  :class="['sub-tab', { active: activeSubTab === 'qualified' }]"
-                >
-                  <i class="fas fa-trophy"></i>
-                  Qualified ({{ getQualifiedFromConfederation(activeConfederation).length }})
-                </button>
+                <div class="sub-tabs-desktop">
+                  <button 
+                    @click="activeSubTab = 'groups'"
+                    :class="['sub-tab', { active: activeSubTab === 'groups' }]"
+                  >
+                    <i class="fas fa-layer-group"></i>
+                    <span class="sub-tab-text">Groups</span>
+                  </button>
+                  <button 
+                    @click="activeSubTab = 'matches'"
+                    :class="['sub-tab', { active: activeSubTab === 'matches' }]"
+                  >
+                    <i class="fas fa-futbol"></i>
+                    <span class="sub-tab-text">Matches</span>
+                  </button>
+                  <button 
+                    @click="activeSubTab = 'statistics'"
+                    :class="['sub-tab', { active: activeSubTab === 'statistics' }]"
+                  >
+                    <i class="fas fa-chart-line"></i>
+                    <span class="sub-tab-text">Stats</span>
+                  </button>
+                  <button 
+                    v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)"
+                    @click="activeSubTab = 'playoff'"
+                    :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
+                  >
+                    <i class="fas fa-medal"></i>
+                    <span class="sub-tab-text">Playoff</span>
+                  </button>
+                  <button 
+                    @click="activeSubTab = 'qualified'"
+                    :class="['sub-tab', { active: activeSubTab === 'qualified' }]"
+                  >
+                    <i class="fas fa-trophy"></i>
+                    <span class="sub-tab-text">Qualified ({{ getQualifiedFromConfederation(activeConfederation).length }})</span>
+                  </button>
+                </div>
+                
+                <div class="sub-tabs-mobile">
+                  <select v-model="activeSubTab" class="sub-tab-select">
+                    <option value="groups">📊 Groups & Standings</option>
+                    <option value="matches">⚽ Matches</option>
+                    <option value="statistics">📈 Statistics</option>
+                    <option v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)" value="playoff">🏅 Playoff</option>
+                    <option value="qualified">🏆 Qualified ({{ getQualifiedFromConfederation(activeConfederation).length }})</option>
+                  </select>
+                </div>
               </div>
 
               <!-- Sub-tab content -->
@@ -1163,23 +1192,33 @@ export default {
   },
   methods: {
     async loadQualificationData() {
+      console.log('Loading qualification data...')
       this.loading = true
+      
       try {
         // Load confederation data
-        const response = await fetch('${API_URL}/qualification/confederations')
+        console.log('Fetching confederations from:', `${API_URL}/qualification/confederations`)
+        const response = await fetch(`${API_URL}/qualification/confederations`)
+        console.log('Confederations response status:', response.status)
+        
         if (response.ok) {
           this.confederations = await response.json()
+          console.log('Loaded confederations:', this.confederations.length)
         }
         
         // Load qualification status for this tournament
         const token = localStorage.getItem('token')
+        console.log('Fetching qualification data from:', `${API_URL}/qualification/${this.tournament._id}`)
         const qualResponse = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
+        console.log('Qualification response status:', qualResponse.status)
+        
         if (qualResponse.ok) {
           this.qualificationData = await qualResponse.json()
+          console.log('Loaded qualification data:', this.qualificationData)
           this.qualificationStarted = this.qualificationData.started
           this.qualificationFinalized = this.qualificationData.completed
           this.qualifiedTeams = this.qualificationData.qualifiedTeams || []
@@ -1188,6 +1227,9 @@ export default {
           // Set default matchday after loading data
           this.activeMatchday = this.defaultActiveMatchday()
           // Tab switching is only handled on initial mount, not during refreshes
+        } else {
+          const errorData = await qualResponse.json()
+          console.error('Failed to load qualification data:', errorData)
         }
       } catch (error) {
         this.error = 'Failed to load qualification data'
@@ -1198,10 +1240,16 @@ export default {
     },
     
     async startQualification() {
+      console.log('Start qualification button clicked!')
       this.starting = true
       this.error = ''
+      
       try {
         const token = localStorage.getItem('token')
+        console.log('Tournament ID:', this.tournament._id)
+        console.log('Token available:', !!token)
+        console.log('Making request to:', `${API_URL}/qualification/${this.tournament._id}/start`)
+        
         const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/start`, {
           method: 'POST',
           headers: {
@@ -1210,16 +1258,23 @@ export default {
           }
         })
         
+        console.log('Response status:', response.status, response.statusText)
+        
         if (response.ok) {
+          const data = await response.json()
+          console.log('Qualification started successfully:', data)
           await this.loadQualificationData()
           this.$emit('qualification-started')
         } else {
           const data = await response.json()
+          console.error('Failed to start qualification:', data)
           this.error = data.error || 'Failed to start qualification'
         }
       } catch (error) {
+        console.error('Error starting qualification:', error)
         this.error = 'Network error. Please try again.'
       } finally {
+        console.log('Start qualification finished')
         this.starting = false
       }
     },
@@ -2677,12 +2732,33 @@ export default {
   letter-spacing: 0.5px;
 }
 
+.confederation-selector {
+  margin-bottom: 1rem;
+}
+
+.desktop-tabs {
+  display: flex;
+}
+
+.mobile-dropdown {
+  display: none;
+}
+
 .confederation-tabs {
   display: flex;
   gap: 0.25rem;
-  margin-bottom: 1rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
+}
+
+.confederation-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: 14px;
+  color: var(--fifa-dark-blue);
 }
 
 .tab-button {
@@ -3364,22 +3440,50 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .qualification-manager {
+    padding: 8px;
+    overflow-x: hidden;
+  }
+  
+  .qualification-content {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
   .qualification-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 12px;
   }
   
   .progress-stats {
     flex-direction: column;
-    gap: 1rem;
+    gap: 12px;
   }
   
-  .confederation-tabs {
-    flex-direction: column;
+  .desktop-tabs {
+    display: none;
   }
   
-  .tab-button {
-    min-width: auto;
+  .mobile-dropdown {
+    display: block;
+  }
+  
+  .confederation-select {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  .sub-tabs-desktop {
+    display: none;
+  }
+  
+  .sub-tabs-mobile {
+    display: block;
+  }
+  
+  .sub-tab-select {
+    font-size: 16px;
+    padding: 12px;
   }
   
   .status-cards {
@@ -3484,11 +3588,29 @@ export default {
 
 /* Sub-navigation */
 .sub-navigation {
-  display: flex;
-  gap: 0.5rem;
   margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 1rem;
+}
+
+.sub-tabs-desktop {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sub-tabs-mobile {
+  display: none;
+}
+
+.sub-tab-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: 14px;
+  color: var(--fifa-dark-blue);
 }
 
 .sub-tab {
@@ -4348,32 +4470,129 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .qual-matches-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .qualification-manager .qual-matches-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
   }
-  .all-confederations-content .qual-matches-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .qual-match-card {
-    padding: 10px;
+  
+  .qualification-manager .all-confederations-content .qual-matches-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
   }
 
-  .qual-match-teams .team-flag {
-    font-size: 1.2rem;
+  /* Simplified mobile match cards */
+  .qualification-manager .qual-match-card {
+    padding: 8px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+  }
+  
+  .qualification-manager .qual-match-header {
+    margin-bottom: 6px !important;
+  }
+  
+  .qualification-manager .qual-match-header .group-label {
+    font-size: 0.7rem !important;
+  }
+  
+  .qualification-manager .qual-match-header .match-status {
+    font-size: 0.65rem !important;
+    padding: 2px 6px !important;
+  }
+  
+  .qualification-manager .qual-match-teams {
+    gap: 12px !important;
+    margin-bottom: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .qualification-manager .qual-match-teams .team {
+    gap: 0 !important;
+    min-width: 40px !important;
   }
 
-  .qual-match-teams .team-name {
-    font-size: 0.7rem;
+  /* Hide team names on mobile, show only flags */
+  .qualification-manager .qual-match-teams .team-name {
+    display: none !important;
   }
 
-  .qual-match-score .score-display {
-    font-size: 1rem;
+  /* Override CountryFlag component size on mobile */
+  .qualification-manager .qual-match-teams .team-flag {
+    font-size: 2.75rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+  
+  .qualification-manager .qual-match-teams .team .country-flag {
+    font-size: 2.75rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+  
+  /* Target the span element inside CountryFlag */
+  .qualification-manager .qual-match-teams .team-flag span,
+  .qualification-manager .qual-match-teams .country-flag span {
+    font-size: 2.75rem !important;
+    line-height: 1 !important;
   }
 
-  .qual-match-score {
-    margin: 0 8px;
+  .qualification-manager .qual-match-score {
+    margin: 0 8px !important;
+  }
+  
+  .qualification-manager .qual-match-score .score-display {
+    font-size: 1.3rem !important;
+    gap: 6px !important;
+    font-weight: bold !important;
+  }
+  
+  .qualification-manager .qual-match-score .btn-small {
+    min-width: 36px !important;
+    height: 36px !important;
+    font-size: 0.8rem !important;
+    padding: 4px !important;
+    border-radius: 50% !important;
+  }
+  
+  .qualification-manager .qual-match-score .match-actions {
+    gap: 4px !important;
+  }
+  
+  /* All Confederations View Mobile Styles */
+  .qualification-manager .all-confederations-content {
+    padding: 8px !important;
+  }
+  
+  .qualification-manager .confederations-matches {
+    gap: 12px !important;
+  }
+  
+  .qualification-manager .confederation-matches-section {
+    padding: 12px !important;
+    margin: 0 !important;
+  }
+  
+  .qualification-manager .confederation-matches-section .confederation-header {
+    font-size: 1rem !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .qualification-manager .confederation-matches-section .match-count {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Simplified confederation match cards on mobile */
+  .qualification-manager .confederation-matches-section .qual-match-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 8px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
   }
 }
 

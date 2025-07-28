@@ -633,10 +633,21 @@ class QualificationService {
       }
 
       // Generate player squads for all qualifying teams
-      console.log('Generating player squads for all qualifying teams...')
+      console.log('Starting player squad generation for all qualifying teams...')
       let totalTeamsGenerated = 0
+      let totalTeamsToGenerate = 0
+      
+      // Count total teams first
+      for (const confederationData of qualificationData.confederations) {
+        for (const group of confederationData.groups) {
+          totalTeamsToGenerate += group.teams.length
+        }
+      }
+      
+      console.log(`Need to generate squads for ${totalTeamsToGenerate} teams total`)
       
       for (const confederationData of qualificationData.confederations) {
+        console.log(`Generating squads for ${confederationData.name} confederation...`)
         for (const group of confederationData.groups) {
           for (const team of group.teams) {
             try {
@@ -651,18 +662,18 @@ class QualificationService {
               )
               totalTeamsGenerated++
               
-              if (totalTeamsGenerated % 10 === 0) {
-                console.log(`✓ Generated squads for ${totalTeamsGenerated} teams...`)
+              if (totalTeamsGenerated % 5 === 0) {
+                console.log(`✓ Generated squads for ${totalTeamsGenerated}/${totalTeamsToGenerate} teams... (${Math.round(totalTeamsGenerated/totalTeamsToGenerate*100)}%)`)
               }
             } catch (squadError) {
-              console.error(`Error generating squad for ${team.country}:`, squadError)
+              console.error(`❌ Error generating squad for ${team.country}:`, squadError)
               // Continue with other teams even if one fails
             }
           }
         }
       }
       
-      console.log(`✅ Player squad generation completed for ${totalTeamsGenerated} qualifying teams`)
+      console.log(`✅ Player squad generation completed for ${totalTeamsGenerated}/${totalTeamsToGenerate} qualifying teams`)
 
       return qualification
     } catch (error) {

@@ -33,19 +33,20 @@
           </span>
         </div>
 
-        <div class="standings-table">
-          <div class="table-header standings-table-header">
-            <div class="pos-col">Pos</div>
-            <div class="team-col">Team</div>
-            <div class="stat-col">P</div>
-            <div class="stat-col">W</div>
-            <div class="stat-col">D</div>
-            <div class="stat-col">L</div>
-            <div class="stat-col">GF</div>
-            <div class="stat-col">GA</div>
-            <div class="stat-col">GD</div>
-            <div class="stat-col">Pts</div>
-          </div>
+        <div class="table-responsive">
+          <div class="standings-table">
+            <div class="table-header standings-table-header">
+              <div class="pos-col">Pos</div>
+              <div class="team-col">Team</div>
+              <div class="stat-col">P</div>
+              <div class="stat-col">W</div>
+              <div class="stat-col">D</div>
+              <div class="stat-col">L</div>
+              <div class="stat-col">GF</div>
+              <div class="stat-col">GA</div>
+              <div class="stat-col">GD</div>
+              <div class="stat-col">Pts</div>
+            </div>
 
           <div class="table-body">
             <div 
@@ -94,6 +95,7 @@
               </div>
               <div class="stat-col points">{{ standing.points }}</div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -256,7 +258,7 @@ export default {
 
 .standings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
   gap: 24px;
 }
 
@@ -448,29 +450,51 @@ export default {
   .standings-header {
     flex-direction: column;
     gap: 16px;
+    align-items: flex-start;
   }
 
   .standings-legend {
-    flex-direction: column;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .standings-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -20px;
+    padding: 0 20px;
+  }
+
+  .standings-table {
+    min-width: 480px;
   }
 
   .table-header,
   .table-row {
-    grid-template-columns: 30px 1fr repeat(8, 25px);
-    gap: 4px;
+    grid-template-columns: 30px 120px repeat(8, 30px);
+    gap: 8px;
   }
 
   .team-name {
     font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
   }
 
   .stat-col {
     font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .group-standings-card {
+    padding: 16px;
   }
 }
 </style>

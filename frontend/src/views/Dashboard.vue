@@ -6,7 +6,7 @@
       @logout="handleLogout" 
     />
     
-    <main class="main-content">
+    <main class="main-content container">
       <WelcomeSection :username="username" />
     </main>
   </div>

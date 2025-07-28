@@ -31,6 +31,7 @@
           <div v-if="hasPreviousMatch || hasNextMatch" class="match-navigation">
             <button v-if="hasPreviousMatch" @click="navigateToPreviousMatch" class="nav-btn prev">
               <i class="fas fa-chevron-left"></i>
+              <span class="nav-text">Previous Match</span>
               <div class="nav-info">
                 <span class="nav-label">Previous Match</span>
                 <span class="nav-teams">{{ previousMatch.homeTeam.name }} vs {{ previousMatch.awayTeam.name }}</span>
@@ -40,70 +41,80 @@
             </button>
             <div class="nav-divider" v-if="hasPreviousMatch && hasNextMatch"></div>
             <button v-if="hasNextMatch" @click="navigateToNextMatch" class="nav-btn next">
+              <i class="fas fa-chevron-right"></i>
+              <span class="nav-text">Next Match</span>
               <div class="nav-info">
                 <span class="nav-label">Next Match</span>
                 <span class="nav-teams">{{ nextMatch.homeTeam.name }} vs {{ nextMatch.awayTeam.name }}</span>
                 <span v-if="nextMatch.confederationName" class="nav-confederation">{{ nextMatch.confederationName }} | Matchday {{ nextMatch.matchday }}</span>
                 <span v-else-if="nextMatch.groupName" class="nav-confederation">{{ nextMatch.groupName }} | Matchday {{ nextMatch.matchday }}</span>
               </div>
-              <i class="fas fa-chevron-right"></i>
             </button>
           </div>
 
           <!-- Match Score Section -->
           <div class="match-score-section">
-            <!-- Home Team with Goals -->
-            <div class="team-info home-team">
-              <CountryFlag :country-code="match.homeTeam.countryCode" :size="32" />
-              <div class="team-name clickable-team" @click="navigateToTeam('home')">{{ match.homeTeam.name }}</div>
-              <!-- Home Team Goals (Live or Final) -->
-              <div v-if="(liveSimulation.isRunning && getLiveTeamGoals('home').length > 0) || (!liveSimulation.isRunning && matchDetails && getTeamGoals('home').length > 0)" class="team-goals">
+            <!-- Top row with flags and score -->
+            <div class="score-and-flags">
+              <!-- Home Team Flag -->
+              <div class="team-info home-team">
+                <CountryFlag :country-code="match.homeTeam.countryCode" :size="32" />
+                <div class="team-name clickable-team" @click="navigateToTeam('home')">{{ match.homeTeam.name }}</div>
+              </div>
+              
+              <!-- Score Display -->
+              <div class="score-display">
+                <div class="score">
+                  <span class="home-score">{{ liveSimulation.isRunning ? liveSimulation.homeScore : (match.homeScore !== null ? match.homeScore : '-') }}</span>
+                  <span class="score-separator">:</span>
+                  <span class="away-score">{{ liveSimulation.isRunning ? liveSimulation.awayScore : (match.awayScore !== null ? match.awayScore : '-') }}</span>
+                </div>
+                <div class="match-status">
+                  <span v-if="!match.played" class="status-upcoming">Upcoming</span>
+                  <span v-else-if="liveSimulation.isRunning" class="status-live">{{ liveSimulation.currentMinute }}'</span>
+                  <span v-else class="status-finished">Final</span>
+                </div>
+                
+                <!-- Live Simulation Button -->
+                <div v-if="!match.played && !liveSimulation.isRunning" class="live-sim-button">
+                  <button @click="startLiveSimulation" class="btn-live-sim">
+                    <i class="fas fa-play"></i>
+                    Simulate Live
+                  </button>
+                </div>
+                <!-- Match Info -->
+                <div class="match-info-compact">
+                  <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
+                  <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
+                  <span v-else-if="match.round">{{ match.round }}</span>
+                  <span v-else>Tournament Match</span>
+                  <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
+                  <span v-if="match.city" class="venue-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ match.city }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Away Team Flag -->
+              <div class="team-info away-team">
+                <CountryFlag :country-code="match.awayTeam.countryCode" :size="32" />
+                <div class="team-name clickable-team" @click="navigateToTeam('away')">{{ match.awayTeam.name }}</div>
+              </div>
+            </div>
+            
+            <!-- Goals section below flags -->
+            <div class="goals-section" v-if="(liveSimulation.isRunning && (getLiveTeamGoals('home').length > 0 || getLiveTeamGoals('away').length > 0)) || (!liveSimulation.isRunning && matchDetails && (getTeamGoals('home').length > 0 || getTeamGoals('away').length > 0))">
+              <!-- Home Team Goals -->
+              <div class="team-goals home-goals">
                 <div v-for="goal in liveSimulation.isRunning ? getLiveTeamGoals('home') : getTeamGoals('home')" :key="goal._id || goal.id" class="goal-item" :class="{ 'new-goal': goal.isNew }">
                   <span class="goal-minute">{{ goal.minute }}'</span>
                   <span class="goal-scorer clickable-player" @click="navigateToPlayer(goal.player._id || goal.playerId)">{{ goal.player?.displayName || goal.scorer }}</span>
                 </div>
               </div>
-            </div>
-            
-            <div class="score-display">
-              <div class="score">
-                <span class="home-score">{{ liveSimulation.isRunning ? liveSimulation.homeScore : (match.homeScore !== null ? match.homeScore : '-') }}</span>
-                <span class="score-separator">:</span>
-                <span class="away-score">{{ liveSimulation.isRunning ? liveSimulation.awayScore : (match.awayScore !== null ? match.awayScore : '-') }}</span>
-              </div>
-              <div class="match-status">
-                <span v-if="!match.played" class="status-upcoming">Upcoming</span>
-                <span v-else-if="liveSimulation.isRunning" class="status-live">{{ liveSimulation.currentMinute }}'</span>
-                <span v-else class="status-finished">Final</span>
-              </div>
               
-              <!-- Live Simulation Button -->
-              <div v-if="!match.played && !liveSimulation.isRunning" class="live-sim-button">
-                <button @click="startLiveSimulation" class="btn-live-sim">
-                  <i class="fas fa-play"></i>
-                  Simulate Live
-                </button>
-              </div>
-              <!-- Match Info -->
-              <div class="match-info-compact">
-                <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
-                <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
-                <span v-else-if="match.round">{{ match.round }}</span>
-                <span v-else>Tournament Match</span>
-                <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
-                <span v-if="match.city" class="venue-info">
-                  <i class="fas fa-map-marker-alt"></i>
-                  {{ match.city }}
-                </span>
-              </div>
-            </div>
-            
-            <!-- Away Team with Goals -->
-            <div class="team-info away-team">
-              <CountryFlag :country-code="match.awayTeam.countryCode" :size="32" />
-              <div class="team-name clickable-team" @click="navigateToTeam('away')">{{ match.awayTeam.name }}</div>
-              <!-- Away Team Goals (Live or Final) -->
-              <div v-if="(liveSimulation.isRunning && getLiveTeamGoals('away').length > 0) || (!liveSimulation.isRunning && matchDetails && getTeamGoals('away').length > 0)" class="team-goals">
+              <!-- Away Team Goals -->
+              <div class="team-goals away-goals">
                 <div v-for="goal in liveSimulation.isRunning ? getLiveTeamGoals('away') : getTeamGoals('away')" :key="goal._id || goal.id" class="goal-item" :class="{ 'new-goal': goal.isNew }">
                   <span class="goal-minute">{{ goal.minute }}'</span>
                   <span class="goal-scorer clickable-player" @click="navigateToPlayer(goal.player._id || goal.playerId)">{{ goal.player?.displayName || goal.scorer }}</span>
@@ -1231,65 +1242,260 @@ export default {
 /* Responsive Design */
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .match-detail-container {
+    padding: 0;
   }
   
   .match-content {
-    padding: 1.5rem;
+    padding: 0.75rem;
   }
   
   .page-header {
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
     text-align: center;
+    padding: 0.75rem;
   }
   
   .page-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
   
-  .match-score-section {
-    flex-direction: column;
-    gap: 2rem;
-    padding: 2rem 1.5rem;
-  }
-  
-  .team-info {
-    flex-direction: row;
+  /* Simplified match navigation for mobile */
+  .match-navigation {
+    padding: 0;
+    background: none;
+    border: none;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 1rem;
   }
   
+  .nav-btn {
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    width: auto;
+    height: auto;
+    min-width: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--fifa-blue);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .nav-btn:hover {
+    transform: none;
+    box-shadow: none;
+    background: none;
+    opacity: 0.8;
+  }
+  
+  .nav-btn i {
+    font-size: 1rem;
+  }
+  
+  .nav-btn.prev {
+    flex-direction: row;
+  }
+  
+  .nav-btn.next {
+    flex-direction: row;
+  }
+  
+  .nav-info {
+    display: none !important;
+  }
+  
+  .nav-text {
+    display: inline !important;
+  }
+  
+  .nav-divider {
+    display: none;
+  }
+  
+  /* Remove the ::after pseudo elements */
+  .nav-btn::after {
+    display: none;
+  }
+  
+  /* Compact score section */
+  .match-score-section {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Top row with flags and score */
+  .score-and-flags {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+  }
+  
+  .team-info {
+    flex: 0 0 auto;
+    max-width: none;
+    gap: 0;
+    flex-direction: column;
+    align-items: center;
+    position: static;
+    padding-bottom: 0;
+  }
+  
+  .team-info .country-flag,
   .team-flag {
-    font-size: 2.5rem;
+    font-size: 3.5rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    line-height: 1 !important;
+    display: block !important;
   }
   
   .team-name {
-    font-size: 1.2rem;
+    display: none;
+  }
+  
+  .score-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   
   .score {
     font-size: 2.5rem;
+    gap: 0.75rem;
   }
   
-  .match-info-section {
-    grid-template-columns: 1fr;
+  .home-score, .away-score {
+    min-width: 3rem;
+  }
+  
+  .match-status {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+  
+  .match-info-compact {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  /* Goals section below flags */
+  .goals-section {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
     gap: 1rem;
+    margin-top: 0.5rem;
   }
   
-  .stats-placeholder,
-  .commentary-placeholder {
-    padding: 3rem 1rem;
+  .team-goals {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+    flex: 1;
+    width: auto;
+  }
+  
+  .team-info.home-team .team-goals {
+    align-items: flex-start;
+  }
+  
+  .team-info.away-team .team-goals {
+    align-items: flex-end;
+  }
+  
+  .goal-item {
+    padding: 0.25rem 0.5rem !important;
+    max-width: none !important;
+    font-size: 0.75rem;
+    flex-direction: row !important;
+    gap: 0.25rem !important;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 4px;
+  }
+  
+  .goal-minute {
+    font-size: 0.7rem !important;
+    padding: 0.1rem 0.3rem !important;
+  }
+  
+  .goal-scorer {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Live simulation button */
+  .btn-live-sim {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Lineups section */
+  .lineups-section {
+    margin-top: 2rem;
+  }
+  
+  .lineups-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
   }
   
   .lineups-container {
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
   }
   
-  .home-lineup,
-  .away-lineup {
-    width: 100%;
+  .home-lineup h4,
+  .away-lineup h4 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
   }
+  
+  .player-item {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .jersey-number {
+    min-width: 24px;
+    font-size: 0.8rem;
+  }
+  
+  .player-name {
+    font-size: 0.85rem;
+  }
+  
+  .player-position {
+    font-size: 0.75rem;
+  }
+  
+  .goal-indicator {
+    font-size: 0.7rem;
+  }
+}
+
+/* Hide nav-text by default (desktop) */
+.nav-text {
+  display: none;
 }
 
 /* Enhanced Match Details Styles */

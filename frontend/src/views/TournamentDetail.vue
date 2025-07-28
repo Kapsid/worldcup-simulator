@@ -1136,6 +1136,7 @@ export default {
 .tournament-container {
   width: 100%;
   max-width: 1200px;
+  overflow-x: hidden;
 }
 
 .loading-state, .error-state {
@@ -2005,6 +2006,17 @@ export default {
     grid-template-columns: 1fr;
   }
   
+  .content-card {
+    padding: 16px;
+    overflow-x: hidden;
+  }
+  
+  .content-card.full-width {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -2032,61 +2044,130 @@ export default {
     font-size: 0.85rem;
   }
   
-  /* Floating Sidebar Mobile */
+  /* Mobile Quick Actions Bar - Override all desktop styles */
   .floating-sidebar {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    transform: none;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 60vh;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 56px !important;
+    max-height: 56px !important;
+    background: white !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
+    z-index: 1000 !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
   
   .floating-sidebar.collapsed {
-    width: 100%;
-    max-height: 80px;
+    transform: none !important;
+    height: 56px !important;
   }
   
   .sidebar-header {
-    padding: 16px 20px;
-  }
-  
-  .sidebar-actions {
-    padding: 12px 16px 24px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-  }
-  
-  .sidebar-action {
-    flex: 0 0 auto;
-    min-width: 120px;
-    padding: 12px;
-    text-align: center;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .collapsed .sidebar-actions {
     display: none;
   }
   
-  .tournament-content.sidebar-open {
-    margin-left: 0;
-    padding-bottom: 120px;
+  .sidebar-toggle {
+    display: none;
+  }
+  
+  .sidebar-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-evenly !important;
+    align-items: center !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    height: 56px !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .sidebar-action {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    height: 56px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: #666 !important;
+    transition: color 0.2s ease !important;
+    position: relative !important;
+    text-align: center !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+  
+  .sidebar-action:disabled {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+  }
+  
+  .sidebar-action.active {
+    color: var(--fifa-blue) !important;
+    background: none !important;
+  }
+  
+  .sidebar-action.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--fifa-blue);
+  }
+  
+  .sidebar-action i {
+    font-size: 1.3rem !important;
+    line-height: 1 !important;
+  }
+  
+  .sidebar-action span {
+    display: none !important;
+  }
+  
+  .news-action .news-icon-container {
+    position: relative;
+  }
+  
+  .news-action .unread-news-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
   }
   
   .tournament-content {
-    margin-left: 0;
-    padding-bottom: 80px;
+    padding-bottom: 60px;
   }
   
   .tournament-details-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .tournament-container {
+    padding: 0 8px;
+  }
+  
+  .tournament-content {
+    margin-left: 0;
+    overflow-x: hidden;
   }
 }
 </style>

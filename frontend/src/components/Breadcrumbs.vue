@@ -77,6 +77,11 @@ export default {
   },
   methods: {
     handleScroll() {
+      // Disable fixed positioning on mobile
+      if (window.innerWidth <= 768) {
+        return
+      }
+      
       const shouldBeFixed = window.scrollY > this.scrollThreshold
       if (shouldBeFixed !== this.isFixed) {
         this.isFixed = shouldBeFixed
@@ -319,31 +324,44 @@ body.breadcrumbs-fixed .main-content {
 
 /* Responsive design */
 @media (max-width: 768px) {
+  .breadcrumbs-container {
+    position: relative !important;
+  }
+  
+  .breadcrumbs-container.fixed {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    box-shadow: none;
+  }
+  
   .breadcrumbs-wrapper {
-    padding: 0 1rem;
+    padding: 0 16px;
+  }
+  
+  .breadcrumbs {
+    padding: 8px 0;
   }
   
   .breadcrumb-list {
-    gap: 0.25rem;
+    gap: 4px;
+    flex-wrap: wrap;
   }
   
   .breadcrumb-link,
   .breadcrumb-text {
-    font-size: 0.8rem;
-    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    padding: 4px 8px;
   }
   
   .breadcrumb-icon {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
   
   .breadcrumb-separator {
-    margin: 0 0.15rem;
-    font-size: 0.6rem;
-  }
-  
-  .breadcrumbs-container.fixed {
-    top: var(--header-height-mobile, 120px);
+    margin: 0 4px;
+    font-size: 0.5rem;
   }
 }
 

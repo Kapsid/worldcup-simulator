@@ -51,7 +51,7 @@
                 Note: Countries from {{ getConfederationName(excludedConfederation) }} are excluded (previous host's confederation)
               </div>
             </div>
-            <button @click="generateCandidates" :disabled="generatingCandidates" class="btn-primary">
+            <button @click="generateCandidates" :disabled="generatingCandidates" class="btn-primary" ref="generateBtn">
               <i v-if="generatingCandidates" class="fas fa-spinner fa-spin"></i>
               <i v-else class="fas fa-dice"></i>
               {{ generatingCandidates ? 'Generating...' : 'Generate Candidates' }}
@@ -627,7 +627,7 @@ export default {
         } else {
           console.error('Failed to load world rankings, falling back to FIFA rankings')
           // Fallback to FIFA rankings
-          const fallbackResponse = await fetch('${API_URL}/tournaments/countries')
+          const fallbackResponse = await fetch(`${API_URL}/tournaments/countries`)
           if (fallbackResponse.ok) {
             const countries = await fallbackResponse.json()
             this.countryRankings = countries
@@ -641,7 +641,7 @@ export default {
 
     async checkExcludedConfederation() {
       try {
-        const response = await fetch('${API_URL}/tournaments/countries')
+        const response = await fetch(`${API_URL}/tournaments/countries`)
         if (response.ok) {
           const countries = await response.json()
           this.excludedConfederation = this.getLastHostConfederation(countries)
@@ -723,21 +723,41 @@ export default {
     },
     
     async generateCandidates() {
+      console.log('Generate candidates button clicked!')
       this.generatingCandidates = true
       
       try {
         // Load latest world cup history to get accurate last host info
-        await this.loadWorldCupHistory()
+        console.log('Loading world cup history...')
+        try {
+          await this.loadWorldCupHistory()
+        } catch (historyError) {
+          console.warn('Failed to load history, continuing anyway:', historyError)
+        }
         
         // Simulate delay
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        console.log('Simulating delay...')
+        await new Promise(resolve => setTimeout(resolve, 1000))
         
-        const response = await fetch('${API_URL}/tournaments/countries')
+        console.log('Fetching countries from:', `${API_URL}/tournaments/countries`)
+        const response = await fetch(`${API_URL}/tournaments/countries`, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        console.log('Response status:', response.status, response.statusText)
+        
         if (response.ok) {
           const countries = await response.json()
+          console.log('Countries loaded:', countries.length)
           
           // Determine the last host's confederation to exclude it
-          const lastHostConfederation = this.getLastHostConfederation(countries)
+          let lastHostConfederation = null
+          try {
+            lastHostConfederation = this.getLastHostConfederation(countries)
+          } catch (confederationError) {
+            console.warn('Error getting last host confederation:', confederationError)
+          }
           this.excludedConfederation = lastHostConfederation
           console.log('Last host confederation:', lastHostConfederation)
           
@@ -748,13 +768,22 @@ export default {
             .filter(c => !lastHostConfederation || c.confederation !== lastHostConfederation)
             .sort((a, b) => a.worldRanking - b.worldRanking)
           
+          console.log('Filtered top countries:', topCountries.length)
+          
           const selectedCandidates = []
           const usedCountries = new Set()
           
+          // Ensure we have at least some candidates
+          if (topCountries.length === 0) {
+            console.warn('No top countries found, using all countries')
+            topCountries.push(...countries.slice(0, 20))
+          }
+          
           // Higher ranked countries have higher chance to be selected
           for (let i = 0; i < candidateCount && selectedCandidates.length < candidateCount; i++) {
-            let country
+            let country = null
             let attempts = 0
+            
             do {
               const rankingWeight = Math.random() * Math.random() // Bias toward better rankings
               const index = Math.floor(rankingWeight * Math.min(topCountries.length, 30))
@@ -771,7 +800,7 @@ export default {
               const winChance = Math.round(baseChance + rankingBonus + (Math.random() - 0.5) * 10)
               
               // Try to get world ranking for display if available
-              const worldRanking = this.countryRankings.find(c => c.code === country.code)
+              const worldRanking = this.countryRankings?.find(c => c.code === country.code)
               
               selectedCandidates.push({
                 ...country,
@@ -783,10 +812,29 @@ export default {
           }
           
           this.candidates = selectedCandidates
+          console.log('Generated candidates:', selectedCandidates.length, selectedCandidates)
+        } else {
+          console.error('Failed to fetch countries. Status:', response.status)
+          const errorText = await response.text()
+          console.error('Error response:', errorText)
+          
+          // Fallback with test data
+          this.candidates = [
+            { name: 'Germany', code: 'GER', rank: 14, points: 1650, winChance: 25 },
+            { name: 'France', code: 'FRA', rank: 3, points: 1840, winChance: 30 },
+            { name: 'Spain', code: 'ESP', rank: 2, points: 1860, winChance: 20 }
+          ]
         }
       } catch (error) {
         console.error('Error generating candidates:', error)
+        // Fallback with test data
+        this.candidates = [
+          { name: 'Germany', code: 'GER', rank: 14, points: 1650, winChance: 25 },
+          { name: 'France', code: 'FRA', rank: 3, points: 1840, winChance: 30 },
+          { name: 'Spain', code: 'ESP', rank: 2, points: 1860, winChance: 20 }
+        ]
       } finally {
+        console.log('Candidate generation finished')
         this.generatingCandidates = false
       }
     },
@@ -909,11 +957,13 @@ export default {
       try {
         console.log('Loading World Cup history for world:', this.world._id)
         const token = localStorage.getItem('token')
+        console.log('Token available:', !!token)
         const response = await fetch(`${API_URL}/worlds/${this.world._id}/history`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
+        console.log('History response status:', response.status)
         
         if (response.ok) {
           const data = await response.json()

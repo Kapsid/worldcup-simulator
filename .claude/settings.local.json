@@ -38,7 +38,8 @@
       "Bash(/dev/null)",
       "Bash(echo)",
       "Bash(mv:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(./restore-to-railway.sh:*)"
     ],
     "deny": []
   }

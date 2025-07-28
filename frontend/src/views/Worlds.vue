@@ -6,7 +6,7 @@
       @logout="handleLogout" 
     />
     
-    <main class="main-content">
+    <main class="main-content container">
       <div class="worlds-container">
         <div class="worlds-header">
           <h1>My Worlds</h1>
