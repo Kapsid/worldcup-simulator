@@ -1,5 +1,7 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import connectDB from './config/database.js'
 import authRoutes from './routes/auth.js'
 import tournamentRoutes from './routes/tournament.js'
@@ -14,6 +16,9 @@ import newsRoutes from './routes/news.js'
 import playersRoutes from './routes/players.js'
 import membershipRoutes from './routes/membership.js'
 import adminRoutes from './routes/admin.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -36,22 +41,32 @@ app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
-// Root endpoint
+// Serve static files from Vue build in production
+if (process.env.NODE_ENV === 'production') {
+  const staticPath = path.join(__dirname, '../frontend/dist')
+  app.use(express.static(staticPath))
+}
+
+// Root endpoint - serve Vue app in production, API info in development
 app.get('/', (req, res) => {
-  res.json({
-    message: 'World Cup Simulator API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      api: '/api',
-      auth: '/api/login, /api/register',
-      tournaments: '/api/tournaments',
-      teams: '/api/teams',
-      matches: '/api/matches'
-    },
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT
-  })
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
+  } else {
+    res.json({
+      message: 'World Cup Simulator API',
+      version: '1.0.0',
+      endpoints: {
+        health: '/health',
+        api: '/api',
+        auth: '/api/login, /api/register',
+        tournaments: '/api/tournaments',
+        teams: '/api/teams',
+        matches: '/api/matches'
+      },
+      environment: process.env.NODE_ENV || 'development',
+      port: PORT
+    })
+  }
 })
 
 // Health check endpoint
@@ -112,9 +127,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' })
 })
 
-// 404 handler
+// 404 handler - serve Vue app for client-side routing in production
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' })
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
+  } else {
+    res.status(404).json({ error: 'Route not found' })
+  }
 })
 
 // Startup logging
