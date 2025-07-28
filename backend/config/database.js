@@ -9,8 +9,6 @@ const connectDB = async () => {
     console.log('Connection string:', mongoUrl.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')) // Hide credentials in logs
     
     const conn = await mongoose.connect(mongoUrl, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 30000, // 30 seconds timeout
       socketTimeoutMS: 45000,
     })
