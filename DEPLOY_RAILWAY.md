@@ -49,22 +49,30 @@ railway up
 
 ## Step 4: Set Up MongoDB
 
-1. In your Railway project dashboard:
-   - Click "New" → "Database" → "Add MongoDB"
-   - Railway will provision a MongoDB instance
-   - Connection string will be automatically available as `MONGODB_URL`
+### IMPORTANT: Railway MongoDB Setup
 
-2. Update environment variables:
-   - Go to your service settings
-   - Click on "Variables"
-   - Railway automatically injects database URL
-   - Add these additional variables:
+1. **Add MongoDB to your project:**
+   - In Railway dashboard, click "New" → "Database" → "MongoDB"
+   - Railway will create a MongoDB instance
+   - The connection string is provided as `MONGODB_URL` (not `MONGODB_URI`)
 
-```env
-JWT_SECRET=your-super-secret-jwt-key-change-this
-NODE_ENV=production
-FRONTEND_URL=https://your-frontend-url.up.railway.app
-```
+2. **Link MongoDB to your service:**
+   - Click on your backend service
+   - Go to "Variables" tab
+   - You should see `MONGODB_URL` already there (injected by Railway)
+   - If not, click "Add Variable Reference" and select MongoDB → MONGODB_URL
+
+3. **Add required environment variables:**
+   ```env
+   JWT_SECRET=your-super-secret-jwt-key-change-this
+   NODE_ENV=production
+   FRONTEND_URL=https://your-frontend-url.up.railway.app
+   ```
+
+4. **Common Issues:**
+   - If you see "connect ECONNREFUSED 127.0.0.1:27017", MongoDB URL is not set
+   - Railway uses `MONGODB_URL`, not `MONGODB_URI`
+   - Make sure MongoDB service is deployed and running
 
 ## Step 5: Configure Services
 
@@ -125,10 +133,29 @@ Railway will automatically redeploy.
 
 ## Troubleshooting
 
-1. **CORS Issues**: Make sure `FRONTEND_URL` is set correctly in backend env vars
-2. **Database Connection**: Railway MongoDB URL is injected as `MONGODB_URL` (not `MONGODB_URI`)
-3. **Build Failures**: Check logs in Railway dashboard
-4. **Port Issues**: Railway assigns ports automatically, use `process.env.PORT`
+### MongoDB Connection Issues
+If you see errors like:
+- "connect ECONNREFUSED 127.0.0.1:27017"
+- "Operation buffering timed out after 10000ms"
+
+**Solution:**
+1. Ensure MongoDB service is added to your Railway project
+2. Check Variables tab - `MONGODB_URL` should be present
+3. Redeploy your service after adding MongoDB
+
+### Common Fixes
+1. **CORS Issues**: Set `FRONTEND_URL` to your Railway frontend URL
+2. **Database**: Railway uses `MONGODB_URL` (we handle both in code)
+3. **Port**: Railway sets PORT automatically (usually 8080)
+4. **Build fails**: Check if all dependencies are in package.json
+
+### Deployment Checklist
+- [ ] MongoDB service added and running
+- [ ] `MONGODB_URL` visible in Variables
+- [ ] `JWT_SECRET` set to secure value
+- [ ] `NODE_ENV` set to "production"
+- [ ] `FRONTEND_URL` points to your frontend Railway URL
+- [ ] Frontend `.env.production` updated with backend URL
 
 ## Monitoring
 

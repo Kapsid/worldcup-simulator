@@ -56,12 +56,22 @@ app.use('*', (req, res) => {
 
 // Connect to MongoDB only if not in test environment
 if (process.env.NODE_ENV !== 'test') {
-  connectDB()
-  
-  app.listen(PORT, () => {
-    console.log(`🏆 World Cup Simulator API running on port ${PORT}`)
-    console.log(`📍 Health check: http://localhost:${PORT}/health`)
-    console.log(`📍 API endpoints: http://localhost:${PORT}/api`)
+  // Connect to database first
+  connectDB().then(() => {
+    // Start server only after DB connection
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🏆 World Cup Simulator API running on port ${PORT}`)
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
+      console.log(`📍 Health check: ${process.env.RAILWAY_STATIC_URL || `http://localhost:${PORT}`}/health`)
+      console.log(`📍 API endpoints: ${process.env.RAILWAY_STATIC_URL || `http://localhost:${PORT}`}/api`)
+      console.log(`🔗 MongoDB: ${process.env.MONGODB_URL ? 'Connected to Railway DB' : 'Using local DB'}`)
+    })
+  }).catch(err => {
+    console.error('Failed to connect to database:', err)
+    // Still start the server but without DB
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`⚠️  Server running on port ${PORT} without database connection`)
+    })
   })
 }
 
