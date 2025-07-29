@@ -4,7 +4,7 @@
       <div class="fifa-logo">
         <i class="fas fa-futbol"></i>
       </div>
-      <h1>World Cup Simulator</h1>
+      <h1>Your Football World</h1>
       <p class="subtitle">Experience the beautiful game</p>
     </div>
     
