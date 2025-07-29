@@ -54,23 +54,26 @@ class DrawService {
       const nonHostTeams = teams.filter(team => !team.isHost)
       
       // Sort teams using world rankings if available, otherwise world rankings
-      for (const team of nonHostTeams) {
-        team._worldRanking = await this.getTeamRanking(team, world)
-      }
-      nonHostTeams.sort((a, b) => a._worldRanking - b._worldRanking)
+      const teamsWithRanking = await Promise.all(
+        nonHostTeams.map(async (team) => ({
+          ...team.toObject(),
+          _worldRanking: await this.getTeamRanking(team, world)
+        }))
+      )
+      teamsWithRanking.sort((a, b) => a._worldRanking - b._worldRanking)
 
       const pots = []
 
-      const pot1Teams = [hostTeam, ...nonHostTeams.slice(0, 7)]
+      const pot1Teams = [hostTeam, ...teamsWithRanking.slice(0, 7)]
       pots.push({ potNumber: 1, teams: pot1Teams })
 
-      const pot2Teams = nonHostTeams.slice(7, 15)
+      const pot2Teams = teamsWithRanking.slice(7, 15)
       pots.push({ potNumber: 2, teams: pot2Teams })
 
-      const pot3Teams = nonHostTeams.slice(15, 23)
+      const pot3Teams = teamsWithRanking.slice(15, 23)
       pots.push({ potNumber: 3, teams: pot3Teams })
 
-      const pot4Teams = nonHostTeams.slice(23, 31)
+      const pot4Teams = teamsWithRanking.slice(23, 31)
       pots.push({ potNumber: 4, teams: pot4Teams })
 
       const savedPots = []

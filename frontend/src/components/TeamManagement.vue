@@ -53,7 +53,7 @@
             :key="country.code"
             :value="country.code"
           >
-            {{ country.flag }} {{ country.name }} (FIFA #{{ country.fifaRanking }})
+            {{ country.flag }} {{ country.name }} (FIFA #{{ country.worldRanking }})
           </option>
         </select>
         <button 
@@ -81,7 +81,7 @@
           <div class="team-details">
             <h4>{{ team.countryName }}</h4>
             <div class="team-meta">
-              <span class="fifa-rank">FIFA Rank: {{ team.fifaRanking }}</span>
+              <span class="fifa-rank">FIFA Rank: {{ team.worldRanking }}</span>
               <span v-if="team.isHost" class="host-badge">
                 <i class="fas fa-home"></i>
                 Host
@@ -160,7 +160,7 @@ export default {
       const selectedCodes = this.teams.map(team => team.countryCode)
       return this.countries
         .filter(country => !selectedCodes.includes(country.code))
-        .sort((a, b) => a.fifaRanking - b.fifaRanking)
+        .sort((a, b) => a.worldRanking - b.worldRanking)
     }
   },
   mounted() {
@@ -190,7 +190,7 @@ export default {
 
     async loadCountries() {
       try {
-        const response = await fetch('${API_URL}/tournaments/countries')
+        const response = await fetch(`${API_URL}/tournaments/countries`)
         if (response.ok) {
           this.countries = await response.json()
         }

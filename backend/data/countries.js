@@ -1533,14 +1533,21 @@ export function getBest31PlusHost(hostCountryCode) {
   // Get the best 31 countries based on world ranking, plus the host country
   const sortedCountries = [...countries].sort((a, b) => (a.worldRanking || 999) - (b.worldRanking || 999))
   
-  // Get top 31 countries
-  const best31 = sortedCountries.slice(0, 31)
-  
-  // Add host country if not already in top 31
+  // Check if host is in top 31
   const hostCountry = getCountryByCode(hostCountryCode)
-  if (hostCountry && !best31.find(c => c.code === hostCountryCode)) {
-    best31.push(hostCountry)
+  const hostInTop31 = hostCountry && sortedCountries.slice(0, 31).find(c => c.code === hostCountryCode)
+  
+  // If host is in top 31, get top 32 (which includes host)
+  // If host is not in top 31, get top 31 plus host
+  let result = []
+  if (hostInTop31) {
+    result = sortedCountries.slice(0, 32)
+  } else {
+    result = sortedCountries.slice(0, 31)
+    if (hostCountry) {
+      result.push(hostCountry)
+    }
   }
   
-  return best31
+  return result
 }
