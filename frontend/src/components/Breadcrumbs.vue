@@ -1,5 +1,5 @@
 <template>
-  <div v-if="breadcrumbs.length > 0" class="breadcrumbs-container" :class="{ 'fixed': isFixed }">
+  <div v-if="breadcrumbs.length > 0" class="breadcrumbs-container">
     <div class="breadcrumbs-wrapper">
       <nav class="breadcrumbs">
         <ol class="breadcrumb-list">
@@ -58,41 +58,14 @@ export default {
     }
   },
   data() {
-    return {
-      isFixed: false,
-      scrollThreshold: 100
-    }
+    return {}
   },
   computed: {
     breadcrumbs() {
       return this.buildBreadcrumbs()
     }
   },
-  mounted() {
-    window.addEventListener('scroll', this.handleScroll)
-  },
-  beforeUnmount() {
-    window.removeEventListener('scroll', this.handleScroll)
-    document.body.classList.remove('breadcrumbs-fixed')
-  },
   methods: {
-    handleScroll() {
-      // Disable fixed positioning on mobile
-      if (window.innerWidth <= 768) {
-        return
-      }
-      
-      const shouldBeFixed = window.scrollY > this.scrollThreshold
-      if (shouldBeFixed !== this.isFixed) {
-        this.isFixed = shouldBeFixed
-        if (shouldBeFixed) {
-          document.body.classList.add('breadcrumbs-fixed')
-        } else {
-          document.body.classList.remove('breadcrumbs-fixed')
-        }
-      }
-    },
-    
     buildBreadcrumbs() {
       const route = this.$route
       

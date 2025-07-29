@@ -647,19 +647,53 @@ export default {
 }
 
 @media (max-width: 768px) {
+  /* Fix navigation tabs overflow */
+  .stats-tabs {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+  
+  .tab-button {
+    flex: 1;
+    min-width: auto;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  
+  .tab-button i {
+    font-size: 0.9rem;
+    margin-right: 0.3rem;
+  }
+  
+  /* Fix scorer box size and centering */
   .scorer-item {
     flex-direction: column;
     gap: 0.75rem;
     text-align: center;
+    padding: 1rem;
+    max-width: none;
+    margin: 0 auto;
   }
   
   .scorer-stats {
     flex-direction: column;
     gap: 0.5rem;
+    align-items: center;
   }
   
   .secondary-stats {
     justify-content: center;
+    gap: 1rem;
+  }
+  
+  .scorers-list {
+    max-width: 100%;
+    padding: 0;
   }
   
   .upcoming-items {

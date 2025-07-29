@@ -1234,6 +1234,96 @@ export default {
     justify-content: center;
   }
 
+  /* Hide main World Cup Draw heading on mobile to avoid duplication */
+  .header-title h3 {
+    display: none;
+  }
+
+  /* Make pot team items more compact - one line layout */
+  .team-item {
+    padding: 8px;
+    align-items: center;
+  }
+
+  .team-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .team-name {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+
+  .team-ranking {
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .host-badge {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    white-space: nowrap;
+  }
+
+  /* Keep live draw groups grid at 4 columns on mobile */
+  .groups-grid.compact {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.2rem;
+  }
+
+  /* Show only flags and pot indicators in live draw on mobile */
+  .groups-grid.compact .team-name {
+    display: none;
+  }
+
+  /* Make group teams more compact - show flags and pot indicators */
+  .groups-grid.compact .group-team {
+    padding: 4px;
+    gap: 2px;
+    justify-content: center;
+    font-size: 0.6rem;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .groups-grid.compact .team-pot {
+    font-size: 0.5rem;
+    font-weight: bold;
+    color: var(--fifa-dark-blue);
+  }
+
+  .groups-grid.compact .group-team .country-flag {
+    font-size: 1.1rem;
+  }
+
+  /* Show just group letter with bigger font in header on mobile */
+  .groups-grid.compact .group-header h5 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1;
+    text-indent: -5ch;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* This will effectively show just the letter by hiding "Group " */
+  .groups-grid.compact .group-header h5::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4ch;
+    height: 100%;
+    background: inherit;
+  }
+
 }
 
 /* Split View Layout for Animated Draw */

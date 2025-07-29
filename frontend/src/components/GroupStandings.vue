@@ -460,41 +460,122 @@ export default {
 
   .standings-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 
   .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin: 0 -20px;
-    padding: 0 20px;
+    margin: 0;
+    padding: 0;
+    width: 100%;
   }
 
   .standings-table {
-    min-width: 480px;
+    min-width: 100%;
+    width: 100%;
   }
 
   .table-header,
   .table-row {
-    grid-template-columns: 30px 120px repeat(8, 30px);
-    gap: 8px;
+    grid-template-columns: 26px 110px repeat(8, 24px);
+    gap: 3px;
+  }
+
+  /* Hide Goals For (F) and Goals Against (A) columns on mobile */
+  .table-header .stat-col:nth-child(7),
+  .table-header .stat-col:nth-child(8),
+  .table-row .stat-col:nth-child(7),
+  .table-row .stat-col:nth-child(8) {
+    display: none;
+  }
+
+  /* Adjust grid after hiding F and A columns - only 6 stat columns now */
+  .table-header,
+  .table-row {
+    grid-template-columns: 26px 110px 24px 24px 24px 24px 24px 24px;
   }
 
   .team-name {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100px;
+    max-width: 105px;
   }
 
   .stat-col {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     text-align: center;
+    padding: 2px 1px;
+  }
+
+  /* Make position column text bigger */
+  .pos-col {
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .table-responsive {
+    overflow-x: visible;
+  }
+
+  /* Ensure backgrounds align with new column layout */
+  .table-header,
+  .table-row {
+    width: 100% !important;
+  }
+
+  /* Force the qualified/eliminated backgrounds to span full width */
+  .table-row.qualified,
+  .table-row.eliminated,
+  .table-row:hover {
+    background-size: 100% 100% !important;
+    width: 100% !important;
+    gap: 3px !important;
+    padding: 8px 0 !important;
+  }
+
+  /* Ensure all table rows use the correct mobile grid */
+  .table-row {
+    gap: 3px !important;
+    padding: 8px 0 !important;
+  }
+
+  /* Change GD header to shorter version on mobile */
+  .table-header .stat-col:nth-child(9)::after { content: "D"; }
+  
+  .table-header .stat-col:nth-child(9) {
+    text-indent: -9999px;
+    position: relative;
+  }
+  
+  .table-header .stat-col:nth-child(9)::after {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-indent: 0;
   }
 
   .group-standings-card {
-    padding: 16px;
+    padding: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Make flags smaller */
+  .team-col .country-flag {
+    font-size: 0.9rem !important;
+  }
+
+  /* Reduce spacing in group header */
+  .group-header {
+    margin-bottom: 8px;
+  }
+
+  .group-header h4 {
+    font-size: 1rem;
   }
 }
 </style>

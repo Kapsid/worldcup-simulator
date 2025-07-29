@@ -750,5 +750,27 @@ export default {
   .match-score {
     margin: 0 8px;
   }
+
+  /* Remove venue/place from group matches on mobile */
+  .match-venue {
+    display: none;
+  }
+
+  /* Make flags bigger in group matches on mobile */
+  .team .country-flag {
+    font-size: 1.8rem !important;
+  }
+
+  /* Make buttons bigger in group matches on mobile */
+  .btn-small {
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+    min-width: 40px;
+    height: 36px;
+  }
+
+  .btn-small i {
+    font-size: 1rem;
+  }
 }
 </style>
