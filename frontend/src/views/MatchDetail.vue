@@ -41,8 +41,8 @@
             </button>
             <div class="nav-divider" v-if="hasPreviousMatch && hasNextMatch"></div>
             <button v-if="hasNextMatch" @click="navigateToNextMatch" class="nav-btn next">
-              <i class="fas fa-chevron-right"></i>
               <span class="nav-text">Next Match</span>
+              <i class="fas fa-chevron-right"></i>
               <div class="nav-info">
                 <span class="nav-label">Next Match</span>
                 <span class="nav-teams">{{ nextMatch.homeTeam.name }} vs {{ nextMatch.awayTeam.name }}</span>
@@ -857,7 +857,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 10px;
 }
 
 .back-btn {
@@ -1255,9 +1255,9 @@ export default {
   
   .page-header {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     text-align: center;
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem 0.25rem 0.75rem;
   }
   
   .page-header h1 {
@@ -1269,7 +1269,7 @@ export default {
     padding: 0;
     background: none;
     border: none;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.1rem !important;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1341,14 +1341,14 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
     width: 100%;
   }
   
   .team-info {
-    flex: 0 0 auto;
+    flex: 1;
     max-width: none;
-    gap: 0;
+    gap: 0.5rem;
     flex-direction: column;
     align-items: center;
     position: static;
@@ -1357,32 +1357,39 @@ export default {
   
   .team-info .country-flag,
   .team-flag {
-    font-size: 3.5rem !important;
-    width: 3.5rem !important;
-    height: 3.5rem !important;
+    font-size: 3rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
     line-height: 1 !important;
     display: block !important;
   }
   
   .team-name {
-    display: none;
+    display: block !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--fifa-dark-blue) !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
   }
   
   .score-display {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    min-width: 120px;
   }
   
   .score {
-    font-size: 2.5rem;
-    gap: 0.75rem;
+    font-size: 2.25rem;
+    gap: 0.5rem;
   }
   
   .home-score, .away-score {
-    min-width: 3rem;
+    min-width: 2.5rem;
   }
   
   .match-status {

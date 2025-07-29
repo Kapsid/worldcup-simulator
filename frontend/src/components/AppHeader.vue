@@ -179,16 +179,21 @@ export default {
 .mobile-nav {
   display: none;
   flex-direction: column;
-  padding: 16px;
-  background: rgba(0, 51, 102, 0.95);
-  backdrop-filter: blur(20px);
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  border-top: none;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .mobile-nav.open {
   max-height: 400px;
+  padding: 16px;
+  background: rgba(0, 51, 102, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mobile-nav .nav-link {
@@ -353,9 +358,7 @@ export default {
     font-size: 1.75rem;
   }
   
-  .mobile-nav {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
+  /* Border is now handled by the .open state */
   
   .logout-btn span {
     display: inline;

@@ -1984,6 +1984,35 @@ export default {
     padding: 16px;
   }
   
+  /* Make tournament header compact and single column */
+  .tournament-title-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+  
+  .title-and-host {
+    flex: none !important;
+  }
+  
+  .title-and-host h1 {
+    font-size: 1.5rem !important;
+    margin: 0 0 8px 0 !important;
+  }
+  
+  .host-info {
+    gap: 6px !important;
+  }
+  
+  .host-details p {
+    font-size: 0.85rem !important;
+    margin: 0 !important;
+  }
+  
+  .status-section {
+    align-self: flex-start !important;
+  }
+  
   .host-section {
     flex-direction: column;
     gap: 16px;

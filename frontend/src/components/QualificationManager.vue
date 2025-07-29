@@ -604,9 +604,11 @@
                         :key="matchday.matchday"
                         @click="activeMatchday = matchday.matchday"
                         :class="['matchday-tab', { active: activeMatchday === matchday.matchday }]"
+                        :data-matchday="matchday.matchday"
                       >
                         <span class="tab-title">Matchday {{ matchday.matchday }}</span>
                         <span class="tab-count">{{ matchday.matches.length }} matches</span>
+                        <span class="mobile-tab-label">M{{ matchday.matchday }}</span>
                       </button>
                     </div>
 
@@ -3455,6 +3457,94 @@ export default {
     gap: 12px;
   }
   
+  /* Make confederation content full width on mobile */
+  .confederation-content {
+    padding: 0.75rem !important;
+    margin: 0 -8px !important;
+    width: calc(100% + 16px) !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Make tables more compact and scrollable */
+  .standings-table {
+    font-size: 0.75rem !important;
+  }
+  
+  .standings-table th,
+  .standings-table td {
+    padding: 0.3rem 0.25rem !important;
+    white-space: nowrap;
+  }
+  
+  /* Change multi-letter column headers to single letters on mobile */
+  .standings-table th:nth-child(6)::after {
+    content: "F";
+  }
+  .standings-table th:nth-child(7)::after {
+    content: "A";
+  }
+  .standings-table th:nth-child(8)::after {
+    content: "D";
+  }
+  .standings-table th:nth-child(6),
+  .standings-table th:nth-child(7),
+  .standings-table th:nth-child(8) {
+    text-indent: -9999px;
+    position: relative;
+  }
+  .standings-table th:nth-child(6)::after,
+  .standings-table th:nth-child(7)::after,
+  .standings-table th:nth-child(8)::after {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-indent: 0;
+  }
+  
+  /* Make table container scrollable horizontally */
+  .group-standings,
+  .runners-up-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Team cell adjustments */
+  .team-cell {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .team-flag {
+    font-size: 1rem !important;
+    margin-right: 0.25rem !important;
+  }
+  
+  /* Hide matchday header info on mobile, keep only button */
+  .matchday-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem;
+  }
+  
+  .matchday-header h5,
+  .matchday-info {
+    display: none !important;
+  }
+  
+  .matchday-actions {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  
+  .simulate-matchday-btn {
+    font-size: 0.85rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
   .progress-stats {
     flex-direction: column;
     gap: 12px;
@@ -3474,16 +3564,96 @@ export default {
   }
   
   .sub-tabs-desktop {
-    display: none;
+    display: flex !important;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 0.5rem;
   }
   
   .sub-tabs-mobile {
-    display: block;
+    display: none !important;
   }
   
-  .sub-tab-select {
-    font-size: 16px;
-    padding: 12px;
+  /* Icon-only sub tabs on mobile */
+  .sub-tab {
+    padding: 0.75rem !important;
+    min-width: 60px !important;
+    flex: 1 !important;
+    max-width: 80px !important;
+    background: var(--white) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .sub-tab:not(.active) {
+    background: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
+  }
+  
+  .sub-tab.active {
+    background: var(--fifa-blue) !important;
+    border-color: var(--fifa-blue) !important;
+    color: white !important;
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3) !important;
+  }
+  
+  .sub-tab .sub-tab-text {
+    display: none !important;
+  }
+  
+  .sub-tab i {
+    font-size: 1.2rem !important;
+  }
+  
+  /* Matchday tabs - 4 per row with M1, M2 format */
+  .matchday-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .matchday-tab {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    background: var(--white) !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .matchday-tab:not(.active) {
+    background: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
+  }
+  
+  .matchday-tab.active {
+    background: var(--fifa-blue) !important;
+    border-color: var(--fifa-blue) !important;
+    color: white !important;
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3) !important;
+  }
+  
+  .matchday-tab .tab-title {
+    display: none !important;
+  }
+  
+  .matchday-tab .tab-count {
+    display: none !important;
+  }
+  
+  .matchday-tab .mobile-tab-label {
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
   }
   
   .status-cards {
@@ -3533,7 +3703,10 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  min-width: 100px;
+}
+
+.mobile-tab-label {
+  display: none;
 }
 
 .matchday-tab:hover {
