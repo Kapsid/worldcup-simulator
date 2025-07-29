@@ -16,6 +16,7 @@
     "concurrently": "^8.2.0"
   },
   "dependencies": {
+    "multer": "^2.0.2",
     "simple-update-notifier": "^2.0.0"
   }
 }

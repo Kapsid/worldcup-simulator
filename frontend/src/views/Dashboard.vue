@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
@@ -26,7 +27,8 @@ export default {
   data() {
     return {
       username: '',
-      subscriptionTier: 'basic'
+      subscriptionTier: 'basic',
+      userAvatar: null
     }
   },
   mounted() {
@@ -46,6 +48,7 @@ export default {
       try {
         const { data: user } = await api.profile.get()
         this.subscriptionTier = user.subscriptionTier || 'basic'
+        this.userAvatar = user.avatar || null
       } catch (error) {
         console.error('Error loading user profile:', error)
       }

@@ -28,7 +28,17 @@
       
       <div class="user-section desktop-user">
         <div class="user-info clickable" @click="goToProfile">
-          <div class="user-avatar">{{ username.charAt(0).toUpperCase() }}</div>
+          <div class="user-avatar">
+            <template v-if="userAvatar && userAvatar.type === 'predefined'">
+              <i :class="userAvatar.icon" :style="{ color: userAvatar.color }"></i>
+            </template>
+            <template v-else-if="userAvatar && userAvatar.type === 'upload' && userAvatar.url">
+              <img :src="userAvatar.url" alt="User Avatar" class="avatar-image" />
+            </template>
+            <template v-else>
+              {{ username.charAt(0).toUpperCase() }}
+            </template>
+          </div>
           <div class="user-details">
             <span class="username">{{ username }}</span>
             <span class="user-role">{{ formatSubscriptionTier(subscriptionTier) }}</span>
@@ -77,6 +87,10 @@ export default {
     subscriptionTier: {
       type: String,
       default: 'basic'
+    },
+    userAvatar: {
+      type: Object,
+      default: null
     }
   },
   data() {
@@ -286,6 +300,14 @@ export default {
   font-weight: var(--font-weight-bold);
   font-size: 1.1rem;
   box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.user-avatar .avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .user-details {

@@ -29,12 +29,12 @@
       <div class="phase-actions" v-if="!readOnly">
         <button 
           @click="generatePots" 
-          :disabled="loading || pots.length > 0"
+          :disabled="loading"
           class="btn-primary"
         >
           <i v-if="loading" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-layer-group"></i>
-          {{ pots.length > 0 ? 'Pots Generated' : 'Generate Pots' }}
+          {{ pots.length > 0 ? 'Regenerate Pots' : 'Generate Pots' }}
         </button>
         <button 
           v-if="pots.length > 0"

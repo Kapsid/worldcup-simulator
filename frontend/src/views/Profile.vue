@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="user.subscriptionTier || 'basic'"
+      :user-avatar="user.avatar"
       @logout="handleLogout" 
     />
     
@@ -24,15 +25,20 @@
             </div>
             
             <div class="profile-info">
-              <div class="profile-avatar">
-                <i class="fas fa-user-circle"></i>
+              <div class="profile-avatar" @click="showAvatarModal">
+                <img v-if="user.avatar && user.avatar.type === 'upload'" :src="user.avatar.url" alt="Profile" class="avatar-image" />
+                <i v-else-if="user.avatar && user.avatar.type === 'predefined'" :class="user.avatar.icon" class="avatar-icon"></i>
+                <i v-else class="fas fa-user-circle avatar-icon"></i>
+                <div class="avatar-overlay">
+                  <i class="fas fa-camera"></i>
+                </div>
               </div>
               <div class="profile-details">
                 <h1>{{ user.name }}</h1>
                 <p class="username">@{{ user.username }}</p>
                 <div class="subscription-badge">
-                  <span :class="`tier-badge tier-${membershipStatus?.plan || 'free'}`">
-                    {{ membershipStatus?.limits?.name || 'Free' }}
+                  <span :class="`tier-badge tier-${user.subscriptionTier || 'basic'}`">
+                    {{ formatSubscriptionTier(user.subscriptionTier) }}
                   </span>
                 </div>
               </div>
@@ -304,6 +310,91 @@
         </div>
       </div>
     </main>
+    
+    <!-- Avatar Selection Modal -->
+    <div v-if="showingAvatarModal" class="modal-overlay" @click.self="closeAvatarModal">
+      <div class="modal glass-white avatar-modal">
+        <div class="modal-header">
+          <h2>Choose Your Avatar</h2>
+          <button @click="closeAvatarModal" class="close-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="modal-content">
+          <!-- Avatar Type Tabs -->
+          <div class="avatar-tabs">
+            <button 
+              @click="selectedAvatarType = 'predefined'" 
+              class="tab-btn"
+              :class="{ 'active': selectedAvatarType === 'predefined' }"
+            >
+              <i class="fas fa-icons"></i>
+              Predefined Avatars
+            </button>
+            <button 
+              @click="selectedAvatarType = 'upload'" 
+              class="tab-btn"
+              :class="{ 'active': selectedAvatarType === 'upload' }"
+            >
+              <i class="fas fa-upload"></i>
+              Upload Photo
+            </button>
+          </div>
+          
+          <!-- Predefined Avatars -->
+          <div v-if="selectedAvatarType === 'predefined'" class="predefined-avatars">
+            <div class="avatars-grid">
+              <div 
+                v-for="avatar in predefinedAvatars" 
+                :key="avatar.id"
+                class="avatar-option"
+                :class="{ 'selected': selectedAvatar?.id === avatar.id }"
+                @click="selectPredefinedAvatar(avatar)"
+              >
+                <i :class="avatar.icon" :style="{ color: avatar.color }"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Upload Photo -->
+          <div v-else class="upload-section">
+            <div class="upload-area">
+              <input 
+                type="file" 
+                id="avatar-upload" 
+                accept="image/*"
+                @change="handleFileUpload"
+                class="file-input"
+              />
+              <label for="avatar-upload" class="upload-label">
+                <div v-if="uploadPreview" class="upload-preview">
+                  <img :src="uploadPreview" alt="Preview" />
+                </div>
+                <div v-else class="upload-placeholder">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <p>Click to upload image</p>
+                  <span>Max size: 5MB</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button @click="closeAvatarModal" class="btn-secondary modal-btn">
+            Cancel
+          </button>
+          <button @click="updateAvatar" :disabled="updatingAvatar" class="btn-primary modal-btn">
+            <i v-if="updatingAvatar" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-save"></i>
+            {{ updatingAvatar ? 'Updating...' : 'Save Avatar' }}
+          </button>
+        </div>
+        
+        <p v-if="avatarError" class="error-message">{{ avatarError }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -344,7 +435,28 @@ export default {
       subscriptionError: '',
       profileSuccess: '',
       passwordSuccess: '',
-      subscriptionSuccess: ''
+      subscriptionSuccess: '',
+      showingAvatarModal: false,
+      selectedAvatarType: 'predefined',
+      selectedAvatar: null,
+      uploadedFile: null,
+      uploadPreview: null,
+      updatingAvatar: false,
+      avatarError: '',
+      predefinedAvatars: [
+        { id: 1, icon: 'fas fa-user-astronaut', color: '#0066CC' },
+        { id: 2, icon: 'fas fa-user-ninja', color: '#2E7D32' },
+        { id: 3, icon: 'fas fa-user-secret', color: '#6A1B9A' },
+        { id: 4, icon: 'fas fa-user-tie', color: '#424242' },
+        { id: 5, icon: 'fas fa-user-graduate', color: '#1976D2' },
+        { id: 6, icon: 'fas fa-user-md', color: '#D32F2F' },
+        { id: 7, icon: 'fas fa-user-injured', color: '#F57C00' },
+        { id: 8, icon: 'fas fa-football-ball', color: '#388E3C' },
+        { id: 9, icon: 'fas fa-trophy', color: '#FBC02D' },
+        { id: 10, icon: 'fas fa-medal', color: '#C0CA33' },
+        { id: 11, icon: 'fas fa-flag-checkered', color: '#5D4037' },
+        { id: 12, icon: 'fas fa-whistle', color: '#00ACC1' }
+      ]
     }
   },
   mounted() {
@@ -692,6 +804,111 @@ export default {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       this.$router.push('/')
+    },
+
+    showAvatarModal() {
+      this.showingAvatarModal = true
+      this.avatarError = ''
+      if (this.user.avatar) {
+        this.selectedAvatarType = this.user.avatar.type
+        if (this.user.avatar.type === 'predefined') {
+          this.selectedAvatar = this.predefinedAvatars.find(a => a.icon === this.user.avatar.icon)
+        }
+      }
+    },
+
+    closeAvatarModal() {
+      this.showingAvatarModal = false
+      this.uploadedFile = null
+      this.uploadPreview = null
+      this.avatarError = ''
+    },
+
+    selectPredefinedAvatar(avatar) {
+      this.selectedAvatar = avatar
+    },
+
+    handleFileUpload(event) {
+      const file = event.target.files[0]
+      if (!file) return
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.avatarError = 'File size must be less than 5MB'
+        return
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.avatarError = 'Please upload an image file'
+        return
+      }
+
+      this.uploadedFile = file
+      this.avatarError = ''
+
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        this.uploadPreview = e.target.result
+      }
+      reader.readAsDataURL(file)
+    },
+
+    async updateAvatar() {
+      this.updatingAvatar = true
+      this.avatarError = ''
+
+      try {
+        const token = localStorage.getItem('token')
+        let response
+
+        if (this.selectedAvatarType === 'predefined' && this.selectedAvatar) {
+          // Update with predefined avatar
+          response = await fetch(`${API_URL}/profile/avatar`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              type: 'predefined',
+              avatarId: this.selectedAvatar.id,
+              icon: this.selectedAvatar.icon,
+              color: this.selectedAvatar.color
+            })
+          })
+        } else if (this.selectedAvatarType === 'upload' && this.uploadedFile) {
+          // Upload custom image
+          const formData = new FormData()
+          formData.append('avatar', this.uploadedFile)
+
+          response = await fetch(`${API_URL}/profile/avatar/upload`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          })
+        } else {
+          this.avatarError = 'Please select an avatar'
+          return
+        }
+
+        const data = await response.json()
+
+        if (response.ok) {
+          this.user.avatar = data.avatar
+          this.closeAvatarModal()
+          this.profileSuccess = 'Avatar updated successfully'
+        } else {
+          this.avatarError = data.error || 'Failed to update avatar'
+        }
+      } catch (error) {
+        this.avatarError = 'Network error. Please try again.'
+      } finally {
+        this.updatingAvatar = false
+      }
     }
   }
 }
@@ -759,8 +976,48 @@ export default {
 }
 
 .profile-avatar {
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+}
+
+.profile-avatar .avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-avatar .avatar-icon {
   font-size: 5rem;
   color: var(--fifa-blue);
+}
+
+.avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--fifa-blue);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.profile-avatar:hover .avatar-overlay {
+  opacity: 1;
 }
 
 .profile-details h1 {
@@ -1178,6 +1435,225 @@ export default {
   border-color: rgba(108, 117, 125, 0.5);
 }
 
+/* Avatar Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modal {
+  width: 100%;
+  max-width: 600px;
+  border-radius: var(--radius-xl);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  margin-bottom: 24px;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--fifa-dark-blue);
+}
+
+.modal-content {
+  padding: 0 24px 24px 24px;
+}
+
+.avatar-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 20px;
+  background: transparent;
+  border: 2px solid rgba(0, 102, 204, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+  background: var(--fifa-blue);
+  color: white;
+  border-color: var(--fifa-blue);
+}
+
+.tab-btn:hover:not(.active) {
+  background: rgba(0, 102, 204, 0.1);
+  border-color: var(--fifa-blue);
+}
+
+.avatars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 16px;
+}
+
+.avatar-option {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 102, 204, 0.05);
+  border: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.avatar-option:hover {
+  background: rgba(0, 102, 204, 0.1);
+  transform: scale(1.1);
+}
+
+.avatar-option.selected {
+  border-color: var(--fifa-blue);
+  background: rgba(0, 102, 204, 0.2);
+}
+
+.avatar-option i {
+  font-size: 2.5rem;
+}
+
+.upload-section {
+  display: flex;
+  justify-content: center;
+}
+
+.upload-area {
+  width: 100%;
+  max-width: 400px;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  display: block;
+  cursor: pointer;
+}
+
+.upload-preview {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--fifa-blue);
+}
+
+.upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-placeholder {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  border: 3px dashed rgba(0, 102, 204, 0.3);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 102, 204, 0.05);
+  transition: all 0.3s ease;
+}
+
+.upload-placeholder:hover {
+  background: rgba(0, 102, 204, 0.1);
+  border-color: var(--fifa-blue);
+}
+
+.upload-placeholder i {
+  font-size: 2.5rem;
+  color: var(--fifa-blue);
+}
+
+.upload-placeholder p {
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.upload-placeholder span {
+  color: var(--gray);
+  font-size: 0.8rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 0;
+  padding: 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-btn {
+  flex: 1;
+  height: 48px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  padding: 12px 24px;
+}
+
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
@@ -1207,6 +1683,23 @@ export default {
   
   .tiers-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .modal {
+    max-width: 90%;
+  }
+  
+  .avatars-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  }
+  
+  .avatar-option {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .avatar-option i {
+    font-size: 2rem;
   }
 }
 </style>

@@ -397,10 +397,10 @@ class TeamManagementService {
         throw new Error('Tournament not found')
       }
 
-      // Check if tournament is already active (only allow draft)
-      if (tournament.status !== 'draft') {
-        throw new Error('Cannot modify teams in an active tournament')
-      }
+      // Allow adding qualified teams even if tournament is active (for auto-population)
+      // if (tournament.status !== 'draft') {
+      //   throw new Error('Cannot modify teams in an active tournament')
+      // }
 
       // Get qualification data
       const QualificationService = await import('./QualificationService.js')

@@ -32,22 +32,64 @@ class DrawService {
       const tournament = await Tournament.findOne({ _id: tournamentId, createdBy: userId })
       if (!tournament) throw new Error('Tournament not found')
 
-      if (tournament.teamCount !== 32) {
-        throw new Error('Tournament must have exactly 32 teams to generate pots')
-      }
+      // Allow pots generation regardless of team count or status
+      // if (tournament.teamCount !== 32) {
+      //   throw new Error('Tournament must have exactly 32 teams to generate pots')
+      // }
 
-      if (tournament.status !== 'active') {
-        throw new Error('Tournament must be active to generate pots')
-      }
+      // if (tournament.status !== 'active') {
+      //   throw new Error('Tournament must be active to generate pots')
+      // }
 
       await TournamentPot.deleteMany({ tournament: tournamentId })
 
-      const teams = await TournamentTeam.find({ tournament: tournamentId })
-
-      // Load world data if tournament belongs to a world
+      // Load world data if tournament belongs to a world (needed for auto-add logic)
       let world = null
       if (tournament.worldId) {
         world = await World.findById(tournament.worldId)
+      }
+
+      const teams = await TournamentTeam.find({ tournament: tournamentId })
+      console.log(`Found ${teams.length} teams in tournament ${tournamentId}`)
+      console.log('Tournament type:', tournament.type)
+      console.log('Tournament status:', tournament.status)
+      console.log('Tournament team count:', tournament.teamCount)
+
+      if (teams.length === 0) {
+        console.log('No teams found in TournamentTeam collection')
+        
+        // If this is a qualification tournament, try to automatically add qualified teams
+        if (tournament.type === 'qualification') {
+          console.log('Attempting to auto-add qualified teams...')
+          try {
+            const TeamManagementService = await import('./TeamManagementService.js')
+            const addedTeams = await TeamManagementService.default.addQualifiedTeamsToTournament(tournamentId, userId)
+            console.log(`Auto-added ${addedTeams.length} qualified teams`)
+            
+            // Re-fetch teams after adding them
+            const updatedTeams = await TournamentTeam.find({ tournament: tournamentId })
+            if (updatedTeams.length > 0) {
+              // Continue with pot generation using the newly added teams
+              return this.generatePotsWithTeams(tournamentId, updatedTeams, world)
+            }
+          } catch (error) {
+            console.error('Failed to auto-add qualified teams:', error.message)
+          }
+        }
+        
+        console.log('Creating empty pots for demonstration')
+        // Create empty pots if no teams exist
+        const emptyPots = []
+        for (let i = 1; i <= 4; i++) {
+          const pot = new TournamentPot({
+            tournament: tournamentId,
+            potNumber: i,
+            teams: []
+          })
+          await pot.save()
+          emptyPots.push(pot)
+        }
+        return emptyPots
       }
 
       const hostTeam = teams.find(team => team.isHost)
@@ -55,12 +97,20 @@ class DrawService {
       
       // Sort teams using world rankings if available, otherwise world rankings
       const teamsWithRanking = await Promise.all(
-        nonHostTeams.map(async (team) => ({
-          ...team.toObject(),
-          _worldRanking: await this.getTeamRanking(team, world)
-        }))
+        nonHostTeams.map(async (team) => {
+          const teamObj = team.toObject()
+          return {
+            ...teamObj,
+            _id: team._id, // Ensure _id is preserved
+            _worldRanking: await this.getTeamRanking(team, world)
+          }
+        })
       )
       teamsWithRanking.sort((a, b) => a._worldRanking - b._worldRanking)
+
+      console.log('Host team:', hostTeam ? hostTeam._id : 'UNDEFINED')
+      console.log('Teams with ranking count:', teamsWithRanking.length)
+      console.log('First few teams:', teamsWithRanking.slice(0, 3).map(t => t ? t._id : 'UNDEFINED'))
 
       const pots = []
 
@@ -78,10 +128,13 @@ class DrawService {
 
       const savedPots = []
       for (const pot of pots) {
+        console.log(`Creating pot ${pot.potNumber} with ${pot.teams.length} teams`)
+        console.log('Teams in pot:', pot.teams.map(team => team ? team._id : 'UNDEFINED'))
+        
         const tournamentPot = new TournamentPot({
           tournament: tournamentId,
           potNumber: pot.potNumber,
-          teams: pot.teams.map(team => team._id)
+          teams: pot.teams.filter(team => team && team._id).map(team => team._id)
         })
         await tournamentPot.save()
         savedPots.push(tournamentPot)
@@ -92,6 +145,51 @@ class DrawService {
       console.error('Error generating pots:', error)
       throw error
     }
+  }
+
+  async generatePotsWithTeams(tournamentId, teams, world) {
+    const hostTeam = teams.find(team => team.isHost)
+    const nonHostTeams = teams.filter(team => !team.isHost)
+    
+    // Sort teams using world rankings if available, otherwise world rankings
+    const teamsWithRanking = await Promise.all(
+      nonHostTeams.map(async (team) => {
+        const teamObj = team.toObject()
+        return {
+          ...teamObj,
+          _id: team._id, // Ensure _id is preserved
+          _worldRanking: await this.getTeamRanking(team, world)
+        }
+      })
+    )
+    teamsWithRanking.sort((a, b) => a._worldRanking - b._worldRanking)
+
+    const pots = []
+
+    const pot1Teams = [hostTeam, ...teamsWithRanking.slice(0, 7)].filter(Boolean)
+    pots.push({ potNumber: 1, teams: pot1Teams })
+
+    const pot2Teams = teamsWithRanking.slice(7, 15)
+    pots.push({ potNumber: 2, teams: pot2Teams })
+
+    const pot3Teams = teamsWithRanking.slice(15, 23)
+    pots.push({ potNumber: 3, teams: pot3Teams })
+
+    const pot4Teams = teamsWithRanking.slice(23, 31)
+    pots.push({ potNumber: 4, teams: pot4Teams })
+
+    const savedPots = []
+    for (const pot of pots) {
+      const tournamentPot = new TournamentPot({
+        tournament: tournamentId,
+        potNumber: pot.potNumber,
+        teams: pot.teams.filter(team => team && team._id).map(team => team._id)
+      })
+      await tournamentPot.save()
+      savedPots.push(tournamentPot)
+    }
+
+    return savedPots
   }
 
   async getPots(tournamentId, userId) {

@@ -188,6 +188,25 @@ class UserService {
       throw error
     }
   }
+
+  async updateAvatar(userId, avatarData) {
+    try {
+      const user = await User.findById(userId)
+      if (!user) {
+        throw new Error('User not found')
+      }
+
+      // If user had a previous uploaded avatar, we could delete the old file here
+      // For now, we'll just update the avatar data
+      user.avatar = avatarData
+      await user.save()
+
+      return user
+    } catch (error) {
+      console.error('Error updating avatar:', error)
+      throw error
+    }
+  }
 }
 
 export default new UserService()
