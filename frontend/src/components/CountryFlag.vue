@@ -5,6 +5,7 @@
     class="country-flag-img"
     :style="flagStyle"
     @error="handleError"
+    @click="$emit('click', $event)"
   />
 </template>
 
@@ -21,6 +22,7 @@ export default {
       default: '20'
     }
   },
+  emits: ['click'],
   data() {
     return {
       currentUrlIndex: 0,

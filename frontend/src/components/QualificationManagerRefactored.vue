@@ -477,7 +477,7 @@ export default {
     
     async loadConfederations() {
       try {
-        const response = await fetch('${API_URL}/confederations')
+        const response = await fetch(`${API_URL}/confederations`)
         if (response.ok) {
           this.confederations = await response.json()
         }

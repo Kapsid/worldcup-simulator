@@ -1906,11 +1906,30 @@ export default {
     text-align: center;
   }
   
+  /* Fix history items overflow - stack champion and host vertically on mobile */
+  .history-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .winner-section,
+  .host-section {
+    width: 100%;
+  }
+  
+  /* Make rankings table horizontally scrollable on mobile */
+  .rankings-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
   .rankings-header,
   .ranking-item {
     grid-template-columns: 50px 1fr 80px 80px;
     gap: 8px;
     padding: 12px 16px;
+    min-width: 300px; /* Ensure minimum width for scrolling */
   }
 }
 </style>

@@ -377,7 +377,12 @@
                 
                 <div class="qual-match-teams">
                   <div class="team home-team">
-                    <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                    <div class="team-info">
+                      <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                      <div class="team-position">
+                        {{ getQualifyingTeamPosition(match.homeTeam.teamId) || '?' }}
+                      </div>
+                    </div>
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                       class="team-name clickable-team"
@@ -414,7 +419,12 @@
                   </div>
                   
                   <div class="team away-team">
-                    <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                    <div class="team-info">
+                      <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                      <div class="team-position">
+                        {{ getQualifyingTeamPosition(match.awayTeam.teamId) || '?' }}
+                      </div>
+                    </div>
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                       class="team-name clickable-team"
@@ -651,7 +661,12 @@
                           
                           <div class="qual-match-teams">
                             <div class="team home-team">
-                              <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                              <div class="team-info">
+                                <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                                <div class="team-position">
+                                  {{ getQualifyingTeamPosition(match.homeTeam.teamId) || '?' }}
+                                </div>
+                              </div>
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                                 class="team-name clickable-team"
@@ -688,7 +703,12 @@
                             </div>
                             
                             <div class="team away-team">
-                              <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                              <div class="team-info">
+                                <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                                <div class="team-position">
+                                  {{ getQualifyingTeamPosition(match.awayTeam.teamId) || '?' }}
+                                </div>
+                              </div>
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                                 class="team-name clickable-team"
@@ -2213,6 +2233,79 @@ export default {
         }
       }
       return false
+    },
+
+    // Get team position in qualifying standings
+    getQualifyingTeamPosition(teamId) {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        return null
+      }
+      
+      // Use the same logic as getStandingsForTeam but just return position
+      for (const confederation of this.qualificationData.confederations) {
+        if (!confederation.groups) continue
+        
+        for (const group of confederation.groups) {
+          const teamInGroup = group.teams?.find(team => team.teamId === teamId)
+          if (teamInGroup) {
+            // Get sorted standings for this group (same logic as getStandingsForTeam)
+            const sortedStandings = [...group.teams].sort((a, b) => {
+              if (b.points !== a.points) return b.points - a.points
+              if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+              return b.goalsFor - a.goalsFor
+            })
+            
+            // Find position of this team in sorted standings
+            const position = sortedStandings.findIndex(team => team.teamId === teamId) + 1
+            return position
+          }
+        }
+      }
+      
+      return null
+    },
+    
+    // Fallback method to calculate position from match results
+    calculateTeamPositionFromMatches(teamId) {
+      if (!this.qualificationData || !this.qualificationData.confederations) return null
+      
+      // Find all matches for this team and calculate simple position
+      let teamMatches = []
+      let teamGroup = null
+      
+      for (const conf of this.qualificationData.confederations) {
+        if (conf.matches) {
+          const matches = conf.matches.filter(m => 
+            m.homeTeam?.teamId === teamId || m.awayTeam?.teamId === teamId
+          )
+          if (matches.length > 0) {
+            teamMatches = matches
+            teamGroup = matches[0].group || matches[0].groupId
+            break
+          }
+        }
+      }
+      
+      if (teamMatches.length === 0) return null
+      
+      // Calculate simple points
+      let points = 0
+      for (const match of teamMatches) {
+        if (match.played) {
+          const isHome = match.homeTeam?.teamId === teamId
+          const teamScore = isHome ? match.homeScore : match.awayScore
+          const opponentScore = isHome ? match.awayScore : match.homeScore
+          
+          if (teamScore > opponentScore) points += 3
+          else if (teamScore === opponentScore) points += 1
+        }
+      }
+      
+      // For now, return a simple position based on points (this is a rough estimate)
+      if (points >= 9) return 1
+      if (points >= 6) return 2
+      if (points >= 3) return 3
+      return 4
     },
 
     // Get confederations that have matches in the specified matchday
@@ -4540,8 +4633,32 @@ export default {
   flex: 1;
 }
 
+.qual-match-teams .team-info {
+  position: relative;
+  display: inline-block;
+}
+
 .qual-match-teams .team-flag {
   font-size: 1.5rem;
+}
+
+.qual-match-teams .team-position {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--fifa-blue);
+  color: var(--white);
+  font-size: 0.6rem;
+  font-weight: var(--font-weight-bold);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .qual-match-teams .team-name {
