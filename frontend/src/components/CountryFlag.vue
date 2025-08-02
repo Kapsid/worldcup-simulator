@@ -45,8 +45,8 @@ export default {
       
       // List of flag API URLs to try
       const urls = [
+        `https://flagcdn.com/w80/${isoCode}.png`,
         `https://flagcdn.com/${isoCode}.svg`,
-        `https://flagpedia.net/data/flags/icon/72x54/${isoCode}.png`,
         `https://hatscripts.github.io/circle-flags/flags/${isoCode}.svg`
       ]
       

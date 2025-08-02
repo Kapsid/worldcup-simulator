@@ -43,7 +43,7 @@
     </form>
     
     <div class="divider">
-      <span>New to the tournament?</span>
+      <span>Don't have an account?</span>
     </div>
     
     <button @click="$emit('switch-to-register')" class="btn-secondary register-btn">

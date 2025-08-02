@@ -2032,6 +2032,9 @@ export default {
     showTooltip(event, teamId) {
       if (!teamId) return
       
+      // Only show tooltip on desktop (screens wider than 768px)
+      if (window.innerWidth <= 768) return
+      
       // Get standings for the team's group
       const standings = this.getStandingsForTeam(teamId)
       if (!standings || standings.length === 0) return
@@ -4653,7 +4656,7 @@ export default {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  display: flex;
+  display: none; /* Hidden on desktop by default */
   align-items: center;
   justify-content: center;
   border: 2px solid var(--white);
@@ -4805,6 +4808,11 @@ export default {
   /* Hide team names on mobile, show only flags */
   .qualification-manager .qual-match-teams .team-name {
     display: none !important;
+  }
+
+  /* Show position indicators only on mobile */
+  .qualification-manager .qual-match-teams .team-position {
+    display: flex !important;
   }
 
   /* Override CountryFlag component size on mobile */

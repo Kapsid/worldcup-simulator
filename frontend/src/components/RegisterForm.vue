@@ -148,16 +148,12 @@ export default {
     async refreshCaptcha() {
       try {
         const { data } = await api.auth.getCaptcha()
-        
-        if (response.ok) {
-          this.captcha = data
-          this.formData.captchaAnswer = ''
-          this.errors.captcha = ''
-        } else {
-          this.error = 'Failed to load captcha'
-        }
+        this.captcha = data
+        this.formData.captchaAnswer = ''
+        this.errors.captcha = ''
       } catch (error) {
-        this.error = 'Network error. Please try again.'
+        console.error('Error loading captcha:', error)
+        this.error = 'Failed to load captcha. Please try again.'
       }
     },
 

@@ -95,6 +95,8 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
                   class="team-name clickable-team"
+                  @mouseenter="showTooltip($event, match.homeTeam._id, match.group._id)"
+                  @mouseleave="hideTooltip"
                 >
                   {{ match.homeTeam.countryName }}
                 </router-link>
@@ -144,6 +146,8 @@
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
                   class="team-name clickable-team"
+                  @mouseenter="showTooltip($event, match.awayTeam._id, match.group._id)"
+                  @mouseleave="hideTooltip"
                 >
                   {{ match.awayTeam.countryName }}
                 </router-link>
@@ -163,18 +167,30 @@
 
     <p v-if="error" class="error-message">{{ error }}</p>
     
+    <!-- Standings Tooltip - teleported to body -->
+    <Teleport to="body">
+      <StandingsTooltip
+        :visible="tooltip.visible"
+        :standings="tooltip.standings"
+        :highlighted-team-id="tooltip.teamId"
+        :rival-team-id="tooltip.rivalTeamId"
+        :position="tooltip.position"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script>
 
 import CountryFlag from './CountryFlag.vue'
+import StandingsTooltip from './StandingsTooltip.vue'
 import { API_URL } from '../config/api.js'
 
 export default {
   name: 'GroupMatches',
   components: {
-    CountryFlag
+    CountryFlag,
+    StandingsTooltip
   },
 
   props: {
@@ -193,7 +209,14 @@ export default {
       activeMatchday: 1,
       loading: false,
       error: '',
-      groupStandings: {}
+      groupStandings: {},
+      tooltip: {
+        visible: false,
+        teamId: null,
+        rivalTeamId: null,
+        position: { x: 0, y: 0 },
+        standings: []
+      }
     }
   },
   computed: {
@@ -380,6 +403,9 @@ export default {
             }
             this.groupStandings[groupId].push({
               teamId: standing.team._id,
+              name: standing.team.countryName,
+              country: standing.team.countryCode,
+              countryCode: standing.team.countryCode,
               position: this.groupStandings[groupId].length + 1,
               points: standing.points || 0,
               played: standing.played || 0
@@ -409,6 +435,52 @@ export default {
     isAdvancingPosition(position) {
       // In tournament groups, top 2 positions advance (green), others are blue
       return position <= 2
+    },
+
+    showTooltip(event, teamId, groupId) {
+      if (!teamId || !groupId) return
+      
+      // Only show tooltip on desktop (screens wider than 768px)
+      if (window.innerWidth <= 768) return
+      
+      // Get standings for the group
+      const standings = this.groupStandings[groupId] || []
+      if (standings.length === 0) {
+        console.log('No standings found for group:', groupId)
+        return
+      }
+      
+      // Find rival team in current match being displayed
+      let rivalTeamId = null
+      // Get matches for current matchday
+      const currentMatchdayMatches = this.getMatchesByMatchday(this.activeMatchday)
+      const currentMatch = currentMatchdayMatches.find(match => 
+        (match.homeTeam._id === teamId || match.awayTeam._id === teamId) &&
+        match.group._id === groupId
+      )
+      if (currentMatch) {
+        rivalTeamId = currentMatch.homeTeam._id === teamId 
+          ? currentMatch.awayTeam._id 
+          : currentMatch.homeTeam._id
+      }
+      
+      // Position tooltip near cursor
+      this.tooltip = {
+        visible: true,
+        teamId: teamId,
+        rivalTeamId: rivalTeamId,
+        position: {
+          x: event.clientX + 15,
+          y: event.clientY - 40
+        },
+        standings: standings
+      }
+    },
+    
+    hideTooltip() {
+      this.tooltip.visible = false
+      this.tooltip.teamId = null
+      this.tooltip.rivalTeamId = null
     }
 
   },
@@ -601,7 +673,7 @@ export default {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  display: flex;
+  display: none; /* Hidden by default on desktop */
   align-items: center;
   justify-content: center;
   border: 2px solid var(--white);
@@ -757,6 +829,11 @@ export default {
   /* Remove venue/place from group matches on mobile */
   .match-venue {
     display: none;
+  }
+
+  /* Show position indicators on mobile */
+  .team-position {
+    display: flex !important;
   }
 
   /* Make flags bigger in group matches on mobile */

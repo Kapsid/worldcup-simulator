@@ -190,22 +190,6 @@
         <h2>🏆 Tournament Results</h2>
         
         <div class="podium">
-          <div class="podium-position second">
-            <div class="position-number">2</div>
-            <div class="team-card">
-              <CountryFlag :country-code="finalResults.runnerUp?.countryCode || finalResults.runnerUp?.code" :size="32" />
-              <router-link 
-                v-if="finalResults.runnerUp"
-                :to="`/tournament/${tournament._id}/team/${finalResults.runnerUp._id}`"
-                class="team-name clickable-team"
-              >
-                {{ finalResults.runnerUp.countryName }}
-              </router-link>
-              <span v-else class="team-name">TBD</span>
-              <div class="medal">🥈</div>
-            </div>
-          </div>
-          
           <div class="podium-position first">
             <div class="position-number">1</div>
             <div class="team-card champion">
@@ -219,6 +203,22 @@
               </router-link>
               <span v-else class="team-name">TBD</span>
               <div class="trophy">🏆</div>
+            </div>
+          </div>
+          
+          <div class="podium-position second">
+            <div class="position-number">2</div>
+            <div class="team-card">
+              <CountryFlag :country-code="finalResults.runnerUp?.countryCode || finalResults.runnerUp?.code" :size="32" />
+              <router-link 
+                v-if="finalResults.runnerUp"
+                :to="`/tournament/${tournament._id}/team/${finalResults.runnerUp._id}`"
+                class="team-name clickable-team"
+              >
+                {{ finalResults.runnerUp.countryName }}
+              </router-link>
+              <span v-else class="team-name">TBD</span>
+              <div class="medal">🥈</div>
             </div>
           </div>
           
@@ -963,16 +963,16 @@ export default {
   gap: 16px;
 }
 
-.podium-position.first {
-  order: 2;
+.podium-position.second {
+  order: -1;
 }
 
-.podium-position.second {
-  order: 1;
+.podium-position.first {
+  order: 0;
 }
 
 .podium-position.third {
-  order: 3;
+  order: 1;
 }
 
 .position-number {
@@ -1066,12 +1066,91 @@ export default {
   }
 
   .match-teams {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .team {
+    flex-direction: row;
+    gap: 8px;
+    padding: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .team-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .team-flag {
+    font-size: 1.5rem;
+  }
+
+  .team-name {
+    font-size: 0.8rem;
+    text-align: left;
+  }
+
+  .team-score {
+    font-size: 0.9rem;
   }
 
   .vs-divider {
-    margin: 0;
+    margin: 0 8px;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .vs-text {
+    font-size: 0.7rem;
+  }
+
+  .match-card {
+    padding: 12px;
+  }
+
+  .match-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .match-stage {
+    font-size: 0.8rem;
+  }
+
+  .match-status,
+  .match-city {
+    font-size: 0.7rem;
+  }
+
+  .match-actions {
+    margin-top: 2px;
+    gap: 6px;
+  }
+
+  .btn-small {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .btn-small i {
+    font-size: 1rem;
+  }
+
+  /* Hide team names on very small screens if needed */
+  @media (max-width: 400px) {
+    .team-name {
+      display: none;
+    }
+    
+    .team {
+      justify-content: center;
+    }
   }
 
   .podium {
@@ -1081,6 +1160,10 @@ export default {
 
   .podium-position {
     order: unset !important;
+  }
+
+  .position-number {
+    display: none;
   }
 }
 

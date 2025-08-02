@@ -670,30 +670,84 @@ export default {
     margin-right: 0.3rem;
   }
   
-  /* Fix scorer box size and centering */
+  /* Fix scorer box size and centering - make full width and compact */
   .scorer-item {
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.75rem;
-    text-align: center;
-    padding: 1rem;
+    text-align: left;
+    padding: 0.75rem;
     max-width: none;
-    margin: 0 auto;
+    margin: 0;
+    width: 100%;
+  }
+  
+  .scorer-rank {
+    width: 2.5rem;
+  }
+  
+  .rank-badge {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.85rem;
+  }
+  
+  .scorer-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .player-name {
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .player-position {
+    font-size: 0.75rem;
+  }
+  
+  .player-country {
+    font-size: 0.8rem;
   }
   
   .scorer-stats {
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    gap: 0.75rem;
     align-items: center;
+    flex-shrink: 0;
+  }
+  
+  .primary-stat {
+    min-width: auto;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .primary-stat .stat-value {
+    font-size: 1.2rem;
+  }
+  
+  .primary-stat .stat-label {
+    font-size: 0.65rem;
   }
   
   .secondary-stats {
-    justify-content: center;
-    gap: 1rem;
+    display: none;
   }
   
   .scorers-list {
     max-width: 100%;
     padding: 0;
+    gap: 0.5rem;
+  }
+  
+  .stats-section {
+    padding: 0;
+  }
+  
+  .section-header {
+    padding: 0 0 1rem 0;
   }
   
   .upcoming-items {
