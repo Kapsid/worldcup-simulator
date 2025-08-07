@@ -67,7 +67,7 @@
             </div>
             
             <div class="candidates-grid">
-              <div v-for="candidate in candidates" :key="candidate.code" class="candidate-card glass-white">
+              <div v-for="candidate in candidates" :key="candidate.code" class="candidate-card glass-white" :class="{ 'voting-active': voting }">
                 <div class="candidate-flag"><CountryFlag :country-code="candidate.code" :size="32" /></div>
                 <div class="candidate-info">
                   <h4>{{ candidate.name }}</h4>
@@ -77,13 +77,18 @@
                     <span class="chance">Win Chance: {{ candidate.winChance }}%</span>
                   </div>
                 </div>
+                <div v-if="voting" class="voting-overlay">
+                  <div class="voting-spinner">
+                    <i class="fas fa-vote-yea"></i>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <button @click="simulateVoting" :disabled="voting" class="btn-primary vote-btn">
+            <button @click="simulateVoting" :disabled="voting || showEnvelopeReveal" class="btn-primary vote-btn">
               <i v-if="voting" class="fas fa-spinner fa-spin"></i>
-              <i v-else class="fas fa-vote-yea"></i>
-              {{ voting ? 'Voting in Progress...' : 'Simulate FIFA Vote' }}
+              <i v-else class="fas fa-envelope"></i>
+              {{ voting ? 'Opening the Envelope...' : 'Open FIFA Envelope' }}
             </button>
           </div>
 
@@ -400,6 +405,14 @@
         </div>
       </div>
     </main>
+
+    <!-- Envelope Reveal Animation -->
+    <EnvelopeReveal 
+      :show="showEnvelopeReveal"
+      :winner="selectedHost"
+      :year="world.beginningYear"
+      @complete="onEnvelopeComplete"
+    />
   </div>
 </template>
 
@@ -407,6 +420,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import CountryFlag from '../components/CountryFlag.vue'
+import EnvelopeReveal from '../components/EnvelopeReveal.vue'
 import { API_URL } from '../config/api.js'
 
 export default {
@@ -414,7 +428,8 @@ export default {
   components: {
     AppHeader,
     Breadcrumbs,
-    CountryFlag
+    CountryFlag,
+    EnvelopeReveal
   },
   data() {
     return {
@@ -432,6 +447,7 @@ export default {
       votingComplete: false,
       selectedHost: null,
       excludedConfederations: [],
+      showEnvelopeReveal: false,
       
       // Tournament Management
       activeTab: 'current',
@@ -858,8 +874,8 @@ export default {
       this.voting = true
       
       try {
-        // Simulate voting delay
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Simulate brief preparation
+        await new Promise(resolve => setTimeout(resolve, 1000))
         
         // Select winner based on win chances
         const totalChance = this.candidates.reduce((sum, c) => sum + c.winChance, 0)
@@ -879,12 +895,21 @@ export default {
         winner.voteShare = Math.max(30, Math.min(70, winner.voteShare))
         
         this.selectedHost = winner
-        this.votingComplete = true
+        
+        // Show envelope animation instead of immediately showing results
+        this.showEnvelopeReveal = true
+        
       } catch (error) {
         console.error('Error simulating voting:', error)
-      } finally {
         this.voting = false
       }
+    },
+    
+    onEnvelopeComplete() {
+      // Called when envelope animation completes
+      this.showEnvelopeReveal = false
+      this.voting = false
+      this.votingComplete = true
     },
     
     async proceedToTournament() {
@@ -1298,10 +1323,57 @@ export default {
   border-radius: var(--radius-lg);
   text-align: center;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.candidate-card:hover {
+.candidate-card:hover:not(.voting-active) {
   transform: translateY(-2px);
+}
+
+.candidate-card.voting-active {
+  animation: votingPulse 2s ease-in-out infinite;
+}
+
+@keyframes votingPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.voting-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 215, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+}
+
+.voting-spinner {
+  background: rgba(255, 215, 0, 0.9);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: votingSpin 1.5s ease-in-out infinite;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.voting-spinner i {
+  color: #1a1a2e;
+  font-size: 18px;
+}
+
+@keyframes votingSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 .candidate-flag {
@@ -1337,6 +1409,41 @@ export default {
   margin-top: 2rem;
   padding: 16px 32px;
   font-size: 1.1rem;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border: none;
+  color: #1a1a2e;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.vote-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+}
+
+.vote-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.vote-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+
+.vote-btn:hover::before {
+  left: 100%;
 }
 
 .voting-results {

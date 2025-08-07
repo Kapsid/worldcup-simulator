@@ -553,6 +553,7 @@ router.get('/:tournamentId/debug-stats', authenticateToken, async (req, res) => 
   }
 })
 
+
 // Get Clean Sheets for tournament
 router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) => {
   try {
@@ -616,6 +617,222 @@ router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) =>
   } catch (error) {
     console.error('Error getting clean sheets:', error)
     res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Get Tournament Surprises and Disappointments
+router.get('/:tournamentId/surprises', authenticateToken, async (req, res) => {
+  console.log('Surprises endpoint hit for tournament:', req.params.tournamentId)
+  try {
+    const { tournamentId } = req.params
+    
+    // Import models
+    const Tournament = (await import('../models/Tournament.js')).default
+    const TournamentTeam = (await import('../models/TournamentTeam.js')).default
+    const Standing = (await import('../models/Standing.js')).default
+    const KnockoutMatch = (await import('../models/KnockoutMatch.js')).default
+    const CountryTournamentHistory = (await import('../models/CountryTournamentHistory.js')).default
+    
+    // Get tournament
+    const tournament = await Tournament.findById(tournamentId)
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' })
+    }
+    
+    // Get all teams in tournament with their rankings
+    const teams = await TournamentTeam.find({ tournament: tournamentId })
+      .sort({ worldRanking: 1 })
+    
+    if (teams.length === 0) {
+      return res.json({
+        surprises: [],
+        disappointments: [],
+        message: 'No teams in tournament yet'
+      })
+    }
+    
+    // Get tournament results if available
+    const standings = await Standing.find({ tournament: tournamentId })
+    const knockoutMatches = await KnockoutMatch.find({ 
+      tournament: tournamentId,
+      status: 'completed'
+    })
+    
+    // Analyze surprises and disappointments
+    const surprises = []
+    const disappointments = []
+    
+    // Helper function to determine team's actual achievement
+    const getTeamAchievement = async (teamCode) => {
+      // Check if winner
+      if (tournament.winner && tournament.winner.code === teamCode) {
+        return { level: 'winner', stage: 'Winner', points: 100 }
+      }
+      
+      // Check if runner-up
+      if (tournament.runnerUp && tournament.runnerUp.code === teamCode) {
+        return { level: 'final', stage: 'Runner-up', points: 90 }
+      }
+      
+      // Check knockout progress - find the furthest stage reached
+      let furthestStage = null
+      const stageOrder = ['round16', 'quarterfinal', 'semifinal', 'final']
+      const stagePoints = { 'round16': 30, 'quarterfinal': 50, 'semifinal': 70, 'final': 90 }
+      const stageNames = { 
+        'round16': 'Round of 16', 
+        'quarterfinal': 'Quarter-finals', 
+        'semifinal': 'Semi-finals', 
+        'final': 'Final'
+      }
+      
+      for (const stage of stageOrder) {
+        const stageMatches = knockoutMatches.filter(m => m.round === stage)
+        const teamMatch = stageMatches.find(match => 
+          match.homeTeam?.code === teamCode || match.awayTeam?.code === teamCode
+        )
+        
+        if (teamMatch) {
+          // Team participated in this stage
+          furthestStage = stage
+          
+          // Check if they won this match to advance further
+          const wonMatch = (teamMatch.homeTeam?.code === teamCode && teamMatch.homeScore > teamMatch.awayScore) ||
+                          (teamMatch.awayTeam?.code === teamCode && teamMatch.awayScore > teamMatch.homeScore)
+          
+          // If they lost, this is their furthest stage (where they were eliminated)
+          if (!wonMatch) {
+            break
+          }
+        } else {
+          // Team didn't reach this stage, so previous stage was their furthest
+          break
+        }
+      }
+      
+      if (furthestStage) {
+        return { 
+          level: furthestStage, 
+          stage: stageNames[furthestStage], 
+          points: stagePoints[furthestStage] 
+        }
+      }
+      
+      // Check group stage
+      const teamStanding = standings.find(s => s.teamCode === teamCode)
+      if (teamStanding) {
+        if (teamStanding.position <= 2) {
+          return { level: 'qualified', stage: 'Qualified from group', points: 20 }
+        }
+        return { level: 'group', stage: 'Group stage', points: 10 }
+      }
+      
+      return { level: 'none', stage: 'Did not qualify', points: 0 }
+    }
+    
+    // Calculate expected performance based on ranking
+    const getExpectedPerformance = (ranking) => {
+      if (ranking <= 4) return { level: 'semifinal', minPoints: 70 }
+      if (ranking <= 8) return { level: 'quarterfinal', minPoints: 50 }
+      if (ranking <= 16) return { level: 'round16', minPoints: 30 }
+      if (ranking <= 24) return { level: 'qualified', minPoints: 20 }
+      return { level: 'group', minPoints: 10 }
+    }
+    
+    // Analyze each team
+    for (const team of teams) {
+      const achievement = await getTeamAchievement(team.countryCode)
+      const expected = getExpectedPerformance(team.worldRanking)
+      
+      // Calculate performance difference
+      const performanceDiff = achievement.points - expected.minPoints
+      
+      // Determine if surprise or disappointment
+      if (performanceDiff >= 40) {
+        // Big surprise
+        surprises.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: Math.min(100, 50 + performanceDiff),
+          description: team.worldRanking > 20 && achievement.level === 'winner' 
+            ? 'Fairytale victory!' 
+            : team.worldRanking > 16 && ['final', 'semifinal'].includes(achievement.level)
+            ? 'Incredible run!'
+            : 'Major overachievement!'
+        })
+      } else if (performanceDiff >= 20) {
+        // Moderate surprise
+        surprises.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: 30 + performanceDiff,
+          description: 'Exceeded expectations'
+        })
+      } else if (performanceDiff <= -40) {
+        // Major disappointment
+        disappointments.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: Math.min(100, 50 + Math.abs(performanceDiff)),
+          description: team.worldRanking <= 5 && achievement.level === 'group'
+            ? 'Shocking early exit!'
+            : team.worldRanking <= 8 && achievement.level === 'group'
+            ? 'Major upset!'
+            : 'Disappointing campaign'
+        })
+      } else if (performanceDiff <= -20) {
+        // Moderate disappointment
+        disappointments.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: 30 + Math.abs(performanceDiff),
+          description: 'Below expectations'
+        })
+      }
+    }
+    
+    // Sort by impact score
+    surprises.sort((a, b) => b.impactScore - a.impactScore)
+    disappointments.sort((a, b) => b.impactScore - a.impactScore)
+    
+    // Limit to top results
+    const topSurprises = surprises.slice(0, 5)
+    const topDisappointments = disappointments.slice(0, 5)
+    
+    res.json({
+      tournamentId,
+      surprises: topSurprises,
+      disappointments: topDisappointments,
+      totalTeams: teams.length,
+      tournamentStatus: tournament.status
+    })
+    
+  } catch (error) {
+    console.error('Error fetching surprises:', error)
+    res.status(500).json({ error: 'Failed to fetch tournament surprises' })
   }
 })
 

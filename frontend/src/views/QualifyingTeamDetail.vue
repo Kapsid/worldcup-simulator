@@ -88,6 +88,14 @@
               <i class="fas fa-history"></i>
               Tournament History
             </button>
+            <button 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'about' }"
+              @click="activeTab = 'about'"
+            >
+              <i class="fas fa-map-marked-alt"></i>
+              About Country
+            </button>
           </div>
           
           <!-- Tab Content -->
@@ -266,6 +274,46 @@
                 </div>
               </div>
             </div>
+            
+            <!-- About Tab -->
+            <div v-if="activeTab === 'about'" class="about-tab">
+              <div class="content-card glass-white">
+                <div class="card-header">
+                  <h3>Discover {{ countryPlaces.capital ? countryPlaces.capital + ', ' : '' }}{{ team.name }}</h3>
+                  <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <div class="card-content">
+                  <div class="country-intro">
+                    <p class="intro-text">
+                      Explore the beautiful landmarks and attractions that make {{ team.name }} unique. 
+                      From historic sites to natural wonders, discover what this amazing country has to offer.
+                    </p>
+                  </div>
+                  
+                  <div class="places-grid">
+                    <div 
+                      v-for="(place, index) in countryPlaces.places" 
+                      :key="index"
+                      class="place-card"
+                    >
+                      <div class="place-icon">{{ place.image }}</div>
+                      <div class="place-info">
+                        <h4 class="place-name">{{ place.name }}</h4>
+                        <span class="place-type">{{ place.type }}</span>
+                        <p class="place-description">{{ place.description }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-if="countryPlaces.capital" class="capital-info">
+                    <div class="capital-badge">
+                      <i class="fas fa-star"></i>
+                      Capital: {{ countryPlaces.capital }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -278,6 +326,7 @@ import AppHeader from '../components/AppHeader.vue'
 import CountryFlag from '../components/CountryFlag.vue'
 import TeamRoster from '../components/TeamRoster.vue'
 import { API_URL } from '../config/api.js'
+import { getCountryPlaces } from '../data/countryPlaces.js'
 
 export default {
   name: 'QualifyingTeamDetail',
@@ -320,6 +369,21 @@ export default {
         c.name === this.team.name ||
         c.name === this.team.country
       )
+    },
+
+    countryPlaces() {
+      if (!this.team) return { capital: '', places: [] }
+      
+      // Extract country code from teamId (format: "confederationId_countryCode")
+      let countryCode = null
+      if (this.team.teamId && this.team.teamId.includes('_')) {
+        countryCode = this.team.teamId.split('_')[1]
+      }
+      
+      // Fallback to other possible country code sources
+      countryCode = countryCode || this.team.country || this.team.countryCode || this.team.code
+      
+      return getCountryPlaces(countryCode)
     },
 
     rosterTeamData() {
@@ -1230,5 +1294,153 @@ export default {
   border-radius: 0;
   border: none;
   background: transparent;
+}
+
+/* About Tab Styles */
+.about-tab .country-intro {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.intro-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--fifa-dark-blue);
+  opacity: 0.8;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.places-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.place-card {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid rgba(0, 102, 204, 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.place-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 102, 204, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.place-icon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.1), rgba(0, 102, 204, 0.05));
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(0, 102, 204, 0.1);
+}
+
+.place-info {
+  flex: 1;
+}
+
+.place-name {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  margin: 0 0 0.5rem 0;
+}
+
+.place-type {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-dark-blue));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.place-description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--gray);
+  margin: 0;
+}
+
+.capital-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.capital-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  color: var(--fifa-dark-blue);
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  animation: capitalGlow 3s ease-in-out infinite alternate;
+}
+
+.capital-badge i {
+  font-size: 1.1rem;
+}
+
+@keyframes capitalGlow {
+  from {
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+  }
+}
+
+@media (max-width: 768px) {
+  .places-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .place-card {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .place-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+    align-self: center;
+  }
+  
+  .place-name {
+    font-size: 1.1rem;
+  }
+  
+  .intro-text {
+    font-size: 0.9rem;
+  }
+  
+  .capital-badge {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
 }
 </style>

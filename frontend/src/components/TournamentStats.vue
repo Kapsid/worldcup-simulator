@@ -41,6 +41,13 @@
           <i class="fas fa-star"></i>
           All Stars XI
         </button>
+        <button 
+          @click="activeTab = 'surprises'"
+          :class="['tab-button', { active: activeTab === 'surprises' }]"
+        >
+          <i class="fas fa-surprise"></i>
+          Surprises
+        </button>
       </div>
       
       <!-- Top Scorers Section -->
@@ -269,6 +276,152 @@
         <AllStarsXI :tournament-id="tournament._id" />
       </div>
       
+      <!-- Surprises & Disappointments Section -->
+      <div v-if="activeTab === 'surprises'" class="tab-content">
+        <div class="stats-section">
+          <div class="section-header">
+            <h4>
+              <i class="fas fa-surprise"></i>
+              Tournament Surprises & Disappointments
+            </h4>
+            <span class="section-meta" v-if="surprises.length + disappointments.length > 0">
+              {{ surprises.length + disappointments.length }} teams analyzed
+            </span>
+          </div>
+          
+          <div v-if="loading" class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Analyzing tournament results...</span>
+          </div>
+          
+          <div v-else-if="surprises.length === 0 && disappointments.length === 0" class="no-data">
+            <i class="fas fa-chart-line"></i>
+            <p v-if="tournament.status !== 'completed'">Analysis available after matches</p>
+            <p v-else>No major surprises or disappointments detected</p>
+            <small v-if="tournament.status !== 'completed'">
+              Surprises and disappointments will be calculated based on world rankings vs actual performance
+            </small>
+            <small v-else>
+              All teams performed roughly as expected based on their world rankings
+            </small>
+          </div>
+          
+          <div v-else class="surprises-container">
+            <!-- Surprises Section -->
+            <div v-if="surprises.length > 0" class="surprise-category">
+              <h5 class="category-title surprise-title">
+                <i class="fas fa-arrow-trend-up"></i>
+                Biggest Surprises
+                <span class="category-count">{{ surprises.length }}</span>
+              </h5>
+              <div class="surprise-list">
+                <div 
+                  v-for="surprise in surprises" 
+                  :key="'surprise-' + surprise.team.code"
+                  class="surprise-item surprise-positive"
+                >
+                  <div class="surprise-impact">
+                    <div class="impact-circle surprise-circle">
+                      <span class="impact-score">{{ Math.round(surprise.impactScore) }}</span>
+                    </div>
+                    <div class="impact-bar">
+                      <div 
+                        class="impact-fill surprise-fill" 
+                        :style="{ width: surprise.impactScore + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div class="surprise-info">
+                    <div class="team-header">
+                      <div class="team-identity">
+                        <CountryFlag :country-code="surprise.team.code" :size="32" />
+                        <div class="team-details">
+                          <div class="team-name">{{ surprise.team.name }}</div>
+                          <div class="team-ranking">World Ranking #{{ surprise.team.ranking }}</div>
+                        </div>
+                      </div>
+                      <div class="surprise-badge positive">
+                        <i class="fas fa-arrow-up"></i>
+                        {{ surprise.description }}
+                      </div>
+                    </div>
+                    
+                    <div class="performance-comparison">
+                      <div class="performance-item expected">
+                        <span class="performance-label">Expected</span>
+                        <span class="performance-value">{{ formatExpectedLevel(surprise.expectedLevel) }}</span>
+                      </div>
+                      <i class="fas fa-arrow-right comparison-arrow"></i>
+                      <div class="performance-item actual surprise">
+                        <span class="performance-label">Achieved</span>
+                        <span class="performance-value">{{ surprise.achievement }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Disappointments Section -->
+            <div v-if="disappointments.length > 0" class="surprise-category">
+              <h5 class="category-title disappointment-title">
+                <i class="fas fa-arrow-trend-down"></i>
+                Biggest Disappointments
+                <span class="category-count">{{ disappointments.length }}</span>
+              </h5>
+              <div class="surprise-list">
+                <div 
+                  v-for="disappointment in disappointments" 
+                  :key="'disappointment-' + disappointment.team.code"
+                  class="surprise-item surprise-negative"
+                >
+                  <div class="surprise-impact">
+                    <div class="impact-circle disappointment-circle">
+                      <span class="impact-score">{{ Math.round(disappointment.impactScore) }}</span>
+                    </div>
+                    <div class="impact-bar">
+                      <div 
+                        class="impact-fill disappointment-fill" 
+                        :style="{ width: disappointment.impactScore + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div class="surprise-info">
+                    <div class="team-header">
+                      <div class="team-identity">
+                        <CountryFlag :country-code="disappointment.team.code" :size="32" />
+                        <div class="team-details">
+                          <div class="team-name">{{ disappointment.team.name }}</div>
+                          <div class="team-ranking">World Ranking #{{ disappointment.team.ranking }}</div>
+                        </div>
+                      </div>
+                      <div class="surprise-badge negative">
+                        <i class="fas fa-arrow-down"></i>
+                        {{ disappointment.description }}
+                      </div>
+                    </div>
+                    
+                    <div class="performance-comparison">
+                      <div class="performance-item expected">
+                        <span class="performance-label">Expected</span>
+                        <span class="performance-value">{{ formatExpectedLevel(disappointment.expectedLevel) }}</span>
+                      </div>
+                      <i class="fas fa-arrow-right comparison-arrow"></i>
+                      <div class="performance-item actual disappointment">
+                        <span class="performance-label">Achieved</span>
+                        <span class="performance-value">{{ disappointment.achievement }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- Additional Stats Sections (Future Enhancement) -->
       <div class="upcoming-stats">
         <div class="upcoming-section">
@@ -317,6 +470,8 @@ export default {
     return {
       topScorers: [],
       cleanSheets: [],
+      surprises: [],
+      disappointments: [],
       loading: false,
       error: null,
       activeTab: 'scorers'
@@ -325,12 +480,14 @@ export default {
   async mounted() {
     await this.loadTopScorers()
     await this.loadCleanSheets()
+    await this.loadSurprises()
   },
   watch: {
     tournament: {
       handler() {
         this.loadTopScorers()
         this.loadCleanSheets()
+        this.loadSurprises()
       },
       deep: true
     }
@@ -386,6 +543,46 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    
+    async loadSurprises() {
+      if (!this.tournament?._id) return
+      
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await fetch(`/api/tournaments/${this.tournament._id}/surprises`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          this.surprises = data.surprises || []
+          this.disappointments = data.disappointments || []
+        } else {
+          const errorData = await response.json()
+          this.error = errorData.error || 'Failed to load tournament analysis'
+        }
+      } catch (error) {
+        console.error('Error loading surprises:', error)
+        this.error = 'Network error. Please try again.'
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    formatExpectedLevel(level) {
+      const levelMap = {
+        'semifinal': 'Semi-finals',
+        'quarterfinal': 'Quarter-finals', 
+        'round16': 'Round of 16',
+        'qualified': 'Group Stage',
+        'group': 'Group Stage'
+      }
+      return levelMap[level] || level
     }
   }
 }
@@ -1069,6 +1266,325 @@ export default {
   
   .achievement-note {
     font-size: 0.75rem;
+  }
+}
+
+/* Surprises & Disappointments Styles */
+.surprises-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.surprise-category {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid rgba(0, 102, 204, 0.1);
+}
+
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 1.5rem 0;
+  color: var(--fifa-dark-blue);
+}
+
+.category-title i {
+  font-size: 1.2rem;
+}
+
+.surprise-title i {
+  color: #28a745;
+}
+
+.disappointment-title i {
+  color: #dc3545;
+}
+
+.category-count {
+  background: rgba(0, 102, 204, 0.1);
+  color: var(--fifa-blue);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-medium);
+  margin-left: auto;
+}
+
+.surprise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.surprise-item {
+  display: flex;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 102, 204, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.surprise-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 102, 204, 0.15);
+}
+
+.surprise-item.surprise-positive {
+  border-left: 4px solid #28a745;
+}
+
+.surprise-item.surprise-negative {
+  border-left: 4px solid #dc3545;
+}
+
+.surprise-impact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 102, 204, 0.05);
+  min-width: 120px;
+  gap: 0.5rem;
+}
+
+.impact-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.9rem;
+  border: 3px solid;
+}
+
+.surprise-circle {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border-color: #28a745;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.disappointment-circle {
+  background: linear-gradient(135deg, #dc3545, #e74c3c);
+  color: white;
+  border-color: #dc3545;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.impact-score {
+  font-size: 0.85rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.impact-bar {
+  width: 80px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.impact-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+.surprise-fill {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.disappointment-fill {
+  background: linear-gradient(90deg, #dc3545, #e74c3c);
+}
+
+.surprise-info {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.team-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.team-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.team-name {
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+}
+
+.team-ranking {
+  font-size: 0.85rem;
+  color: var(--gray);
+  font-weight: var(--font-weight-medium);
+}
+
+.surprise-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.surprise-badge.positive {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.surprise-badge.negative {
+  background: linear-gradient(135deg, #dc3545, #e74c3c);
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.surprise-badge i {
+  font-size: 0.9rem;
+}
+
+.performance-comparison {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(0, 102, 204, 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 102, 204, 0.1);
+}
+
+.performance-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  min-width: 120px;
+}
+
+.performance-item.expected {
+  background: rgba(108, 117, 125, 0.1);
+}
+
+.performance-item.actual.surprise {
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.performance-item.actual.disappointment {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.performance-label {
+  font-size: 0.75rem;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.performance-value {
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--fifa-dark-blue);
+}
+
+.comparison-arrow {
+  color: var(--fifa-blue);
+  font-size: 1.2rem;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .surprise-item {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .surprise-impact {
+    flex-direction: row;
+    min-width: auto;
+    padding: 0.75rem 1rem;
+    justify-content: center;
+    background: rgba(0, 102, 204, 0.08);
+  }
+  
+  .impact-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 0.8rem;
+  }
+  
+  .impact-bar {
+    width: 60px;
+    height: 4px;
+  }
+  
+  .team-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .surprise-badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    align-self: flex-start;
+  }
+  
+  .performance-comparison {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .performance-item {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .comparison-arrow {
+    transform: rotate(90deg);
+    font-size: 1rem;
+  }
+  
+  .surprises-container {
+    gap: 1.5rem;
   }
 }
 </style>
