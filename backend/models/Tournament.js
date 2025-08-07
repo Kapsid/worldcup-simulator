@@ -190,6 +190,20 @@ const tournamentSchema = new mongoose.Schema({
     flag: String
   },
   finalScore: String,
+  mvp: {
+    playerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Player'
+    },
+    playerName: String,
+    teamId: String,
+    nationality: String,
+    position: String,
+    goals: Number,
+    assists: Number,
+    averageRating: Number,
+    matchesPlayed: Number
+  },
   completedAt: {
     type: Date,
     default: null

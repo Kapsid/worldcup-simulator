@@ -354,17 +354,11 @@ router.get('/:id/top-scorers', authenticateToken, async (req, res) => {
     // Import PlayerStats model
     const PlayerStats = (await import('../models/PlayerStats.js')).default
     
-    // Build query for tournament stats
+    // Build query for tournament stats - only current tournament
     const query = { 
+      tournamentId: tournament._id,
       competitionType: 'tournament',
       goals: { $gt: 0 } // Only include players with goals
-    }
-    
-    // Add tournament or world context
-    if (tournament.worldId) {
-      query.worldId = tournament.worldId
-    } else {
-      query.tournamentId = tournament._id
     }
 
     // Get top scorers with player details
@@ -397,6 +391,78 @@ router.get('/:id/top-scorers', authenticateToken, async (req, res) => {
     })
   } catch (error) {
     console.error('Error getting tournament top scorers:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+
+// Fix MVP data endpoint - recalculate MVP for completed tournaments
+router.post('/:id/fix-mvp', authenticateToken, async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id)
+    
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' })
+    }
+    
+    if (tournament.status !== 'completed') {
+      return res.status(400).json({ error: 'Tournament must be completed to fix MVP' })
+    }
+
+    // Import KnockoutService and recalculate MVP
+    const KnockoutService = (await import('../services/KnockoutService.js')).default
+    const mvpPlayer = await KnockoutService.calculateMVP(req.params.id)
+    
+    if (mvpPlayer && mvpPlayer.player && mvpPlayer.player.displayName) {
+      tournament.mvp = {
+        playerId: mvpPlayer.player._id,
+        playerName: mvpPlayer.player.displayName,
+        teamId: mvpPlayer.player.teamId,
+        nationality: mvpPlayer.player.nationality,
+        position: mvpPlayer.player.position || mvpPlayer.player.detailedPosition,
+        goals: mvpPlayer.goals || 0,
+        assists: mvpPlayer.assists || 0,
+        averageRating: mvpPlayer.averageRating || 0,
+        matchesPlayed: mvpPlayer.matchesPlayed || 0
+      }
+      
+      await tournament.save()
+      
+      console.log('🏆 MVP recalculated and fixed:', tournament.mvp)
+      
+      res.json({
+        message: 'MVP recalculated successfully',
+        mvp: tournament.mvp
+      })
+    } else {
+      res.status(400).json({ error: 'Could not calculate MVP - no valid player data found' })
+    }
+    
+  } catch (error) {
+    console.error('Error fixing MVP:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// List tournaments with MVP status
+router.get('/list-mvp-status', authenticateToken, async (req, res) => {
+  try {
+    const tournaments = await Tournament.find({ createdBy: req.user.userId })
+      .select('name status mvp winner runnerUp')
+      .lean()
+    
+    const tournamentsWithMVPStatus = tournaments.map(t => ({
+      _id: t._id,
+      name: t.name,
+      status: t.status,
+      hasWinner: !!t.winner,
+      hasMVP: !!t.mvp,
+      mvpComplete: !!(t.mvp && t.mvp.playerName)
+    }))
+    
+    res.json(tournamentsWithMVPStatus)
+  } catch (error) {
+    console.error('Error listing MVP status:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
@@ -505,17 +571,12 @@ router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Tournament not found' })
     }
     
-    // Build query based on whether tournament has worldId
+    // Build query for current tournament only
     const query = {
+      tournamentId: tournamentId,
       competitionType: { $in: ['tournament', 'world_cup'] },
       matchesPlayed: { $gte: 1 }, // At least 1 match
       cleanSheets: { $gt: 0 } // Only players with clean sheets
-    }
-    
-    if (tournament.worldId) {
-      query.worldId = tournament.worldId
-    } else {
-      query.tournamentId = tournamentId
     }
     
     console.log('Clean Sheets Query:', query)
@@ -574,17 +635,12 @@ router.get('/:tournamentId/all-stars-xi', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Tournament not found' })
     }
     
-    // Build query based on whether tournament has worldId
+    // Build query for current tournament only
     const query = {
+      tournamentId: tournamentId,
       competitionType: { $in: ['tournament', 'world_cup'] },
       matchesPlayed: { $gte: 1 }, // At least 1 match
       averageRating: { $gt: 0 }
-    }
-    
-    if (tournament.worldId) {
-      query.worldId = tournament.worldId
-    } else {
-      query.tournamentId = tournamentId
     }
     
     console.log('All Stars XI Query:', query)

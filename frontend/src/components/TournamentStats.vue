@@ -28,6 +28,13 @@
           Clean Sheets
         </button>
         <button 
+          @click="activeTab = 'mvp'"
+          :class="['tab-button', { active: activeTab === 'mvp' }]"
+        >
+          <i class="fas fa-trophy"></i>
+          MVP
+        </button>
+        <button 
           @click="activeTab = 'allstars'"
           :class="['tab-button', { active: activeTab === 'allstars' }]"
         >
@@ -58,7 +65,10 @@
             v-for="scorer in topScorers" 
             :key="scorer.player._id"
             class="scorer-item"
-            :class="{ 'golden-boot': scorer.rank === 1 }"
+            :class="{ 
+              'golden-boot': scorer.rank === 1, 
+              'mvp-player': tournament.mvp && scorer.player._id === tournament.mvp.playerId 
+            }"
           >
             <div class="scorer-rank">
               <span v-if="scorer.rank === 1" class="rank-badge golden">
@@ -73,6 +83,10 @@
             <div class="scorer-info">
               <div class="player-name">
                 {{ scorer.player.displayName }}
+                <span v-if="tournament.mvp && scorer.player._id === tournament.mvp.playerId" class="mvp-badge">
+                  <i class="fas fa-trophy"></i>
+                  MVP
+                </span>
                 <span class="player-position">{{ scorer.player.detailedPosition }}</span>
               </div>
               <div class="player-country">
@@ -168,6 +182,88 @@
       </div>
       </div>
       
+      <!-- MVP Section -->
+      <div v-if="activeTab === 'mvp'" class="tab-content">
+        <div class="stats-section">
+          <div class="section-header">
+            <h4>
+              <i class="fas fa-trophy"></i>
+              Tournament MVP
+            </h4>
+            <span class="section-meta" v-if="tournament.status === 'completed'">Tournament Complete</span>
+            <span class="section-meta" v-else>Determined at tournament end</span>
+          </div>
+          
+          <div v-if="tournament.status !== 'completed'" class="no-data">
+            <i class="fas fa-trophy"></i>
+            <p>MVP will be announced</p>
+            <small>The Most Valuable Player will be determined when the tournament is completed</small>
+          </div>
+          
+          <div v-else-if="!tournament.mvp" class="no-data">
+            <i class="fas fa-trophy"></i>
+            <p>No MVP data available</p>
+            <small>MVP data may still be processing</small>
+          </div>
+          
+          <div v-else class="mvp-container">
+            <div class="mvp-card">
+              <div class="mvp-trophy">
+                <i class="fas fa-trophy"></i>
+              </div>
+              <div class="mvp-info">
+                <div class="mvp-title">Tournament MVP</div>
+                <div class="player-name mvp-name">
+                  {{ tournament.mvp.playerName || 'Unknown Player' }}
+                  <span class="player-position">{{ tournament.mvp.position || 'N/A' }}</span>
+                </div>
+                <div class="player-country">
+                  <CountryFlag v-if="tournament.mvp.teamId" :country-code="tournament.mvp.teamId" :size="32" />
+                  <span v-else class="flag-fallback">🏆</span>
+                  {{ tournament.mvp.teamId || tournament.mvp.nationality || 'Unknown Team' }}
+                </div>
+                <div class="mvp-description">
+                  <p><strong>{{ tournament.mvp.playerName }}</strong> demonstrated exceptional performance throughout the tournament, combining individual brilliance with team success.</p>
+                </div>
+                <div class="mvp-stats">
+                  <div class="stat-group">
+                    <div class="stat-item highlight-stat">
+                      <span class="stat-value">{{ tournament.mvp.averageRating ? tournament.mvp.averageRating.toFixed(1) : '0.0' }}</span>
+                      <span class="stat-label">Avg Rating</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-value">{{ tournament.mvp.goals || 0 }}</span>
+                      <span class="stat-label">Goals</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-value">{{ tournament.mvp.assists || 0 }}</span>
+                      <span class="stat-label">Assists</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-value">{{ tournament.mvp.matchesPlayed || 0 }}</span>
+                      <span class="stat-label">Matches</span>
+                    </div>
+                  </div>
+                  <div class="mvp-achievement" v-if="tournament.winner || tournament.runnerUp">
+                    <div class="achievement-badge" v-if="tournament.winner && tournament.winner.code === tournament.mvp.teamId">
+                      <i class="fas fa-trophy"></i>
+                      <span>Tournament Winner</span>
+                    </div>
+                    <div class="achievement-badge runner-up" v-else-if="tournament.runnerUp && tournament.runnerUp.code === tournament.mvp.teamId">
+                      <i class="fas fa-medal"></i>
+                      <span>Tournament Runner-up</span>
+                    </div>
+                    <div class="achievement-note">
+                      MVP selection considers individual performance, team success, and contribution to team progression.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- All Stars XI Section -->
       <div v-if="activeTab === 'allstars'" class="tab-content">
         <AllStarsXI :tournament-id="tournament._id" />
@@ -764,6 +860,215 @@ export default {
     flex-direction: column;
     gap: 0.5rem;
     align-items: flex-start;
+  }
+}
+
+/* MVP Styles */
+.mvp-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.mvp-card {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 193, 7, 0.05));
+  border: 2px solid var(--fifa-gold);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+}
+
+.mvp-trophy {
+  margin-bottom: 1rem;
+}
+
+.mvp-trophy i {
+  font-size: 3rem;
+  color: var(--fifa-gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.mvp-title {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+.mvp-name {
+  font-size: 1.5rem !important;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-gold);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.mvp-stats {
+  margin-top: 1.5rem;
+}
+
+.stat-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.mvp-badge {
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  color: var(--fifa-dark-blue);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  animation: mvpGlow 2s ease-in-out infinite alternate;
+}
+
+.mvp-badge i {
+  font-size: 0.6rem;
+}
+
+@keyframes mvpGlow {
+  from {
+    box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.5);
+  }
+}
+
+.scorer-item.mvp-player {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 193, 7, 0.05));
+  border-color: var(--fifa-gold);
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.25);
+}
+
+.scorer-item.mvp-player:hover {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 193, 7, 0.08));
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.35);
+}
+
+@media (max-width: 768px) {
+  .mvp-card {
+    padding: 1.5rem;
+  }
+  
+  .mvp-trophy i {
+    font-size: 2.5rem;
+  }
+  
+  .mvp-name {
+    font-size: 1.3rem !important;
+  }
+  
+  .stat-group {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .mvp-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Enhanced MVP Styles */
+.mvp-description {
+  margin: 1rem 0 1.5rem 0;
+  text-align: center;
+}
+
+.mvp-description p {
+  color: var(--fifa-dark-blue);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.stat-group .stat-item.highlight-stat {
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  color: var(--fifa-dark-blue);
+  border-radius: var(--radius-md);
+  position: relative;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+}
+
+.stat-group .stat-item.highlight-stat .stat-value {
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-bold);
+  font-size: 1.1em;
+}
+
+.stat-group .stat-item.highlight-stat .stat-label {
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mvp-achievement {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  color: var(--fifa-dark-blue);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+}
+
+.achievement-badge.runner-up {
+  background: linear-gradient(135deg, #C0C0C0, #E5E5E5);
+  color: #333;
+}
+
+.achievement-badge i {
+  font-size: 1rem;
+}
+
+.achievement-note {
+  font-size: 0.8rem;
+  color: var(--gray);
+  line-height: 1.3;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .mvp-description p {
+    font-size: 0.85rem;
+  }
+  
+  .achievement-badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .achievement-note {
+    font-size: 0.75rem;
   }
 }
 </style>
