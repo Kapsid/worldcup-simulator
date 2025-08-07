@@ -173,6 +173,13 @@ class MembershipService {
       const membership = await this.getMembership(userId)
       const limits = membership.getPlanLimits()
       
+      // Count only standalone tournaments (not world tournaments)
+      const Tournament = (await import('../models/Tournament.js')).default
+      const standaloneTournamentCount = await Tournament.countDocuments({
+        createdBy: userId,
+        worldId: { $exists: false }
+      })
+      
       return {
         plan: membership.plan,
         status: membership.status,
@@ -181,11 +188,11 @@ class MembershipService {
         endDate: membership.endDate,
         limits,
         usage: {
-          tournaments: membership.tournamentsCreated,
+          tournaments: standaloneTournamentCount, // Only count standalone tournaments
           worlds: membership.worldsCreated
         },
         permissions: {
-          canCreateTournament: membership.canCreateTournament(),
+          canCreateTournament: await membership.canCreateTournament(), // Now async
           canCreateWorld: membership.canCreateWorld(),
           canModifyStats: membership.canModifyStats()
         }

@@ -16,6 +16,7 @@ import newsRoutes from './routes/news.js'
 import playersRoutes from './routes/players.js'
 import membershipRoutes from './routes/membership.js'
 import adminRoutes from './routes/admin.js'
+import countriesRoutes from './routes/countries.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -123,6 +124,7 @@ app.use('/api/news', newsRoutes)
 app.use('/api/players', playersRoutes)
 app.use('/api/membership', membershipRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/countries', countriesRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

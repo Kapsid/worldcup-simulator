@@ -75,7 +75,7 @@ membershipSchema.virtual('isActive').get(function() {
 });
 
 // Method to check if user can create tournaments
-membershipSchema.methods.canCreateTournament = function() {
+membershipSchema.methods.canCreateTournament = async function() {
   // Admin users have unlimited access (check populated user or via virtual)
   if ((this.user && this.user.username === 'admin') || this.plan === 'admin') {
     return true;
@@ -83,11 +83,18 @@ membershipSchema.methods.canCreateTournament = function() {
   
   if (!this.isActive) return false;
   
+  // Count only standalone tournaments (not world tournaments)
+  const Tournament = mongoose.model('Tournament');
+  const standaloneTournamentCount = await Tournament.countDocuments({
+    createdBy: this.user._id || this.user,
+    worldId: { $exists: false }
+  });
+  
   switch (this.plan) {
     case 'free':
-      return this.tournamentsCreated < 1;
+      return standaloneTournamentCount < 1;
     case 'pro':
-      return this.tournamentsCreated < 5;
+      return standaloneTournamentCount < 5;
     case 'football_maniac':
     case 'admin':
       return true; // Unlimited

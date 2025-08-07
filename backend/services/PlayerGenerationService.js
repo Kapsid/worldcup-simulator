@@ -53,21 +53,38 @@ class PlayerGenerationService {
   }
 
   // Generate a complete squad for a team
-  async generateSquad(teamCode, tournamentId = null, worldId = null, currentYear = 2024) {
+  async generateSquad(teamCode, tournamentId = null, worldId = null, currentYear = 2024, preserveExisting = false) {
     try {
       console.log(`⚽ SQUAD GENERATION: Starting for ${teamCode}`)
       console.log(`⚽ SQUAD GENERATION: Tournament ID: ${tournamentId}`)
       console.log(`⚽ SQUAD GENERATION: World ID: ${worldId}`)
       console.log(`⚽ SQUAD GENERATION: Current year: ${currentYear}`)
+      console.log(`⚽ SQUAD GENERATION: Preserve existing: ${preserveExisting}`)
       
-      // Delete existing players for this team/tournament/world
-      const deleteQuery = { teamId: teamCode }
-      if (tournamentId) deleteQuery.tournamentId = tournamentId
-      if (worldId) deleteQuery.worldId = worldId
+      // Check for existing players first
+      const existingQuery = { teamId: teamCode }
+      if (tournamentId) existingQuery.tournamentId = tournamentId
+      if (worldId) existingQuery.worldId = worldId
       
-      console.log(`⚽ SQUAD GENERATION: Delete query:`, deleteQuery)
-      const deleteResult = await Player.deleteMany(deleteQuery)
-      console.log(`⚽ SQUAD GENERATION: Cleared ${deleteResult.deletedCount} existing players for ${teamCode}`)
+      const existingPlayers = await Player.find(existingQuery)
+      console.log(`⚽ SQUAD GENERATION: Found ${existingPlayers.length} existing players`)
+      
+      // If preserving existing players and they exist, return them
+      if (preserveExisting && existingPlayers.length > 0) {
+        console.log(`⚽ SQUAD GENERATION: Preserving ${existingPlayers.length} existing players for ${teamCode}`)
+        return existingPlayers
+      }
+      
+      // Delete existing players for this team/tournament/world (only if not preserving)
+      if (!preserveExisting) {
+        const deleteQuery = { teamId: teamCode }
+        if (tournamentId) deleteQuery.tournamentId = tournamentId
+        if (worldId) deleteQuery.worldId = worldId
+        
+        console.log(`⚽ SQUAD GENERATION: Delete query:`, deleteQuery)
+        const deleteResult = await Player.deleteMany(deleteQuery)
+        console.log(`⚽ SQUAD GENERATION: Cleared ${deleteResult.deletedCount} existing players for ${teamCode}`)
+      }
 
       const players = []
       const usedJerseyNumbers = new Set()
@@ -454,41 +471,111 @@ class PlayerGenerationService {
     console.log(`🏆 SERVICE: Tournament ID: ${tournamentId}`)
     console.log(`🏆 SERVICE: World ID: ${worldId}`)
     
+    // Build query with team code
     const query = { teamId: teamCode }
+    
+    // Try to find players with exact tournament/world match first
     if (tournamentId) query.tournamentId = tournamentId
     if (worldId) query.worldId = worldId
     
-    console.log(`🏆 SERVICE: Query:`, query)
+    console.log(`🏆 SERVICE: Initial query:`, query)
     
-    const players = await Player.find(query).sort({ jerseyNumber: 1 })
-    console.log(`🏆 SERVICE: Found ${players.length} players`)
+    let players = await Player.find(query).sort({ jerseyNumber: 1 })
+    console.log(`🏆 SERVICE: Found ${players.length} players with exact match`)
     
-    // If no players found, let's debug what's in the database
+    // If no players found with tournament ID, try with just world ID
+    if (players.length === 0 && tournamentId && worldId) {
+      console.log(`🏆 SERVICE: No players found with tournament ID, trying with just world ID...`)
+      delete query.tournamentId
+      players = await Player.find(query).sort({ jerseyNumber: 1 })
+      console.log(`🏆 SERVICE: Found ${players.length} players with world ID only`)
+    }
+    
+    // If still no players found, let's debug what's in the database
     if (players.length === 0) {
-      console.log(`🏆 SERVICE: No players found, checking database...`)
-      
-      // Check if any players exist for this world
-      const worldPlayers = await Player.find({ worldId }).limit(5)
-      console.log(`🏆 SERVICE: Sample players in world:`, worldPlayers.map(p => ({
-        teamId: p.teamId,
-        nationality: p.nationality,
-        name: p.displayName
-      })))
+      console.log(`🏆 SERVICE: Still no players found, checking database...`)
       
       // Check if any players exist for this team (any variant)
       const teamVariants = [teamCode, teamCode.toUpperCase(), teamCode.toLowerCase()]
       const anyTeamPlayers = await Player.find({ 
-        teamId: { $in: teamVariants },
-        worldId 
+        teamId: { $in: teamVariants }
       }).limit(5)
-      console.log(`🏆 SERVICE: Players with team variants:`, anyTeamPlayers.map(p => ({
+      console.log(`🏆 SERVICE: Players with team variants (any world/tournament):`, anyTeamPlayers.map(p => ({
         teamId: p.teamId,
         nationality: p.nationality,
+        tournamentId: p.tournamentId,
+        worldId: p.worldId,
         name: p.displayName
       })))
+      
+      // If we found players with team variants but not with our query, use them
+      if (anyTeamPlayers.length > 0 && worldId) {
+        console.log(`🏆 SERVICE: Found players with team variants, fetching all for this world...`)
+        players = await Player.find({
+          teamId: { $in: teamVariants },
+          worldId: worldId
+        }).sort({ jerseyNumber: 1 })
+        console.log(`🏆 SERVICE: Found ${players.length} players with team variants and world ID`)
+      }
     }
     
     return players
+  }
+
+  // Copy existing players from world to tournament (for roster preservation)
+  async copyPlayersToTournament(teamCode, tournamentId, worldId) {
+    try {
+      console.log(`📋 ROSTER COPY: Copying players for ${teamCode} from world ${worldId} to tournament ${tournamentId}`)
+      
+      // Find existing players in the world for this team
+      const worldPlayers = await Player.find({ 
+        teamId: teamCode, 
+        worldId: worldId, 
+        tournamentId: null // Players that belong to the world but not a specific tournament
+      })
+      
+      console.log(`📋 ROSTER COPY: Found ${worldPlayers.length} world players for ${teamCode}`)
+      
+      if (worldPlayers.length === 0) {
+        console.log(`📋 ROSTER COPY: No world players found for ${teamCode} - cannot copy`)
+        return []
+      }
+      
+      // Check if tournament players already exist
+      const existingTournamentPlayers = await Player.find({
+        teamId: teamCode,
+        tournamentId: tournamentId,
+        worldId: worldId
+      })
+      
+      if (existingTournamentPlayers.length > 0) {
+        console.log(`📋 ROSTER COPY: Tournament players already exist (${existingTournamentPlayers.length}) - returning existing`)
+        return existingTournamentPlayers
+      }
+      
+      // Create copies of world players for the tournament
+      const copiedPlayers = []
+      for (const worldPlayer of worldPlayers) {
+        const playerCopy = new Player({
+          ...worldPlayer.toObject(),
+          _id: undefined, // Let MongoDB generate new ID
+          tournamentId: tournamentId,
+          // Keep the same worldId
+          createdAt: undefined,
+          updatedAt: undefined
+        })
+        
+        await playerCopy.save()
+        copiedPlayers.push(playerCopy)
+      }
+      
+      console.log(`📋 ROSTER COPY: Successfully copied ${copiedPlayers.length} players from world to tournament`)
+      return copiedPlayers
+      
+    } catch (error) {
+      console.error(`📋 ROSTER COPY: Error copying players for ${teamCode}:`, error)
+      throw error
+    }
   }
 
   // Get player by ID
@@ -503,33 +590,14 @@ class PlayerGenerationService {
 
   // Age players for world mode
   async agePlayersInWorld(worldId, newYear) {
+    // DISABLED: Player aging and retirement has been disabled
+    // All players will maintain their current age and stay active
+    console.log(`🚫 AGING DISABLED: Player aging/retirement disabled for world ${worldId} - players will not age or retire`)
+    
     const players = await Player.find({ worldId, isRetired: false })
-    const updates = []
+    console.log(`🚫 AGING DISABLED: Found ${players.length} active players, but they will not be aged`)
     
-    for (const player of players) {
-      const newAge = player.getAgeAtYear(newYear)
-      const shouldRetire = player.shouldRetire(newYear)
-      
-      const updateData = { age: newAge }
-      
-      if (shouldRetire) {
-        updateData.isRetired = true
-        updateData.retirementYear = newYear
-      }
-      
-      updates.push({
-        updateOne: {
-          filter: { _id: player._id },
-          update: updateData
-        }
-      })
-    }
-    
-    if (updates.length > 0) {
-      await Player.bulkWrite(updates)
-    }
-    
-    return { aged: updates.length, retired: updates.filter(u => u.updateOne.update.isRetired).length }
+    return { aged: 0, retired: 0, message: 'Player aging and retirement disabled' }
   }
 }
 

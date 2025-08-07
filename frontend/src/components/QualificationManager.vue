@@ -185,14 +185,14 @@
               <div v-if="simulationProgress.currentMatch" class="current-match">
                 <span class="match-teams">
                   <span class="team">
-                    <CountryFlag :country-code="simulationProgress.currentMatch.homeTeam?.country || simulationProgress.currentMatch.homeTeam?.countryCode" :size="16" class="team-flag" />
-                    {{ simulationProgress.currentMatch.homeTeam }}
+                    <CountryFlag :country-code="simulationProgress.currentMatch.homeTeam?.countryCode" :size="16" class="team-flag" />
+                    {{ simulationProgress.currentMatch.homeTeam?.name }}
                   </span>
                   <span v-if="!simulationProgress.lastResult" class="vs">vs</span>
-                  <span v-else class="result-in-vs">{{ simulationProgress.lastResult }}</span>
+                  <span v-else class="result-in-vs">{{ simulationProgress.lastResult }}</span>  
                   <span class="team">
-                    {{ simulationProgress.currentMatch.awayTeam }}
-                    <CountryFlag :country-code="simulationProgress.currentMatch.awayTeam?.country || simulationProgress.currentMatch.awayTeam?.countryCode" :size="16" class="team-flag" />
+                    {{ simulationProgress.currentMatch.awayTeam?.name }}
+                    <CountryFlag :country-code="simulationProgress.currentMatch.awayTeam?.countryCode" :size="16" class="team-flag" />
                   </span>
                 </span>
               </div>
@@ -2359,8 +2359,18 @@ export default {
             unplayedMatches.push(...matchesToSimulate.map(m => ({
               matchId: m.matchId,
               confederationId: conf.confederationId,
-              homeTeam: m.homeTeam.name,
-              awayTeam: m.awayTeam.name,
+              homeTeam: {
+                name: m.homeTeam.name,
+                country: m.homeTeam.country,
+                countryCode: m.homeTeam.countryCode,
+                flag: m.homeTeam.flag
+              },
+              awayTeam: {
+                name: m.awayTeam.name,
+                country: m.awayTeam.country,
+                countryCode: m.awayTeam.countryCode,
+                flag: m.awayTeam.flag
+              },
               homeFlag: m.homeTeam.flag,
               awayFlag: m.awayTeam.flag
             })))
@@ -2389,8 +2399,16 @@ export default {
           
           // Update current match being simulated
           this.simulationProgress.currentMatch = {
-            homeTeam: match.homeTeam,
-            awayTeam: match.awayTeam,
+            homeTeam: {
+              ...match.homeTeam,
+              countryCode: match.homeTeam.country || match.homeTeam.countryCode,
+              name: match.homeTeam.name
+            },
+            awayTeam: {
+              ...match.awayTeam,
+              countryCode: match.awayTeam.country || match.awayTeam.countryCode,
+              name: match.awayTeam.name
+            },
             homeFlag: match.homeFlag,
             awayFlag: match.awayFlag
           }

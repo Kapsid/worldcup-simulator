@@ -435,6 +435,57 @@ export default {
               isKnockout: true
             }
             
+            // Populate allMatches with all knockout matches for navigation
+            this.allMatches = []
+            if (bracket.matches) {
+              // Define round order for proper navigation sequence
+              const roundOrder = ['round16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+              
+              // Collect all matches from all rounds
+              roundOrder.forEach(roundName => {
+                if (bracket.matches[roundName]) {
+                  bracket.matches[roundName].forEach(match => {
+                    this.allMatches.push({
+                      ...match,
+                      homeTeam: {
+                        name: match.homeTeam?.countryName || 'TBD',
+                        flag: match.homeTeam?.countryFlag || '?',
+                        countryCode: match.homeTeam?.countryCode
+                      },
+                      awayTeam: {
+                        name: match.awayTeam?.countryName || 'TBD',
+                        flag: match.awayTeam?.countryFlag || '?',
+                        countryCode: match.awayTeam?.countryCode
+                      },
+                      round: this.getMatchLabel(match),
+                      played: match.status === 'completed',
+                      date: match.date || match.scheduledDate,
+                      isKnockout: true,
+                      roundName: roundName,
+                      matchPosition: match.matchPosition
+                    })
+                  })
+                }
+              })
+              
+              // Sort matches by round order and match position
+              this.allMatches.sort((a, b) => {
+                const roundOrderA = roundOrder.indexOf(a.roundName)
+                const roundOrderB = roundOrder.indexOf(b.roundName)
+                
+                // Primary sort: by round order
+                if (roundOrderA !== roundOrderB) {
+                  return roundOrderA - roundOrderB
+                }
+                
+                // Secondary sort: by match position within the same round
+                return (a.matchPosition || 0) - (b.matchPosition || 0)
+              })
+            }
+            
+            // Find current match index in the sorted array
+            this.currentMatchIndex = this.allMatches.findIndex(m => m._id === matchId)
+            
             // Try to load enhanced match details for knockout matches
             await this.loadEnhancedMatchDetails(matchId)
             this.loading = false
@@ -853,7 +904,7 @@ export default {
 
 .match-detail-container {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1400px;
 }
 
 .page-header {
@@ -913,17 +964,223 @@ export default {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
+/* Desktop Layout */
+@media (min-width: 1024px) {
+  .main-content {
+    padding: 3rem;
+  }
+  
+  .match-content {
+    padding: 2rem;
+  }
+  
+  .match-score-section {
+    grid-column: 1 / -1;
+    margin-bottom: 1rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .lineups-section {
+    grid-column: 1 / -1;
+  }
+  
+  .lineups-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .lineups-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .home-lineup h4,
+  .away-lineup h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    background: var(--background);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+}
+
 /* Match Score Section */
 .match-score-section {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
   background: var(--background);
   border-radius: var(--radius-lg);
-  padding: 2rem 1.5rem;
+  padding: 1.5rem;
   margin-bottom: 2rem;
   border: 1px solid var(--border);
   gap: 1rem;
+}
+
+/* Desktop layout for match score section */
+@media (min-width: 1024px) {
+  .match-score-section {
+    padding: 3rem 2rem;
+  }
+  
+  .score-and-flags {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+  
+  .team-info {
+    flex: 1;
+    max-width: 300px;
+  }
+  
+  .score-display {
+    flex: 0 0 auto;
+    min-width: 200px;
+  }
+  
+  .goals-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  
+  .team-goals {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  
+  .home-goals {
+    order: 1;
+  }
+  
+  .away-goals {
+    order: 2;
+  }
+  
+  /* Match Navigation for Desktop */
+  .match-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+  
+  .nav-btn {
+    flex: 1;
+    max-width: 350px;
+    padding: 1rem 1.25rem;
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--fifa-gold);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+  
+  .nav-btn:hover {
+    background: var(--background);
+    color: var(--fifa-blue);
+    border-color: var(--fifa-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.15);
+  }
+  
+  .nav-btn:hover::before {
+    transform: scaleX(1);
+  }
+  
+  .nav-btn.prev {
+    flex-direction: row;
+  }
+  
+  .nav-btn.next {
+    flex-direction: row-reverse;
+  }
+  
+  .nav-text {
+    display: none; /* Hidden on desktop, use icon instead */
+  }
+  
+  .nav-btn i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  
+  .nav-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .nav-label {
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-semibold);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .nav-teams {
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-bold);
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .nav-confederation {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Team display improvements for desktop */
+  .team-info .team-name {
+    font-size: 1.4rem;
+    font-weight: var(--font-weight-bold);
+  }
+  
+  .team-info.home-team,
+  .team-info.away-team {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 102, 204, 0.1);
+  }
 }
 
 .team-info {
@@ -997,6 +1254,7 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  text-align: center;
   flex: 0 0 auto;
   min-width: 150px;
 }

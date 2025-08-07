@@ -47,9 +47,9 @@
             <div class="step-info">
               <h3>Step 1: Generate Host Candidates</h3>
               <p>FIFA will select 3-8 candidate countries based on rankings and capabilities</p>
-              <div v-if="excludedConfederation" class="confederation-notice">
+              <div v-if="excludedConfederations.length > 0" class="confederation-notice">
                 <i class="fas fa-info-circle"></i>
-                Note: Countries from {{ getConfederationName(excludedConfederation) }} are excluded (previous host's confederation)
+                Note: Countries from {{ excludedConfederations.map(c => getConfederationName(c)).join(' and ') }} are excluded (previous {{ excludedConfederations.length > 1 ? 'hosts\' confederations' : 'host\'s confederation' }})
               </div>
             </div>
             <button @click="generateCandidates" :disabled="generatingCandidates" class="btn-primary" ref="generateBtn">
@@ -431,7 +431,7 @@ export default {
       voting: false,
       votingComplete: false,
       selectedHost: null,
-      excludedConfederation: null,
+      excludedConfederations: [],
       
       // Tournament Management
       activeTab: 'current',
@@ -647,33 +647,32 @@ export default {
         const response = await fetch(`${API_URL}/tournaments/countries`)
         if (response.ok) {
           const countries = await response.json()
-          this.excludedConfederation = this.getLastHostConfederation(countries)
+          this.excludedConfederations = this.getLastHostConfederations(countries)
         }
       } catch (error) {
         console.error('Error checking excluded confederation:', error)
       }
     },
 
-    getLastHostConfederation(countries) {
-      // Get the most recent tournament host from world's history
-      let lastHostCode = null
+    getLastHostConfederations(countries, count = 2) {
+      // Get the most recent tournament hosts' confederations from world's history
+      const hostConfederations = []
 
       // Check worldCupHistory first (this includes both real and simulated history and is always up-to-date)
+      let history = []
       if (this.worldCupHistory && this.worldCupHistory.length > 0) {
-        const sortedHistory = [...this.worldCupHistory].sort((a, b) => b.year - a.year)
-        lastHostCode = sortedHistory[0].host?.code
+        history = [...this.worldCupHistory].sort((a, b) => b.year - a.year)
       } 
       // Fallback: check world's simulatedHistory directly
       else if (this.world.simulatedHistory && this.world.simulatedHistory.length > 0) {
-        const sortedHistory = [...this.world.simulatedHistory].sort((a, b) => b.year - a.year)
-        lastHostCode = sortedHistory[0].host?.code
+        history = [...this.world.simulatedHistory].sort((a, b) => b.year - a.year)
       } 
       // If no simulated history, use real World Cup history up to the world's beginning year
       else if (this.world.useRealHistoricData) {
         // Use built-in real World Cup history and find the most recent tournament before this world's beginning
         const realHistory = [
           { year: 2022, host: { code: 'QAT' } },
-          { year: 2018, host: { code: 'RUS' } },
+          { year: 2018, host: { code: 'RUS' } }, // Russia - might not be in countries data
           { year: 2014, host: { code: 'BRA' } },
           { year: 2010, host: { code: 'RSA' } },
           { year: 2006, host: { code: 'GER' } },
@@ -688,29 +687,42 @@ export default {
           { year: 1970, host: { code: 'MEX' } }
         ]
         
-        const realHistoryBeforeWorld = realHistory
+        history = realHistory
           .filter(wc => wc.year < this.world.beginningYear)
           .sort((a, b) => b.year - a.year)
-        
-        if (realHistoryBeforeWorld.length > 0) {
-          lastHostCode = realHistoryBeforeWorld[0].host?.code
+      }
+
+      // Fallback confederation mapping for countries not in the data
+      const fallbackConfederations = {
+        'RUS': 'uefa',  // Russia
+        'KOR': 'afc',   // South Korea
+        'SUI': 'uefa',  // Switzerland
+        'AUT': 'uefa',  // Austria
+      }
+
+      // Get the last 'count' hosts' confederations
+      for (let i = 0; i < Math.min(count, history.length); i++) {
+        const hostCode = history[i]?.host?.code
+        if (hostCode) {
+          const hostCountry = countries.find(c => c.code === hostCode)
+          if (hostCountry && hostCountry.confederation && !hostConfederations.includes(hostCountry.confederation)) {
+            hostConfederations.push(hostCountry.confederation)
+            console.log(`Host ${i+1}: ${hostCountry.name} (${hostCode}) from ${hostCountry.confederation}`)
+          } else if (!hostCountry && fallbackConfederations[hostCode] && !hostConfederations.includes(fallbackConfederations[hostCode])) {
+            // Use fallback confederation for missing countries
+            hostConfederations.push(fallbackConfederations[hostCode])
+            console.log(`Host ${i+1}: ${hostCode} from ${fallbackConfederations[hostCode]} (using fallback)`)
+          }
         }
       }
 
-      if (!lastHostCode) {
-        console.log('No previous host found, allowing all confederations')
-        return null
+      if (hostConfederations.length === 0) {
+        console.log('No previous hosts found, allowing all confederations')
+      } else {
+        console.log(`Excluding confederations: ${hostConfederations.join(', ')}`)
       }
 
-      // Find the confederation of the last host
-      const lastHostCountry = countries.find(c => c.code === lastHostCode)
-      if (lastHostCountry) {
-        console.log(`Last host was ${lastHostCountry.name} (${lastHostCode}) from ${lastHostCountry.confederation}`)
-        return lastHostCountry.confederation
-      }
-
-      console.log('Last host country not found in countries data')
-      return null
+      return hostConfederations
     },
 
     getConfederationName(confederationCode) {
@@ -755,20 +767,20 @@ export default {
           console.log('Countries loaded:', countries.length)
           
           // Determine the last host's confederation to exclude it
-          let lastHostConfederation = null
+          let lastHostConfederations = []
           try {
-            lastHostConfederation = this.getLastHostConfederation(countries)
+            lastHostConfederations = this.getLastHostConfederations(countries)
           } catch (confederationError) {
-            console.warn('Error getting last host confederation:', confederationError)
+            console.warn('Error getting last host confederations:', confederationError)
           }
-          this.excludedConfederation = lastHostConfederation
-          console.log('Last host confederation:', lastHostConfederation)
+          this.excludedConfederations = lastHostConfederations
+          console.log('Last host confederations:', lastHostConfederations)
           
-          // Select 3-8 candidates based on FIFA ranking, excluding last host's confederation
+          // Select 3-8 candidates based on FIFA ranking, excluding last hosts' confederations
           const candidateCount = Math.floor(Math.random() * 6) + 3 // 3-8
           const topCountries = countries
             .filter(c => c.worldRanking && c.worldRanking <= 50)
-            .filter(c => !lastHostConfederation || c.confederation !== lastHostConfederation)
+            .filter(c => !lastHostConfederations.includes(c.confederation))
             .sort((a, b) => a.worldRanking - b.worldRanking)
           
           console.log('Filtered top countries:', topCountries.length)

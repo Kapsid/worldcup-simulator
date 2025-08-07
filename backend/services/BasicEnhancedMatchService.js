@@ -8,23 +8,14 @@ class BasicEnhancedMatchService {
    * Get players for a team
    */
   static async getTeamPlayers(teamCode, tournamentId = null, worldId = null) {
-    const query = { teamId: teamCode }
+    // Use PlayerGenerationService which has better fallback logic
+    const PlayerGenerationService = await import('./PlayerGenerationService.js').then(m => m.default)
+    const players = await PlayerGenerationService.getTeamPlayers(teamCode, tournamentId, worldId)
     
-    if (tournamentId) {
-      query.tournamentId = tournamentId
-    } else if (worldId) {
-      query.worldId = worldId
-    }
-
-    const players = await Player.find(query).sort({ overallRating: -1 })
+    // Sort by overall rating for match selection
+    players.sort((a, b) => b.overallRating - a.overallRating)
+    
     console.log(`🔍 PLAYER LOOKUP: Found ${players.length} players for team ${teamCode}`)
-    
-    if (players.length === 0) {
-      // Try alternate search without tournament/world restrictions
-      const alternateQuery = { teamId: teamCode }
-      const alternatePlayers = await Player.find(alternateQuery).sort({ overallRating: -1 })
-      console.log(`🔍 PLAYER LOOKUP: Alternate search found ${alternatePlayers.length} players for team ${teamCode}`)
-    }
     
     return players
   }
