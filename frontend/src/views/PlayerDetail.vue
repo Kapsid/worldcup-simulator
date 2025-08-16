@@ -97,7 +97,7 @@
                   <h3>International Career</h3>
                   <div class="international-grid">
                     <div class="intl-stat">
-                      <div class="stat-number">{{ player.internationalCaps }}</div>
+                      <div class="stat-number">{{ player.overallMatches || 0 }}/{{ player.internationalCaps }}</div>
                       <div class="stat-label">Caps</div>
                     </div>
                     <div v-if="player.position !== 'Goalkeeper'" class="intl-stat">

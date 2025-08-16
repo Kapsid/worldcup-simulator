@@ -527,8 +527,11 @@ export default {
 
 .bracket-responsive-wrapper {
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 20px;
+  max-width: 100vw;
+  position: relative;
 }
 
 .bracket-container {
@@ -823,6 +826,13 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .bracket-responsive-wrapper {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 10px;
+    width: calc(100% + 32px);
+  }
+  
   .bracket-container {
     gap: 40px;
     min-width: 800px;
@@ -853,6 +863,7 @@ export default {
   .bracket-responsive-wrapper {
     padding: 10px;
     margin: 0 -16px;
+    width: calc(100% + 32px);
   }
   
   .bracket-container {

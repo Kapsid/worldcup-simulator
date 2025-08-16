@@ -2,6 +2,8 @@ import KnockoutMatch from '../models/KnockoutMatch.js'
 import KnockoutRound from '../models/KnockoutRound.js'
 import Standing from '../models/Standing.js'
 import Tournament from '../models/Tournament.js'
+import PlayerStatsUpdateService from './PlayerStatsUpdateService.js'
+import PlayerGenerationService from './PlayerGenerationService.js'
 
 class KnockoutService {
   constructor() {
@@ -185,6 +187,10 @@ class KnockoutService {
       match.simulatedAt = new Date()
       
       await match.save()
+      
+      // Update player statistics for international caps and goals
+      await this.updatePlayerStatsForMatch(match, result)
+      
       await this.updateNextMatch(match)
       await this.updateRoundStatus(match.tournament, match.round)
       
@@ -1043,6 +1049,86 @@ class KnockoutService {
     }
     
     return team.code || team.countryCode || team.teamId || team.country || team.name
+  }
+
+  /**
+   * Update player statistics after a knockout match
+   */
+  async updatePlayerStatsForMatch(match, result) {
+    try {
+      // Get tournament info
+      const tournament = await Tournament.findById(match.tournament)
+      if (!tournament || !tournament.worldId) {
+        console.log('Skipping player stats update - not a world tournament')
+        return
+      }
+
+      // Get all players from both teams (basic implementation - all starting players get +1 cap)
+      const homeTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+        match.homeTeam.code || match.homeTeam.countryCode,
+        null, // Get world-level players
+        tournament.worldId.toString()
+      )
+
+      const awayTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+        match.awayTeam.code || match.awayTeam.countryCode,
+        null, // Get world-level players
+        tournament.worldId.toString()
+      )
+
+      // Simulate basic goal distribution (this is a simplified approach)
+      const homeGoals = (result.homeScore || 0) + (result.homeExtraTimeScore || 0)
+      const awayGoals = (result.awayScore || 0) + (result.awayExtraTimeScore || 0)
+      
+      const goalScorers = {}
+      const assistProviders = {}
+      
+      // Randomly distribute goals to forwards and midfielders (simple simulation)
+      if (homeGoals > 0) {
+        const homeScorers = homeTeamPlayers.filter(p => ['Forward', 'Midfielder'].includes(p.position))
+        for (let i = 0; i < homeGoals; i++) {
+          const scorer = homeScorers[Math.floor(Math.random() * homeScorers.length)]
+          goalScorers[scorer._id] = (goalScorers[scorer._id] || 0) + 1
+        }
+      }
+
+      if (awayGoals > 0) {
+        const awayScorers = awayTeamPlayers.filter(p => ['Forward', 'Midfielder'].includes(p.position))
+        for (let i = 0; i < awayGoals; i++) {
+          const scorer = awayScorers[Math.floor(Math.random() * awayScorers.length)]
+          goalScorers[scorer._id] = (goalScorers[scorer._id] || 0) + 1
+        }
+      }
+
+      // Determine clean sheet keeper
+      let cleanSheetKeeper = null
+      if (awayGoals === 0) {
+        const homeKeeper = homeTeamPlayers.find(p => p.position === 'Goalkeeper')
+        cleanSheetKeeper = homeKeeper?._id
+      } else if (homeGoals === 0) {
+        const awayKeeper = awayTeamPlayers.find(p => p.position === 'Goalkeeper')
+        cleanSheetKeeper = awayKeeper?._id
+      }
+
+      // Update stats for all players (assume starting XI for each team)
+      const homePlayerIds = homeTeamPlayers.slice(0, 11).map(p => p._id)
+      const awayPlayerIds = awayTeamPlayers.slice(0, 11).map(p => p._id)
+
+      await PlayerStatsUpdateService.updateTeamMatchStats(
+        homePlayerIds,
+        awayPlayerIds,
+        goalScorers,
+        assistProviders,
+        cleanSheetKeeper,
+        tournament.worldId.toString(),
+        tournament._id.toString()
+      )
+
+      console.log(`✅ Updated player stats for knockout match: ${match.homeTeam.name} vs ${match.awayTeam.name}`)
+
+    } catch (error) {
+      console.error('Error updating player stats for knockout match:', error)
+    }
   }
 }
 

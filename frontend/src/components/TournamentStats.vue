@@ -307,8 +307,8 @@
           </div>
           
           <div v-else class="surprises-container">
-            <!-- Surprises Section -->
-            <div v-if="surprises.length > 0" class="surprise-category">
+            <!-- Surprises Section - Always show first -->
+            <div v-if="surprises.length > 0" class="surprise-category" style="order: 1;">
               <h5 class="category-title surprise-title">
                 <i class="fas fa-arrow-trend-up"></i>
                 Biggest Surprises
@@ -363,8 +363,8 @@
               </div>
             </div>
             
-            <!-- Disappointments Section -->
-            <div v-if="disappointments.length > 0" class="surprise-category">
+            <!-- Disappointments Section - Always show second -->
+            <div v-if="disappointments.length > 0" class="surprise-category" style="order: 2;">
               <h5 class="category-title disappointment-title">
                 <i class="fas fa-arrow-trend-down"></i>
                 Biggest Disappointments
@@ -547,6 +547,13 @@ export default {
     
     async loadSurprises() {
       if (!this.tournament?._id) return
+      
+      // Don't load surprises/disappointments unless tournament has meaningful progress
+      if (this.tournament.status === 'draft' || this.tournament.status === 'cancelled') {
+        this.surprises = []
+        this.disappointments = []
+        return
+      }
       
       this.loading = true
       this.error = null

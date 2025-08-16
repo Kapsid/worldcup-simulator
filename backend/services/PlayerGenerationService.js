@@ -53,12 +53,18 @@ class PlayerGenerationService {
   }
 
   // Generate a complete squad for a team
-  async generateSquad(teamCode, tournamentId = null, worldId = null, currentYear = 2024, preserveExisting = false) {
+  async generateSquad(teamCode, tournamentId = null, worldId = null, currentYear = 2024, preserveExisting = null) {
     try {
       console.log(`⚽ SQUAD GENERATION: Starting for ${teamCode}`)
       console.log(`⚽ SQUAD GENERATION: Tournament ID: ${tournamentId}`)
       console.log(`⚽ SQUAD GENERATION: World ID: ${worldId}`)
       console.log(`⚽ SQUAD GENERATION: Current year: ${currentYear}`)
+      
+      // Auto-determine preserve behavior if not explicitly set
+      if (preserveExisting === null) {
+        preserveExisting = worldId !== null // Preserve for world tournaments by default
+      }
+      
       console.log(`⚽ SQUAD GENERATION: Preserve existing: ${preserveExisting}`)
       
       // Check for existing players first
@@ -242,7 +248,14 @@ class PlayerGenerationService {
       Math.floor(Math.random() * 28) + 1)
 
     // Generate career stats based on age and position
-    const careerStats = PlayerGenerationService.generateCareerStats(age, template.position)
+    // For new worlds, players start with 0 caps/goals
+    const careerStats = worldId ? {
+      caps: 0,
+      goals: 0,
+      assists: 0,
+      cleanSheets: 0,
+      debutYear: null
+    } : PlayerGenerationService.generateCareerStats(age, template.position)
 
     // Generate physical attributes
     const height = PlayerGenerationService.generateHeight(template.position)

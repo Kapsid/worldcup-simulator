@@ -129,25 +129,27 @@ export default {
       // Reset all states
       this.resetAnimation()
       
-      // Step 1: Setup and anticipation
-      this.progressText = 'Preparing ceremony...'
-      await this.animateProgress(0, 20, 1500)
+      // Step 1: Brief setup
+      this.progressText = 'Opening envelope...'
+      await this.animateProgress(0, 30, 800)
       
-      // Step 2: Opening the envelope
-      this.progressText = 'Opening the envelope...'
+      // Step 2: Open the envelope
       this.isOpening = true
-      await this.animateProgress(20, 60, 2500)
+      await this.animateProgress(30, 60, 1200)
       
-      // Step 3: Envelope opened, card sliding out
+      // Step 3: Envelope opened
       this.progressText = 'Revealing the host...'
       this.isOpened = true
-      this.isRevealing = true
-      await this.animateProgress(60, 90, 2000)
+      await this.animateProgress(60, 80, 800)
       
-      // Step 4: Full reveal
-      this.progressText = 'Announcing the winner!'
+      // Step 4: Show the result
+      this.progressText = 'The host is...'
+      this.isRevealing = true
+      await this.animateProgress(80, 90, 500)
+      
+      // Step 5: Full reveal with fanfare
       this.isRevealed = true
-      await this.animateProgress(90, 100, 1000)
+      await this.animateProgress(90, 100, 800)
       
       // Auto-continue after a few seconds
       setTimeout(() => {
@@ -417,17 +419,23 @@ export default {
   top: 20px;
   left: 25px;
   transform: translateY(100px);
-  transition: transform 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 15px 35px rgba(0,0,0,0.4);
   z-index: 1;
 }
 
 .result-card.revealing {
-  transform: translateY(50px);
+  transform: translateY(20px) scale(0.95);
+  opacity: 0.5;
+  visibility: visible;
 }
 
 .result-card.revealed {
-  transform: translateY(0);
+  transform: translateY(-20px) scale(1);
+  opacity: 1;
+  visibility: visible;
 }
 
 .card-content {

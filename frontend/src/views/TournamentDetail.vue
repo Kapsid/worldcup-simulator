@@ -857,7 +857,8 @@ export default {
     async handleQualificationCompleted() {
       // Reload tournament data when qualification is completed
       await this.loadTournament()
-      // Potentially show a success message or redirect
+      // After qualification is completed, automatically show the draw phase
+      this.showCurrentPhase()
     },
 
     handleProceedToMatches() {

@@ -88,7 +88,8 @@
                 <span class="rating">{{ player.overallRating }}</span>
               </div>
               <div class="player-stats">
-                <span class="caps">{{ player.internationalCaps }} caps</span>
+                <!-- Display format: overallMatches/internationalCaps -->
+                <span class="caps">{{ player.overallMatches || 0 }}/{{ player.internationalCaps }} caps</span>
                 <span v-if="player.position !== 'Goalkeeper'" class="goals">
                   {{ player.internationalGoals }} goals
                 </span>

@@ -157,7 +157,8 @@ router.post('/', authenticateToken, checkWorldCreation, async (req, res) => {
             country.code,
             null, // No tournament ID for world-level players
             world._id.toString(), // World ID
-            beginningYear
+            beginningYear,
+            false // Don't preserve existing - force generation for new world
           )
           
           const duration = Date.now() - startTime

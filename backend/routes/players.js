@@ -136,6 +136,21 @@ router.post('/generate-squad', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Team code is required' })
     }
 
+    // Check if players already exist before generating
+    const existingPlayers = await PlayerGenerationService.getTeamPlayers(
+      teamCode,
+      tournamentId || null,
+      worldId || null
+    )
+    
+    if (existingPlayers.length > 0) {
+      return res.json({
+        message: `Team ${teamCode} already has ${existingPlayers.length} players - returning existing squad`,
+        players: existingPlayers,
+        alreadyExisted: true
+      })
+    }
+
     const players = await PlayerGenerationService.generateSquad(
       teamCode,
       tournamentId || null,

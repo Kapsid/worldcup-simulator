@@ -76,6 +76,57 @@
                   <span v-else class="status-finished">Final</span>
                 </div>
                 
+                <!-- Knockout Match Result Info -->
+                <div v-if="match.played && match.isKnockout" class="knockout-result-info">
+                  <!-- Show if match ended in a draw in regular time but no ET/penalties yet -->
+                  <div v-if="match.homeScore === match.awayScore && match.homeExtraTimeScore === null && match.homePenaltyScore === null" class="draw-notice">
+                    <i class="fas fa-equals"></i>
+                    <span class="result-label">Draw after 90 minutes</span>
+                    <span class="result-info">Match requires extra time</span>
+                  </div>
+                  
+                  <!-- Extra Time Result -->
+                  <div v-if="match.homeExtraTimeScore !== null" class="extra-time-result">
+                    <div class="result-phase-header">
+                      <i class="fas fa-clock"></i>
+                      <span>After Extra Time</span>
+                    </div>
+                    <div class="result-scores">
+                      <span class="total-score">{{ match.homeScore + match.homeExtraTimeScore }}</span>
+                      <span class="score-separator">-</span>
+                      <span class="total-score">{{ match.awayScore + match.awayExtraTimeScore }}</span>
+                    </div>
+                    <div class="score-breakdown">
+                      ({{ match.homeScore }}-{{ match.awayScore }} in regular time, {{ match.homeExtraTimeScore }}-{{ match.awayExtraTimeScore }} in extra time)
+                    </div>
+                  </div>
+                  
+                  <!-- Penalty Shootout Result -->
+                  <div v-if="match.homePenaltyScore !== null" class="penalties-result">
+                    <div class="result-phase-header">
+                      <i class="fas fa-bullseye"></i>
+                      <span>Penalty Shootout</span>
+                    </div>
+                    <div class="penalty-scores">
+                      <span class="penalty-score-value">{{ match.homePenaltyScore }}</span>
+                      <span class="score-separator">-</span>
+                      <span class="penalty-score-value">{{ match.awayPenaltyScore }}</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Match Winner -->
+                  <div v-if="getWinnerName(match)" class="match-winner-section">
+                    <div class="winner-divider"></div>
+                    <div class="winner-content">
+                      <i class="fas fa-trophy"></i>
+                      <div class="winner-details">
+                        <span class="winner-team-name">{{ getWinnerName(match) }}</span>
+                        <span class="winner-method">{{ getWinMethod(match) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <!-- Live Simulation Button -->
                 <div v-if="!match.played && !liveSimulation.isRunning" class="live-sim-button">
                   <button @click="startLiveSimulation" class="btn-live-sim">
@@ -542,6 +593,72 @@ export default {
         'penalties': 'Penalties'
       }
       return texts[decidedBy] || ''
+    },
+    
+    getWinnerName(match) {
+      if (!match.winner) return ''
+      
+      // Check if winner is an ID and compare with team IDs
+      if (typeof match.winner === 'string') {
+        if (match.homeTeam._id === match.winner || match.homeTeam.id === match.winner) {
+          return match.homeTeam.name
+        } else if (match.awayTeam._id === match.winner || match.awayTeam.id === match.winner) {
+          return match.awayTeam.name
+        }
+      }
+      
+      // If winner is an object with countryName or name
+      if (match.winner.countryName) return match.winner.countryName
+      if (match.winner.name) return match.winner.name
+      
+      // Fallback: determine winner based on scores
+      const homeTotalScore = (match.homeScore || 0) + (match.homeExtraTimeScore || 0)
+      const awayTotalScore = (match.awayScore || 0) + (match.awayExtraTimeScore || 0)
+      
+      if (match.homePenaltyScore !== null && match.awayPenaltyScore !== null) {
+        // Decided by penalties
+        return match.homePenaltyScore > match.awayPenaltyScore ? match.homeTeam.name : match.awayTeam.name
+      } else if (homeTotalScore !== awayTotalScore) {
+        // Decided by regular or extra time
+        return homeTotalScore > awayTotalScore ? match.homeTeam.name : match.awayTeam.name
+      }
+      
+      return ''
+    },
+    
+    getWinMethod(match) {
+      if (!match.played || !match.isKnockout) return ''
+      
+      // Check if decided by penalties
+      if (match.homePenaltyScore !== null && match.awayPenaltyScore !== null) {
+        return `Won ${match.homePenaltyScore}-${match.awayPenaltyScore} on penalties`
+      }
+      
+      // Check if decided in extra time
+      if (match.homeExtraTimeScore !== null) {
+        const homeTotalScore = (match.homeScore || 0) + (match.homeExtraTimeScore || 0)
+        const awayTotalScore = (match.awayScore || 0) + (match.awayExtraTimeScore || 0)
+        if (homeTotalScore !== awayTotalScore) {
+          return 'Won after extra time'
+        }
+      }
+      
+      // Check if decided in regular time
+      if (match.homeScore !== match.awayScore) {
+        return 'Won in regular time'
+      }
+      
+      // Based on decidedBy field if available
+      if (match.decidedBy) {
+        const methods = {
+          'regular': 'Won in regular time',
+          'extra_time': 'Won after extra time',
+          'penalties': 'Won on penalties'
+        }
+        return methods[match.decidedBy] || ''
+      }
+      
+      return ''
     },
     
     async loadUserProfile() {
@@ -1335,6 +1452,141 @@ export default {
   font-weight: var(--font-weight-medium);
 }
 
+.knockout-result-info {
+  margin-top: 1.5rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.draw-notice {
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+  color: #2d3436;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.draw-notice i {
+  font-size: 1.5rem;
+  color: #636e72;
+}
+
+.result-label {
+  font-weight: var(--font-weight-semibold);
+  font-size: 1rem;
+}
+
+.result-info {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.extra-time-result,
+.penalties-result {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.result-phase-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #636e72;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.result-phase-header i {
+  color: #0066cc;
+}
+
+.result-scores,
+.penalty-scores {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  color: #2d3436;
+  margin-bottom: 0.5rem;
+}
+
+.total-score,
+.penalty-score-value {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.score-separator {
+  color: #b2bec3;
+  font-weight: normal;
+}
+
+.score-breakdown {
+  text-align: center;
+  color: #636e72;
+  font-size: 0.85rem;
+}
+
+.match-winner-section {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+  color: var(--white);
+  padding: 1.25rem;
+  position: relative;
+}
+
+.winner-divider {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.winner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.winner-content i {
+  font-size: 2rem;
+  color: #ffeaa7;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.winner-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.winner-team-name {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.winner-method {
+  font-size: 0.9rem;
+  opacity: 0.95;
+  font-weight: var(--font-weight-medium);
+}
+
 .status-upcoming {
   background: var(--warning-background);
   color: var(--warning-text);
@@ -1662,6 +1914,31 @@ export default {
     font-size: 0.8rem;
     padding: 0.5rem;
     margin-top: 0.5rem;
+  }
+  
+  .knockout-result-info {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+  
+  .result-scores,
+  .penalty-scores {
+    font-size: 1.5rem;
+  }
+  
+  .total-score,
+  .penalty-score-value {
+    font-size: 1.5rem;
+  }
+  
+  .winner-team-name {
+    font-size: 1.1rem;
+  }
+  
+  .score-breakdown {
+    font-size: 0.75rem;
+    padding: 0 0.5rem;
   }
   
   /* Goals section below flags */

@@ -639,6 +639,25 @@ router.get('/:tournamentId/surprises', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Tournament not found' })
     }
     
+    // Only calculate surprises/disappointments for completed tournaments
+    // or tournaments with significant progress (at least knockout stage started)
+    if (tournament.status !== 'completed') {
+      // Check if knockout stage has started
+      const knockoutMatches = await KnockoutMatch.find({ 
+        tournament: tournamentId,
+        status: 'completed'
+      })
+      
+      if (knockoutMatches.length === 0) {
+        return res.json({
+          surprises: [],
+          disappointments: [],
+          message: 'Analysis will be available once knockout stage begins',
+          tournamentStatus: tournament.status
+        })
+      }
+    }
+    
     // Get all teams in tournament with their rankings
     const teams = await TournamentTeam.find({ tournament: tournamentId })
       .sort({ worldRanking: 1 })
@@ -721,9 +740,13 @@ router.get('/:tournamentId/surprises', authenticateToken, async (req, res) => {
       const teamStanding = standings.find(s => s.teamCode === teamCode)
       if (teamStanding) {
         if (teamStanding.position <= 2) {
+          // If tournament is not completed and they qualified, they're still active
+          if (tournament.status !== 'completed') {
+            return { level: 'active', stage: 'Still in tournament', points: 25, isActive: true }
+          }
           return { level: 'qualified', stage: 'Qualified from group', points: 20 }
         }
-        return { level: 'group', stage: 'Group stage', points: 10 }
+        return { level: 'group', stage: 'Group stage exit', points: 10 }
       }
       
       return { level: 'none', stage: 'Did not qualify', points: 0 }
@@ -742,6 +765,11 @@ router.get('/:tournamentId/surprises', authenticateToken, async (req, res) => {
     for (const team of teams) {
       const achievement = await getTeamAchievement(team.countryCode)
       const expected = getExpectedPerformance(team.worldRanking)
+      
+      // Skip teams that are still active in an ongoing tournament
+      if (achievement.isActive) {
+        continue
+      }
       
       // Calculate performance difference
       const performanceDiff = achievement.points - expected.minPoints
