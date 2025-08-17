@@ -114,8 +114,8 @@
                     </div>
                   </div>
                   
-                  <!-- Match Winner -->
-                  <div v-if="getWinnerName(match)" class="match-winner-section">
+                  <!-- Match Winner (only show for draws that went to ET/penalties) -->
+                  <div v-if="getWinnerName(match) && (match.homeExtraTimeScore !== null || match.homePenaltyScore !== null)" class="match-winner-section">
                     <div class="winner-divider"></div>
                     <div class="winner-content">
                       <i class="fas fa-trophy"></i>
