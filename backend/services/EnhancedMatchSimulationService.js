@@ -45,6 +45,14 @@ class EnhancedMatchSimulationService {
     'LW': 0.30, 'RW': 0.30, 'CF': 0.20, 'ST': 0.18
   }
 
+  // Card probability by position (higher = more likely to get cards)
+  static CARD_PROBABILITIES = {
+    'GK': 0.02,
+    'CB': 0.25, 'LB': 0.18, 'RB': 0.18, 'LWB': 0.15, 'RWB': 0.15,
+    'CDM': 0.30, 'CM': 0.20, 'CAM': 0.12, 'LM': 0.15, 'RM': 0.15,
+    'LW': 0.18, 'RW': 0.18, 'CF': 0.22, 'ST': 0.25
+  }
+
   /**
    * Get players for a team from the database
    */
@@ -229,23 +237,30 @@ class EnhancedMatchSimulationService {
    */
   async generateGoals(homeScore, awayScore, homeLineup, awayLineup) {
     const goals = []
+    const cards = []
     const totalGoals = homeScore + awayScore
     
     if (totalGoals === 0) return goals
 
+    // Generate cards first to know which players are sent off
+    const tempMatchStats = {
+      fouls: { home: 12, away: 14 } // Temporary stats for card generation
+    }
+    const generatedCards = await this.generateCards(homeLineup, awayLineup, tempMatchStats)
+    
     // Assign goals to teams
     const homeGoals = homeScore
     const awayGoals = awayScore
 
     // Generate home team goals
     for (let i = 0; i < homeGoals; i++) {
-      const goal = await this.generateSingleGoal('home', homeLineup)
+      const goal = await this.generateSingleGoal('home', homeLineup, generatedCards)
       goals.push(goal)
     }
 
     // Generate away team goals
     for (let i = 0; i < awayGoals; i++) {
-      const goal = await this.generateSingleGoal('away', awayLineup)
+      const goal = await this.generateSingleGoal('away', awayLineup, generatedCards)
       goals.push(goal)
     }
 
@@ -256,23 +271,209 @@ class EnhancedMatchSimulationService {
   }
 
   /**
+   * Generate goals considering substitutions
+   */
+  async generateGoalsWithSubstitutions(homeScore, awayScore, homeLineup, awayLineup, substitutions) {
+    const goals = []
+    const totalGoals = homeScore + awayScore
+    
+    if (totalGoals === 0) return goals
+
+    // Generate temporary cards for red card filtering
+    const tempMatchStats = {
+      fouls: { home: 12, away: 14 }
+    }
+    const tempCards = await this.generateCards(homeLineup, awayLineup, tempMatchStats)
+    
+    // Assign goals to teams
+    const homeGoals = homeScore
+    const awayGoals = awayScore
+
+    // Generate home team goals
+    for (let i = 0; i < homeGoals; i++) {
+      const goal = await this.generateSingleGoal('home', homeLineup, tempCards, substitutions)
+      goals.push(goal)
+    }
+
+    // Generate away team goals
+    for (let i = 0; i < awayGoals; i++) {
+      const goal = await this.generateSingleGoal('away', awayLineup, tempCards, substitutions)
+      goals.push(goal)
+    }
+
+    // Sort goals by minute
+    goals.sort((a, b) => a.minute - b.minute)
+
+    return goals
+  }
+
+  /**
+   * Generate cards considering substitutions
+   */
+  async generateCardsWithSubstitutions(homeLineup, awayLineup, matchStats, substitutions) {
+    const cards = []
+    const playerCards = new Map()
+    
+    // Calculate total card count based on fouls
+    const totalFouls = matchStats.fouls.home + matchStats.fouls.away
+    const baseCardCount = Math.floor(totalFouls / 4)
+    const cardVariation = Math.floor(Math.random() * 3) - 1
+    const totalCards = Math.max(0, Math.min(8, baseCardCount + cardVariation))
+    
+    if (totalCards === 0) return cards
+    
+    // Distribute cards between teams
+    const homeCardRatio = (matchStats.fouls.home / totalFouls) * 0.9
+    const homeCards = Math.round(totalCards * homeCardRatio)
+    const awayCards = totalCards - homeCards
+    
+    // Generate home team cards
+    for (let i = 0; i < homeCards; i++) {
+      const card = this.generateSingleCardWithSubstitutions('home', homeLineup, playerCards, substitutions)
+      if (card) {
+        cards.push(card)
+        this.trackPlayerCard(playerCards, card.player, card.cardType)
+      }
+    }
+    
+    // Generate away team cards
+    for (let i = 0; i < awayCards; i++) {
+      const card = this.generateSingleCardWithSubstitutions('away', awayLineup, playerCards, substitutions)
+      if (card) {
+        cards.push(card)
+        this.trackPlayerCard(playerCards, card.player, card.cardType)
+      }
+    }
+    
+    // Sort cards by minute
+    cards.sort((a, b) => a.minute - b.minute)
+    
+    return cards
+  }
+
+  /**
+   * Generate a single card considering substitutions
+   */
+  generateSingleCardWithSubstitutions(team, lineup, playerCards, substitutions) {
+    // Select a random minute
+    const minute = this.generateCardMinute()
+    
+    // Get active players at this minute (considering substitutions)
+    const activePlayers = this.getActivePlayersAtMinute(lineup, substitutions, [], team, minute)
+    
+    // Select player based on position probabilities and existing cards
+    const cardReceiver = this.selectCardReceiverFromActivePlayers(activePlayers, playerCards)
+    if (!cardReceiver) return null
+    
+    // Determine card type (same logic as original)
+    const existingYellows = playerCards.get(cardReceiver.player.toString()) || { yellows: 0, reds: 0 }
+    let cardType = 'yellow'
+    let reason = 'foul'
+    
+    if (existingYellows.yellows > 0) {
+      if (Math.random() < 0.25) {
+        cardType = 'second_yellow'
+        reason = 'second_yellow'
+      }
+    } else {
+      if (Math.random() < 0.05) {
+        cardType = 'red'
+        reason = Math.random() < 0.5 ? 'violent_conduct' : 'serious_foul_play'
+      }
+    }
+    
+    if (cardType === 'yellow') {
+      const yellowReasons = ['foul', 'unsporting_behavior', 'dissent']
+      reason = yellowReasons[Math.floor(Math.random() * yellowReasons.length)]
+    }
+    
+    return {
+      player: cardReceiver.player,
+      team: team,
+      minute: minute,
+      cardType: cardType,
+      reason: reason
+    }
+  }
+
+  /**
+   * Select card receiver from active players
+   */
+  selectCardReceiverFromActivePlayers(activePlayers, playerCards) {
+    // Filter out players who already have red cards
+    const eligiblePlayers = activePlayers.filter(player => {
+      const playerCardHistory = playerCards.get(player.player.toString()) || { yellows: 0, reds: 0 }
+      return playerCardHistory.reds === 0
+    })
+    
+    if (eligiblePlayers.length === 0) return null
+    
+    const weights = eligiblePlayers.map(player => 
+      EnhancedMatchSimulationService.CARD_PROBABILITIES[player.position] || 0.1
+    )
+    
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+    let random = Math.random() * totalWeight
+    
+    for (let i = 0; i < eligiblePlayers.length; i++) {
+      random -= weights[i]
+      if (random <= 0) {
+        return eligiblePlayers[i]
+      }
+    }
+    
+    return eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)]
+  }
+
+  /**
    * Generate a single goal
    */
-  async generateSingleGoal(team, lineup) {
+  async generateSingleGoal(team, lineup, cards = [], substitutions = []) {
     // Select a random minute (weighted towards certain periods)
     const minute = this.generateGoalMinute()
     
-    // Select scorer based on position probabilities
-    const scorer = this.selectGoalScorer(lineup)
+    // Select scorer based on position probabilities, excluding red-carded and substituted players
+    const scorer = this.selectGoalScorer(lineup, cards, minute, substitutions, team)
     
-    // Determine goal type
-    const goalTypes = ['open_play', 'penalty', 'free_kick', 'corner', 'header']
-    const goalType = goalTypes[Math.floor(Math.random() * goalTypes.length)]
+    // Determine goal type with realistic weightings
+    const goalTypeWeights = [
+      { type: 'open_play', weight: 0.55 },    // 55% - Most common
+      { type: 'penalty', weight: 0.12 },      // 12% - Realistic penalty frequency
+      { type: 'free_kick', weight: 0.08 },    // 8% - Direct free kicks
+      { type: 'corner', weight: 0.15 },       // 15% - Headers from corners
+      { type: 'header', weight: 0.10 }        // 10% - Headers from other situations
+    ]
     
-    // Possibly add assist (70% chance)
+    const totalWeight = goalTypeWeights.reduce((sum, gt) => sum + gt.weight, 0)
+    let random = Math.random() * totalWeight
+    let goalType = 'open_play'
+    
+    for (const gt of goalTypeWeights) {
+      random -= gt.weight
+      if (random <= 0) {
+        goalType = gt.type
+        break
+      }
+    }
+    
+    // For penalties, prefer players who are good penalty takers (usually forwards/mids)
+    if (goalType === 'penalty') {
+      const penaltyTakers = lineup.filter(p => 
+        p.isStarter && ['ST', 'CF', 'CAM', 'CM'].includes(p.position)
+      )
+      // Filter out red-carded penalty takers
+      const availablePenaltyTakers = this.filterRedCardedPlayers(penaltyTakers, cards, minute)
+      if (availablePenaltyTakers.length > 0) {
+        const penaltyScorer = availablePenaltyTakers[Math.floor(Math.random() * availablePenaltyTakers.length)]
+        scorer.player = penaltyScorer.player
+        scorer.position = penaltyScorer.position
+      }
+    }
+    
+    // Possibly add assist (70% chance, but not for penalties)
     let assist = null
     if (Math.random() < 0.7 && goalType !== 'penalty') {
-      assist = this.selectAssistProvider(lineup, scorer)
+      assist = this.selectAssistProvider(lineup, scorer, cards, minute)
     }
 
     return {
@@ -313,53 +514,295 @@ class EnhancedMatchSimulationService {
   }
 
   /**
+   * Filter out players who have been sent off before the given minute
+   */
+  filterRedCardedPlayers(players, cards, minute) {
+    return players.filter(player => {
+      // Check if this player has a red card before this minute
+      const playerRedCard = cards.find(card => 
+        card.player.toString() === player.player.toString() &&
+        (card.cardType === 'red' || card.cardType === 'second_yellow') &&
+        card.minute < minute
+      )
+      return !playerRedCard // Include player only if they don't have a red card before this minute
+    })
+  }
+
+  /**
+   * Filter out players who have been substituted off before the given minute
+   */
+  filterSubstitutedPlayers(players, substitutions, team, minute) {
+    return players.filter(player => {
+      // Check if this player was substituted out before this minute
+      const substitutedOut = substitutions.find(sub => 
+        sub.team === team &&
+        sub.playerOut.toString() === player.player.toString() &&
+        sub.minute < minute
+      )
+      return !substitutedOut // Include player only if they weren't substituted out before this minute
+    })
+  }
+
+  /**
+   * Get active players at a given minute (including substitutes who came on)
+   */
+  getActivePlayersAtMinute(lineup, substitutions, cards, team, minute) {
+    // Start with all players who were originally on the field
+    let activePlayers = lineup.filter(p => p.isStarter)
+    
+    // Remove players who were substituted out before this minute
+    activePlayers = this.filterSubstitutedPlayers(activePlayers, substitutions, team, minute)
+    
+    // Remove players who were red-carded before this minute
+    activePlayers = this.filterRedCardedPlayers(activePlayers, cards, minute)
+    
+    // Add players who were substituted in before this minute (but not red-carded)
+    const substitutedIn = substitutions.filter(sub => 
+      sub.team === team && sub.minute < minute
+    )
+    
+    for (const sub of substitutedIn) {
+      // Find the substitute player in the lineup
+      const subPlayer = lineup.find(p => p.player.toString() === sub.playerIn.toString())
+      if (subPlayer) {
+        // Check if the substitute was red-carded after coming on
+        const subPlayerCards = cards.filter(card => 
+          card.player.toString() === subPlayer.player.toString() &&
+          (card.cardType === 'red' || card.cardType === 'second_yellow') &&
+          card.minute > sub.minute && card.minute < minute
+        )
+        if (subPlayerCards.length === 0) {
+          activePlayers.push(subPlayer)
+        }
+      }
+    }
+    
+    return activePlayers
+  }
+
+  /**
    * Select goal scorer based on position probabilities
    */
-  selectGoalScorer(lineup) {
-    const startingPlayers = lineup.filter(p => p.isStarter)
-    const weights = startingPlayers.map(player => 
+  selectGoalScorer(lineup, cards = [], minute = 90, substitutions = [], team = 'home') {
+    // Get all active players at this minute (considering substitutions and red cards)
+    const availablePlayers = this.getActivePlayersAtMinute(lineup, substitutions, cards, team, minute)
+    
+    if (availablePlayers.length === 0) {
+      // Fallback: if no players are available (very rare), return any starting player
+      const startingPlayers = lineup.filter(p => p.isStarter)
+      return startingPlayers[Math.floor(Math.random() * startingPlayers.length)]
+    }
+    
+    const weights = availablePlayers.map(player => 
       EnhancedMatchSimulationService.GOAL_PROBABILITIES[player.position] || 0.1
     )
     
     const totalWeight = weights.reduce((sum, w) => sum + w, 0)
     let random = Math.random() * totalWeight
     
-    for (let i = 0; i < startingPlayers.length; i++) {
+    for (let i = 0; i < availablePlayers.length; i++) {
       random -= weights[i]
       if (random <= 0) {
-        return startingPlayers[i]
+        return availablePlayers[i]
       }
     }
     
     // Fallback
-    return startingPlayers[Math.floor(Math.random() * startingPlayers.length)]
+    return availablePlayers[Math.floor(Math.random() * availablePlayers.length)]
   }
 
   /**
    * Select assist provider
    */
-  selectAssistProvider(lineup, scorer) {
+  selectAssistProvider(lineup, scorer, cards = [], minute = 90) {
     const startingPlayers = lineup.filter(p => 
       p.isStarter && !p.player.equals(scorer.player)
     )
     
-    if (startingPlayers.length === 0) return null
+    // Filter out red-carded players
+    const availablePlayers = this.filterRedCardedPlayers(startingPlayers, cards, minute)
     
-    const weights = startingPlayers.map(player => 
+    if (availablePlayers.length === 0) return null
+    
+    const weights = availablePlayers.map(player => 
       EnhancedMatchSimulationService.ASSIST_PROBABILITIES[player.position] || 0.1
     )
     
     const totalWeight = weights.reduce((sum, w) => sum + w, 0)
     let random = Math.random() * totalWeight
     
-    for (let i = 0; i < startingPlayers.length; i++) {
+    for (let i = 0; i < availablePlayers.length; i++) {
       random -= weights[i]
       if (random <= 0) {
-        return startingPlayers[i].player
+        return availablePlayers[i].player
       }
     }
     
     return null
+  }
+
+  /**
+   * Generate cards for the match
+   */
+  async generateCards(homeLineup, awayLineup, matchStats) {
+    const cards = []
+    const playerCards = new Map() // Track cards per player
+    
+    // Calculate total card count based on fouls (realistic range: 1-6 cards per match)
+    const totalFouls = matchStats.fouls.home + matchStats.fouls.away
+    const baseCardCount = Math.floor(totalFouls / 4) // Roughly 1 card per 4 fouls
+    const cardVariation = Math.floor(Math.random() * 3) - 1 // -1, 0, or +1
+    const totalCards = Math.max(0, Math.min(8, baseCardCount + cardVariation))
+    
+    if (totalCards === 0) return cards
+    
+    // Distribute cards between teams (with slight home advantage in avoiding cards)
+    const homeCardRatio = (matchStats.fouls.home / totalFouls) * 0.9 // 10% home advantage
+    const homeCards = Math.round(totalCards * homeCardRatio)
+    const awayCards = totalCards - homeCards
+    
+    // Generate home team cards
+    for (let i = 0; i < homeCards; i++) {
+      const card = this.generateSingleCard('home', homeLineup, playerCards)
+      if (card) {
+        cards.push(card)
+        this.trackPlayerCard(playerCards, card.player, card.cardType)
+      }
+    }
+    
+    // Generate away team cards
+    for (let i = 0; i < awayCards; i++) {
+      const card = this.generateSingleCard('away', awayLineup, playerCards)
+      if (card) {
+        cards.push(card)
+        this.trackPlayerCard(playerCards, card.player, card.cardType)
+      }
+    }
+    
+    // Sort cards by minute
+    cards.sort((a, b) => a.minute - b.minute)
+    
+    return cards
+  }
+
+  /**
+   * Generate a single card
+   */
+  generateSingleCard(team, lineup, playerCards) {
+    // Select a random minute (weighted towards certain periods)
+    const minute = this.generateCardMinute()
+    
+    // Select player based on position probabilities and existing cards
+    const cardReceiver = this.selectCardReceiver(lineup, playerCards)
+    if (!cardReceiver) return null
+    
+    // Determine card type (check if player already has yellow)
+    const existingYellows = playerCards.get(cardReceiver.player.toString()) || { yellows: 0, reds: 0 }
+    let cardType = 'yellow'
+    let reason = 'foul'
+    
+    if (existingYellows.yellows > 0) {
+      // Player already has yellow, 25% chance of second yellow = red
+      if (Math.random() < 0.25) {
+        cardType = 'second_yellow'
+        reason = 'second_yellow'
+      }
+    } else {
+      // 5% chance of straight red card
+      if (Math.random() < 0.05) {
+        cardType = 'red'
+        reason = Math.random() < 0.5 ? 'violent_conduct' : 'serious_foul_play'
+      }
+    }
+    
+    // Select reason for yellow cards
+    if (cardType === 'yellow') {
+      const yellowReasons = ['foul', 'unsporting_behavior', 'dissent']
+      reason = yellowReasons[Math.floor(Math.random() * yellowReasons.length)]
+    }
+    
+    return {
+      player: cardReceiver.player,
+      team: team,
+      minute: minute,
+      cardType: cardType,
+      reason: reason
+    }
+  }
+
+  /**
+   * Generate realistic card minutes (more likely in certain periods)
+   */
+  generateCardMinute() {
+    // Cards more likely in intense periods
+    const periods = [
+      { min: 1, max: 15, weight: 0.10 },   // Early - fewer cards
+      { min: 16, max: 30, weight: 0.15 },  // First half middle
+      { min: 31, max: 45, weight: 0.20 },  // End of first half - more tension
+      { min: 46, max: 60, weight: 0.15 },  // Start of second half
+      { min: 61, max: 75, weight: 0.20 },  // Second half middle - intensity builds
+      { min: 76, max: 90, weight: 0.20 }   // End of second half - desperation
+    ]
+    
+    const random = Math.random()
+    let cumulative = 0
+    
+    for (const period of periods) {
+      cumulative += period.weight
+      if (random <= cumulative) {
+        return Math.floor(Math.random() * (period.max - period.min + 1)) + period.min
+      }
+    }
+    
+    return 45 + Math.floor(Math.random() * 46) // Fallback
+  }
+
+  /**
+   * Select card receiver based on position probabilities
+   */
+  selectCardReceiver(lineup, playerCards) {
+    const startingPlayers = lineup.filter(p => p.isStarter)
+    
+    // Filter out players who already have red cards
+    const eligiblePlayers = startingPlayers.filter(player => {
+      const playerCardHistory = playerCards.get(player.player.toString()) || { yellows: 0, reds: 0 }
+      return playerCardHistory.reds === 0 // Can't get card if already sent off
+    })
+    
+    if (eligiblePlayers.length === 0) return null
+    
+    const weights = eligiblePlayers.map(player => 
+      EnhancedMatchSimulationService.CARD_PROBABILITIES[player.position] || 0.1
+    )
+    
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+    let random = Math.random() * totalWeight
+    
+    for (let i = 0; i < eligiblePlayers.length; i++) {
+      random -= weights[i]
+      if (random <= 0) {
+        return eligiblePlayers[i]
+      }
+    }
+    
+    // Fallback
+    return eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)]
+  }
+
+  /**
+   * Track cards for each player
+   */
+  trackPlayerCard(playerCards, playerId, cardType) {
+    const playerIdStr = playerId.toString()
+    const current = playerCards.get(playerIdStr) || { yellows: 0, reds: 0 }
+    
+    if (cardType === 'yellow') {
+      current.yellows += 1
+    } else if (cardType === 'red' || cardType === 'second_yellow') {
+      current.reds += 1
+    }
+    
+    playerCards.set(playerIdStr, current)
   }
 
   /**
@@ -523,18 +966,27 @@ class EnhancedMatchSimulationService {
       const homeScore = match.homeScore
       const awayScore = match.awayScore
       
-      // Generate goals with actual players
-      const goals = await this.generateGoals(homeScore, awayScore, homeStartingXI, awayStartingXI)
+      // Create full lineup (starters + subs) for substitution generation
+      const fullHomeLineup = [...homeStartingXI, ...homeSubstitutes]
+      const fullAwayLineup = [...awayStartingXI, ...awaySubstitutes]
       
       // Generate substitutions
       const substitutions = this.generateSubstitutions(homeStartingXI, awayStartingXI, homeSubstitutes, awaySubstitutes)
       
+      // Generate goals with actual players
+      const goals = await this.generateGoals(homeScore, awayScore, homeStartingXI, awayStartingXI)
+      
+      // Generate cards
+      const cards = await this.generateCards(homeStartingXI, awayStartingXI, matchStats)
+      
+      // Update match stats with actual card counts
+      matchStats.yellowCards.home = cards.filter(c => c.team === 'home' && c.cardType === 'yellow').length
+      matchStats.yellowCards.away = cards.filter(c => c.team === 'away' && c.cardType === 'yellow').length
+      matchStats.redCards.home = cards.filter(c => c.team === 'home' && (c.cardType === 'red' || c.cardType === 'second_yellow')).length
+      matchStats.redCards.away = cards.filter(c => c.team === 'away' && (c.cardType === 'red' || c.cardType === 'second_yellow')).length
+      
       // Generate match report
       const matchReport = await this.generateMatchReport(match.homeTeam, match.awayTeam, homeScore, awayScore, goals, matchStats)
-      
-      // Create full lineup (starters + subs)
-      const fullHomeLineup = [...homeStartingXI, ...homeSubstitutes]
-      const fullAwayLineup = [...awayStartingXI, ...awaySubstitutes]
       
       // Create or update match details
       const matchDetail = await MatchDetail.findOneAndUpdate(
@@ -545,6 +997,7 @@ class EnhancedMatchSimulationService {
           awayLineup: fullAwayLineup,
           goals: goals,
           substitutions: substitutions,
+          cards: cards,
           possession: matchStats.possession,
           shots: matchStats.shots,
           shotsOnTarget: matchStats.shotsOnTarget,

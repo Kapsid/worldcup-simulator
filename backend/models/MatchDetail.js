@@ -33,6 +33,35 @@ const goalSchema = new mongoose.Schema({
   }
 })
 
+const cardSchema = new mongoose.Schema({
+  player: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Player',
+    required: true
+  },
+  team: {
+    type: String,
+    enum: ['home', 'away'],
+    required: true
+  },
+  minute: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 120
+  },
+  cardType: {
+    type: String,
+    enum: ['yellow', 'red', 'second_yellow'],
+    required: true
+  },
+  reason: {
+    type: String,
+    enum: ['foul', 'unsporting_behavior', 'dissent', 'violent_conduct', 'serious_foul_play', 'offensive_language', 'second_yellow'],
+    default: 'foul'
+  }
+})
+
 const substitutionSchema = new mongoose.Schema({
   playerOut: {
     type: mongoose.Schema.Types.ObjectId,
@@ -105,6 +134,7 @@ const matchDetailSchema = new mongoose.Schema({
   // Match Events
   goals: [goalSchema],
   substitutions: [substitutionSchema],
+  cards: [cardSchema],
   
   // Match Statistics
   possession: {

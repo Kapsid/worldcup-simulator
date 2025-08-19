@@ -155,21 +155,81 @@
               </div>
             </div>
             
-            <!-- Goals section below flags -->
-            <div class="goals-section" v-if="(liveSimulation.isRunning && (getLiveTeamGoals('home').length > 0 || getLiveTeamGoals('away').length > 0)) || (!liveSimulation.isRunning && matchDetails && (getTeamGoals('home').length > 0 || getTeamGoals('away').length > 0))">
-              <!-- Home Team Goals -->
-              <div class="team-goals home-goals">
-                <div v-for="goal in liveSimulation.isRunning ? getLiveTeamGoals('home') : getTeamGoals('home')" :key="goal._id || goal.id" class="goal-item" :class="{ 'new-goal': goal.isNew }">
-                  <span class="goal-minute">{{ goal.minute }}'</span>
-                  <span class="goal-scorer clickable-player" @click="navigateToPlayer(goal.player._id || goal.playerId)">{{ goal.player?.displayName || goal.scorer }}</span>
+            <!-- Match Events Timeline (Goals and Cards) -->
+            <div class="match-events-section" v-if="(liveSimulation.isRunning && (getLiveTeamEvents('home').length > 0 || getLiveTeamEvents('away').length > 0)) || (!liveSimulation.isRunning && matchDetails && (getTeamEvents('home').length > 0 || getTeamEvents('away').length > 0))">
+              <!-- Home Team Events -->
+              <div class="team-events home-events">
+                <div v-for="event in liveSimulation.isRunning ? getLiveTeamEvents('home') : getTeamEvents('home')" :key="event._id || event.id || `${event.type}-${event.minute}-${event.player}`" class="event-item" :class="{ 'new-goal': event.isNew, 'penalty-goal': event.goalType === 'penalty', 'goal-event': event.type === 'goal', 'card-event': event.type === 'card', 'substitution-event': event.type === 'substitution', 'red-card': event.cardType === 'red' || event.cardType === 'second_yellow', 'yellow-card': event.cardType === 'yellow' }">
+                  <span class="event-minute">{{ event.minute }}'</span>
+                  <span v-if="event.type === 'substitution'" class="event-substitution">
+                    <span class="player-out clickable-player" @click="navigateToPlayer(event.playerOut._id || event.playerOut)">
+                      {{ event.playerOut?.displayName || 'Unknown Player' }}
+                    </span>
+                    <i class="fas fa-arrow-right substitution-arrow"></i>
+                    <span class="player-in clickable-player" @click="navigateToPlayer(event.playerIn._id || event.playerIn)">
+                      {{ event.playerIn?.displayName || 'Unknown Player' }}
+                    </span>
+                  </span>
+                  <span v-else class="event-player clickable-player" @click="navigateToPlayer(event.player._id || event.player || event.playerId)">
+                    {{ event.player?.displayName || event.scorer || 'Unknown Player' }}
+                    <span v-if="event.goalType === 'penalty'" class="penalty-indicator">(P)</span>
+                  </span>
+                  <div v-if="event.type === 'card'" class="event-icon">
+                    <div v-if="event.cardType === 'yellow'" class="card-icon yellow">
+                      <i class="fas fa-square"></i>
+                    </div>
+                    <div v-else-if="event.cardType === 'red' || event.cardType === 'second_yellow'" class="card-icon red">
+                      <i class="fas fa-square"></i>
+                    </div>
+                  </div>
+                  <div v-if="event.type === 'goal'" class="event-icon">
+                    <div class="goal-icon">
+                      <i class="fas fa-futbol"></i>
+                    </div>
+                  </div>
+                  <div v-if="event.type === 'substitution'" class="event-icon">
+                    <div class="substitution-icon">
+                      <i class="fas fa-exchange-alt"></i>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <!-- Away Team Goals -->
-              <div class="team-goals away-goals">
-                <div v-for="goal in liveSimulation.isRunning ? getLiveTeamGoals('away') : getTeamGoals('away')" :key="goal._id || goal.id" class="goal-item" :class="{ 'new-goal': goal.isNew }">
-                  <span class="goal-minute">{{ goal.minute }}'</span>
-                  <span class="goal-scorer clickable-player" @click="navigateToPlayer(goal.player._id || goal.playerId)">{{ goal.player?.displayName || goal.scorer }}</span>
+              <!-- Away Team Events -->
+              <div class="team-events away-events">
+                <div v-for="event in liveSimulation.isRunning ? getLiveTeamEvents('away') : getTeamEvents('away')" :key="event._id || event.id || `${event.type}-${event.minute}-${event.player}`" class="event-item" :class="{ 'new-goal': event.isNew, 'penalty-goal': event.goalType === 'penalty', 'goal-event': event.type === 'goal', 'card-event': event.type === 'card', 'substitution-event': event.type === 'substitution', 'red-card': event.cardType === 'red' || event.cardType === 'second_yellow', 'yellow-card': event.cardType === 'yellow' }">
+                  <span class="event-minute">{{ event.minute }}'</span>
+                  <span v-if="event.type === 'substitution'" class="event-substitution">
+                    <span class="player-out clickable-player" @click="navigateToPlayer(event.playerOut._id || event.playerOut)">
+                      {{ event.playerOut?.displayName || 'Unknown Player' }}
+                    </span>
+                    <i class="fas fa-arrow-right substitution-arrow"></i>
+                    <span class="player-in clickable-player" @click="navigateToPlayer(event.playerIn._id || event.playerIn)">
+                      {{ event.playerIn?.displayName || 'Unknown Player' }}
+                    </span>
+                  </span>
+                  <span v-else class="event-player clickable-player" @click="navigateToPlayer(event.player._id || event.player || event.playerId)">
+                    {{ event.player?.displayName || event.scorer || 'Unknown Player' }}
+                    <span v-if="event.goalType === 'penalty'" class="penalty-indicator">(P)</span>
+                  </span>
+                  <div v-if="event.type === 'card'" class="event-icon">
+                    <div v-if="event.cardType === 'yellow'" class="card-icon yellow">
+                      <i class="fas fa-square"></i>
+                    </div>
+                    <div v-else-if="event.cardType === 'red' || event.cardType === 'second_yellow'" class="card-icon red">
+                      <i class="fas fa-square"></i>
+                    </div>
+                  </div>
+                  <div v-if="event.type === 'goal'" class="event-icon">
+                    <div class="goal-icon">
+                      <i class="fas fa-futbol"></i>
+                    </div>
+                  </div>
+                  <div v-if="event.type === 'substitution'" class="event-icon">
+                    <div class="substitution-icon">
+                      <i class="fas fa-exchange-alt"></i>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -184,10 +244,21 @@
                 <div class="players-list">
                   <div v-for="player in getOrderedLineup(matchDetails.homeLineup, 'home')" :key="player._id" class="player-item">
                     <span class="jersey-number">{{ player.jerseyNumber }}</span>
-                    <span class="player-name clickable-player" @click="navigateToPlayer(player.player?._id)">
+                    <span class="player-name clickable-player" @click="navigateToPlayer(player.player?._id)" :class="{ 'substituted-out': getPlayerSubstitutionInfo(player.player?._id, 'home')?.type === 'out' }">
                       {{ player.player?.displayName || 'Unknown Player' }}
                       <span v-if="player.player?._id && getPlayerGoalCount(player.player._id, 'home') > 0" class="goal-indicator">
                         ⚽ {{ getPlayerGoalCount(player.player._id, 'home') }}
+                      </span>
+                      <span v-if="player.player?._id && getPlayerCardDisplay(player.player._id, 'home')" class="card-indicator" :class="getPlayerCardDisplay(player.player._id, 'home').type">
+                        {{ getPlayerCardDisplay(player.player._id, 'home').display }}
+                      </span>
+                      <span v-if="player.player?._id && getPlayerSubstitutionInfo(player.player._id, 'home')" class="substitution-indicator" :class="getPlayerSubstitutionInfo(player.player._id, 'home').type">
+                        <span v-if="getPlayerSubstitutionInfo(player.player._id, 'home').type === 'out'">
+                          ↓{{ getPlayerSubstitutionInfo(player.player._id, 'home').minute }}'
+                        </span>
+                        <span v-else>
+                          ↑{{ getPlayerSubstitutionInfo(player.player._id, 'home').minute }}'
+                        </span>
                       </span>
                     </span>
                     <span class="player-position">{{ player.position }}</span>
@@ -200,10 +271,21 @@
                 <div class="players-list">
                   <div v-for="player in getOrderedLineup(matchDetails.awayLineup, 'away')" :key="player._id" class="player-item">
                     <span class="jersey-number">{{ player.jerseyNumber }}</span>
-                    <span class="player-name clickable-player" @click="navigateToPlayer(player.player?._id)">
+                    <span class="player-name clickable-player" @click="navigateToPlayer(player.player?._id)" :class="{ 'substituted-out': getPlayerSubstitutionInfo(player.player?._id, 'away')?.type === 'out' }">
                       {{ player.player?.displayName || 'Unknown Player' }}
                       <span v-if="player.player?._id && getPlayerGoalCount(player.player._id, 'away') > 0" class="goal-indicator">
                         ⚽ {{ getPlayerGoalCount(player.player._id, 'away') }}
+                      </span>
+                      <span v-if="player.player?._id && getPlayerCardDisplay(player.player._id, 'away')" class="card-indicator" :class="getPlayerCardDisplay(player.player._id, 'away').type">
+                        {{ getPlayerCardDisplay(player.player._id, 'away').display }}
+                      </span>
+                      <span v-if="player.player?._id && getPlayerSubstitutionInfo(player.player._id, 'away')" class="substitution-indicator" :class="getPlayerSubstitutionInfo(player.player._id, 'away').type">
+                        <span v-if="getPlayerSubstitutionInfo(player.player._id, 'away').type === 'out'">
+                          ↓{{ getPlayerSubstitutionInfo(player.player._id, 'away').minute }}'
+                        </span>
+                        <span v-else>
+                          ↑{{ getPlayerSubstitutionInfo(player.player._id, 'away').minute }}'
+                        </span>
                       </span>
                     </span>
                     <span class="player-position">{{ player.position }}</span>
@@ -252,6 +334,8 @@ export default {
         timer: null,
         goalNotification: null,
         simulatedGoals: [],
+        simulatedCards: [],
+        simulatedSubstitutions: [],
         homeScore: 0,
         awayScore: 0
       },
@@ -716,6 +800,95 @@ export default {
         .filter(goal => goal.team === team)
         .sort((a, b) => a.minute - b.minute)
     },
+    getTeamCards(team) {
+      if (!this.matchDetails || !this.matchDetails.cards) return []
+      return this.matchDetails.cards
+        .filter(card => card.team === team)
+        .sort((a, b) => a.minute - b.minute)
+    },
+    getTeamEvents(team) {
+      if (!this.matchDetails) return []
+      
+      const events = []
+      
+      // Add goals
+      if (this.matchDetails.goals) {
+        this.matchDetails.goals
+          .filter(goal => goal.team === team)
+          .forEach(goal => {
+            events.push({
+              ...goal,
+              type: 'goal'
+            })
+          })
+      }
+      
+      // Add cards
+      if (this.matchDetails.cards) {
+        this.matchDetails.cards
+          .filter(card => card.team === team)
+          .forEach(card => {
+            events.push({
+              ...card,
+              type: 'card'
+            })
+          })
+      }
+      
+      // Add substitutions
+      if (this.matchDetails.substitutions) {
+        this.matchDetails.substitutions
+          .filter(sub => sub.team === team)
+          .forEach(sub => {
+            events.push({
+              ...sub,
+              type: 'substitution'
+            })
+          })
+      }
+      
+      // Sort by minute
+      return events.sort((a, b) => a.minute - b.minute)
+    },
+    getLiveTeamEvents(team) {
+      // For live simulation, merge live goals with live cards
+      const events = []
+      
+      // Add live goals (already filtered by current minute)
+      const liveGoals = this.getLiveTeamGoals(team)
+      liveGoals.forEach(goal => {
+        events.push({
+          ...goal,
+          type: 'goal'
+        })
+      })
+      
+      // Add live cards (filter by current minute like goals)
+      if (this.liveSimulation.simulatedCards) {
+        this.liveSimulation.simulatedCards
+          .filter(card => card.team === team && card.minute <= this.liveSimulation.currentMinute)
+          .forEach(card => {
+            events.push({
+              ...card,
+              type: 'card'
+            })
+          })
+      }
+      
+      // Add live substitutions (filter by current minute like goals)
+      if (this.liveSimulation.simulatedSubstitutions) {
+        this.liveSimulation.simulatedSubstitutions
+          .filter(sub => sub.team === team && sub.minute <= this.liveSimulation.currentMinute)
+          .forEach(sub => {
+            events.push({
+              ...sub,
+              type: 'substitution'
+            })
+          })
+      }
+      
+      return events.sort((a, b) => a.minute - b.minute)
+    },
 
     getPlayerGoals(playerId) {
       if (!this.matchDetails || !this.matchDetails.goals) return []
@@ -731,6 +904,89 @@ export default {
       // Otherwise show all goals
       const goals = this.getTeamGoals(team)
       return goals.filter(goal => goal.player?._id === playerId).length
+    },
+    getPlayerCards(playerId, team) {
+      if (!this.matchDetails || !this.matchDetails.cards) return []
+      return this.matchDetails.cards.filter(card => 
+        card.team === team && card.player?._id === playerId
+      )
+    },
+    getPlayerCardDisplay(playerId, team) {
+      const cards = this.getPlayerCards(playerId, team)
+      if (cards.length === 0) return null
+      
+      let yellowCount = 0
+      let hasRed = false
+      
+      cards.forEach(card => {
+        if (card.cardType === 'yellow') {
+          yellowCount++
+        } else if (card.cardType === 'red' || card.cardType === 'second_yellow') {
+          hasRed = true
+        }
+      })
+      
+      if (hasRed) {
+        return { type: 'red', display: '🟥' }
+      } else if (yellowCount > 0) {
+        return { type: 'yellow', display: yellowCount > 1 ? `🟨 ${yellowCount}` : '🟨' }
+      }
+      
+      return null
+    },
+
+    getPlayerSubstitutionInfo(playerId, team) {
+      if (!this.matchDetails || !this.matchDetails.substitutions) return null
+      
+      // Check if player was substituted out
+      const substitutedOut = this.matchDetails.substitutions.find(sub => 
+        sub.team === team && sub.playerOut?._id === playerId
+      )
+      
+      if (substitutedOut) {
+        // During live simulation, only show if substitution has happened
+        if (this.liveSimulation.isRunning) {
+          if (substitutedOut.minute <= this.liveSimulation.currentMinute) {
+            return { 
+              type: 'out', 
+              minute: substitutedOut.minute,
+              replacedBy: substitutedOut.playerIn?.displayName
+            }
+          }
+          return null
+        }
+        return { 
+          type: 'out', 
+          minute: substitutedOut.minute,
+          replacedBy: substitutedOut.playerIn?.displayName
+        }
+      }
+      
+      // Check if player came on as substitute
+      const substitutedIn = this.matchDetails.substitutions.find(sub => 
+        sub.team === team && sub.playerIn?._id === playerId
+      )
+      
+      if (substitutedIn) {
+        // During live simulation, only show if substitution has happened
+        if (this.liveSimulation.isRunning) {
+          if (substitutedIn.minute <= this.liveSimulation.currentMinute) {
+            return { 
+              type: 'in', 
+              minute: substitutedIn.minute,
+              replaced: substitutedIn.playerOut?.displayName
+            }
+          }
+          return null
+        }
+        return { 
+          type: 'in', 
+          minute: substitutedIn.minute,
+          replaced: substitutedIn.playerOut?.displayName
+        }
+      }
+      
+      return null
     },
 
     getOrderedLineup(lineup, team) {
@@ -868,12 +1124,24 @@ export default {
       if (this.matchDetails && this.matchDetails.goals) {
         this.liveSimulation.simulatedGoals = [...this.matchDetails.goals].sort((a, b) => a.minute - b.minute)
       }
+      
+      // Get cards for live display
+      if (this.matchDetails && this.matchDetails.cards) {
+        this.liveSimulation.simulatedCards = [...this.matchDetails.cards].sort((a, b) => a.minute - b.minute)
+      }
+      
+      // Get substitutions for live display
+      if (this.matchDetails && this.matchDetails.substitutions) {
+        this.liveSimulation.simulatedSubstitutions = [...this.matchDetails.substitutions].sort((a, b) => a.minute - b.minute)
+      }
     },
 
     startLiveTimer() {
       const totalDuration = 10000 // 10 seconds for 90 minutes
       const interval = totalDuration / 90 // ~111ms per minute
       let goalIndex = 0
+      let cardIndex = 0
+      let substitutionIndex = 0
 
       this.liveSimulation.timer = setInterval(() => {
         this.liveSimulation.currentMinute++
@@ -884,6 +1152,28 @@ export default {
           if (goal.minute <= this.liveSimulation.currentMinute) {
             this.showGoalNotification(goal)
             goalIndex++
+          } else {
+            break
+          }
+        }
+
+        // Check if there's a card at this minute
+        while (this.liveSimulation.simulatedCards && cardIndex < this.liveSimulation.simulatedCards.length) {
+          const card = this.liveSimulation.simulatedCards[cardIndex]
+          if (card.minute <= this.liveSimulation.currentMinute) {
+            this.showCardNotification(card)
+            cardIndex++
+          } else {
+            break
+          }
+        }
+
+        // Check if there's a substitution at this minute
+        while (this.liveSimulation.simulatedSubstitutions && substitutionIndex < this.liveSimulation.simulatedSubstitutions.length) {
+          const substitution = this.liveSimulation.simulatedSubstitutions[substitutionIndex]
+          if (substitution.minute <= this.liveSimulation.currentMinute) {
+            this.showSubstitutionNotification(substitution)
+            substitutionIndex++
           } else {
             break
           }
@@ -912,6 +1202,18 @@ export default {
       setTimeout(() => {
         this.liveSimulation.goalNotification = null
       }, 3000)
+    },
+    showCardNotification(card) {
+      // For now, cards don't show notifications like goals
+      // They just appear in the timeline when their minute is reached
+      // You could add a card notification system here if desired
+      console.log(`🟨 Card at minute ${card.minute}: ${card.player?.displayName} (${card.cardType})`)
+    },
+    showSubstitutionNotification(substitution) {
+      // For now, substitutions don't show notifications like goals
+      // They just appear in the timeline when their minute is reached
+      // You could add a substitution notification system here if desired
+      console.log(`🔄 Substitution at minute ${substitution.minute}: ${substitution.playerIn?.displayName} on for ${substitution.playerOut?.displayName}`)
     },
 
     updateLiveScores() {
@@ -1522,6 +1824,18 @@ export default {
   font-weight: var(--font-weight-semibold);
 }
 
+.penalty-indicator {
+  font-size: 0.8em;
+  color: var(--fifa-gold);
+  font-weight: bold;
+  margin-left: 0.25rem;
+}
+
+.penalty-goal {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+  border-left: 3px solid var(--fifa-gold);
+}
+
 .match-status {
   padding: 0.4rem 0.8rem;
   border-radius: var(--radius-full);
@@ -2087,6 +2401,182 @@ export default {
   .goal-scorer {
     font-size: 0.75rem !important;
   }
+}
+
+/* Match Events Section (Goals and Cards) */
+.match-events-section {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.team-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  flex: 1;
+}
+
+.event-item {
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 280px;
+  min-height: 2.5rem;
+}
+
+/* Goal Events */
+.event-item.goal-event {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+/* Penalty goals look the same as regular goals - only the (P) indicator shows difference */
+.event-item.penalty-goal {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+/* Card Events */
+.event-item.card-event {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Substitution Events */
+.event-item.substitution-event {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.event-substitution {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.substitution-arrow {
+  color: #2196F3;
+  font-size: 0.8rem;
+}
+
+.player-out {
+  opacity: 0.7;
+}
+
+.player-in {
+  font-weight: 500;
+}
+
+.substitution-icon {
+  color: #2196F3;
+  font-size: 1rem;
+}
+
+.goal-icon {
+  color: #4CAF50;
+  font-size: 1rem;
+}
+
+.event-item.yellow-card {
+  background: rgba(255, 235, 59, 0.1);
+  border-color: rgba(255, 235, 59, 0.4);
+}
+
+.event-item.red-card {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: rgba(244, 67, 54, 0.4);
+}
+
+.event-minute {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--fifa-dark-blue);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  min-width: 35px;
+  text-align: center;
+}
+
+.event-player {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--fifa-dark-blue);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.event-player:hover {
+  color: var(--fifa-blue);
+}
+
+.event-icon {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.card-icon {
+  font-size: 0.8rem;
+  width: 12px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon.yellow {
+  color: #FFD700;
+}
+
+.card-icon.red {
+  color: #DC143C;
+}
+
+.card-icon.double {
+  display: flex;
+  gap: 1px;
+}
+
+@media (max-width: 1023px) {
+  .match-events-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.25rem;
+  }
+  
+  .team-events {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  
+  .event-item {
+    padding: 0.25rem 0.5rem;
+    max-width: none;
+    font-size: 0.75rem;
+    flex-direction: row;
+    gap: 0.25rem;
+  }
+  
+  .event-minute {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.3rem;
+  }
+  
+  .event-player {
+    font-size: 0.75rem;
+  }
   
   /* Live simulation button */
   .btn-live-sim {
@@ -2135,6 +2625,12 @@ export default {
   
   .goal-indicator {
     font-size: 0.7rem;
+  }
+  
+  .card-indicator {
+    font-size: 0.7rem;
+    margin-left: 0.25rem;
+    padding: 0.1rem 0.3rem;
   }
 }
 
@@ -2350,7 +2846,51 @@ export default {
   border: 1px solid rgba(76, 175, 80, 0.3);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+}
+
+.card-indicator {
+  font-weight: var(--font-weight-bold);
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.card-indicator.yellow {
+  color: #FFD700;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 235, 59, 0.1));
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.card-indicator.red {
+  color: #DC143C;
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.1), rgba(244, 67, 54, 0.1));
+  border: 1px solid rgba(220, 20, 60, 0.3);
+}
+
+.substitution-indicator {
+  font-weight: var(--font-weight-bold);
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+.substitution-indicator.out {
+  color: #FF6B6B;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.substitution-indicator.in {
+  color: #4ECDC4;
+  background: rgba(78, 205, 196, 0.1);
+}
+
+.player-name.substituted-out {
+  opacity: 0.6;
+  text-decoration: line-through;
 }
 
 /* Clickable styles */

@@ -128,6 +128,7 @@ router.get('/detail/:matchId', async (req, res) => {
           .populate('homeLineup.player awayLineup.player')
           .populate('goals.player goals.assist')
           .populate('substitutions.playerOut substitutions.playerIn')
+          .populate('cards.player')
           .populate('matchReport.manOfTheMatch')
           
         console.log(`MATCH DETAIL API: Populate with ${queryUsed} query successful`)
