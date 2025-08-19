@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
@@ -53,17 +54,6 @@
                     Vice Captain
                   </div>
                 </div>
-                
-                <div class="player-ratings">
-                  <div class="rating-circle">
-                    <div class="rating-value">{{ player.overallRating }}</div>
-                    <div class="rating-label">Overall</div>
-                  </div>
-                  <div class="rating-circle">
-                    <div class="rating-value">{{ player.potential }}</div>
-                    <div class="rating-label">Potential</div>
-                  </div>
-                </div>
               </div>
               
               <div class="player-info-section">
@@ -95,10 +85,6 @@
                 <div class="international-stats">
                   <h3>International Career</h3>
                   <div class="international-grid">
-                    <div class="intl-stat">
-                      <div class="stat-number">{{ player.internationalCaps }}</div>
-                      <div class="stat-label">Caps</div>
-                    </div>
                     <div v-if="player.position !== 'Goalkeeper'" class="intl-stat">
                       <div class="stat-number">{{ player.internationalGoals }}</div>
                       <div class="stat-label">Goals</div>
@@ -192,6 +178,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import { getPlayerAvatarUrl } from '../utils/avatarGenerator.js'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'PlayerDetail',
@@ -203,6 +190,7 @@ export default {
     return {
       username: '',
       subscriptionTier: 'basic',
+      userAvatar: null,
       player: null,
       loading: true,
       error: '',
@@ -250,7 +238,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/players/${this.playerId}`, {
+        const response = await fetch(`${API_URL}/players/${this.playerId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -273,7 +261,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -282,6 +270,7 @@ export default {
         if (response.ok) {
           const user = await response.json()
           this.subscriptionTier = user.subscriptionTier || 'basic'
+          this.userAvatar = user.avatar || null
         }
       } catch (error) {
         console.error('Error loading user profile:', error)
@@ -294,7 +283,7 @@ export default {
         
         // Load all player stats across all tournaments
         const response = await fetch(
-          `http://localhost:3001/api/players/${this.playerId}/tournament-history`,
+          `${API_URL}/players/${this.playerId}/tournament-history`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -349,7 +338,7 @@ export default {
         
         // Load qualification stats
         const qualResponse = await fetch(
-          `http://localhost:3001/api/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=qualification`,
+          `${API_URL}/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=qualification`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
@@ -368,7 +357,7 @@ export default {
         
         // Load tournament stats
         const tournResponse = await fetch(
-          `http://localhost:3001/api/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=tournament`,
+          `${API_URL}/matches/${tournamentId}/player-stats/${this.playerId}?competitionType=tournament`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
@@ -506,14 +495,14 @@ export default {
 .player-header {
   background: rgba(255, 255, 255, 0.95);
   border-radius: var(--radius-xl);
-  padding: 2rem;
+  padding: 1.5rem;
   margin-bottom: 2rem;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .back-navigation {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .back-btn {
@@ -538,15 +527,13 @@ export default {
 .player-main-info {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 3rem;
+  gap: 2rem;
   align-items: start;
 }
 
 .player-avatar-section {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
 }
 
 .player-avatar-large {
@@ -557,102 +544,77 @@ export default {
 }
 
 .player-avatar-large img {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  border: 4px solid var(--fifa-gold);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 3px solid var(--fifa-gold);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
 }
 
 .jersey-number-large {
   position: absolute;
-  bottom: -10px;
-  right: -10px;
+  bottom: -8px;
+  right: -8px;
   background: var(--fifa-dark-blue);
   color: var(--white);
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
 }
 
 .captain-badge-large {
-  margin-top: 1rem;
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--fifa-gold);
   color: var(--dark);
-  padding: 8px 16px;
-  border-radius: var(--radius-lg);
-  font-size: 0.9rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
   font-weight: bold;
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  white-space: nowrap;
 }
 
 .captain-badge-large.vice {
   background: #C0C0C0;
 }
 
-.player-ratings {
-  display: flex;
-  gap: 2rem;
-}
-
-.rating-circle {
-  text-align: center;
-}
-
-.rating-value {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background: var(--fifa-gold);
-  color: var(--dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 8px;
-  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
-}
-
-.rating-label {
-  font-size: 0.9rem;
-  color: var(--fifa-dark-blue);
-  font-weight: 500;
-}
-
 .player-info-section h1 {
   color: var(--fifa-dark-blue);
-  font-size: 2.5rem;
-  margin: 0 0 1.5rem 0;
+  font-size: 2rem;
+  margin: 0 0 1rem 0;
   font-weight: bold;
 }
 
 .player-basic-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
 }
 
 .info-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 1.1rem;
+  gap: 8px;
+  font-size: 0.95rem;
   color: var(--fifa-dark-blue);
 }
 
 .info-item i {
-  width: 24px;
+  width: 18px;
   color: var(--fifa-gold);
+  font-size: 0.9rem;
 }
 
 .player-stats-section {
@@ -779,15 +741,15 @@ export default {
 
 /* International Career in Main Card */
 .international-stats {
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
   border-top: 2px solid rgba(0, 102, 204, 0.1);
 }
 
 .international-stats h3 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   color: var(--fifa-dark-blue);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
@@ -799,21 +761,21 @@ export default {
 
 .intl-stat {
   text-align: center;
-  padding: 0.75rem;
+  padding: 0.5rem;
   background: rgba(0, 102, 204, 0.05);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .intl-stat .stat-number {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: bold;
   color: var(--fifa-blue);
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .intl-stat .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -981,8 +943,13 @@ export default {
 @media (max-width: 768px) {
   .player-main-info {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
     text-align: center;
+  }
+  
+  .player-avatar-section {
+    justify-content: center;
+    margin-bottom: 1rem;
   }
   
   .player-stats-section {
@@ -990,11 +957,12 @@ export default {
   }
   
   .player-info-section h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    text-align: center;
   }
   
-  .player-ratings {
-    justify-content: center;
+  .player-basic-info {
+    grid-template-columns: 1fr;
   }
 }
 </style>

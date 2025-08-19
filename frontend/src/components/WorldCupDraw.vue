@@ -29,12 +29,12 @@
       <div class="phase-actions" v-if="!readOnly">
         <button 
           @click="generatePots" 
-          :disabled="loading || pots.length > 0"
+          :disabled="loading"
           class="btn-primary"
         >
           <i v-if="loading" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-layer-group"></i>
-          {{ pots.length > 0 ? 'Pots Generated' : 'Generate Pots' }}
+          {{ pots.length > 0 ? 'Regenerate Pots' : 'Generate Pots' }}
         </button>
         <button 
           v-if="pots.length > 0"
@@ -337,6 +337,7 @@
 
 <script>
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'WorldCupDraw',
@@ -404,7 +405,7 @@ export default {
     async loadPots() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/pots`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/pots`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -421,7 +422,7 @@ export default {
     async loadGroups() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/groups`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/groups`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -441,7 +442,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/pots/generate`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/pots/generate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -471,7 +472,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/all`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/all`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -503,7 +504,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/pot/${potNumber}`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/pot/${potNumber}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -539,7 +540,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/clear`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/clear`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -567,7 +568,7 @@ export default {
         this.error = ''
 
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/draw/${this.tournament._id}/draw/all`, {
+        const response = await fetch(`${API_URL}/draw/${this.tournament._id}/draw/all`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -1231,6 +1232,96 @@ export default {
 
   .pot-draw-buttons {
     justify-content: center;
+  }
+
+  /* Hide main World Cup Draw heading on mobile to avoid duplication */
+  .header-title h3 {
+    display: none;
+  }
+
+  /* Make pot team items more compact - one line layout */
+  .team-item {
+    padding: 8px;
+    align-items: center;
+  }
+
+  .team-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .team-name {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+
+  .team-ranking {
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .host-badge {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    white-space: nowrap;
+  }
+
+  /* Keep live draw groups grid at 4 columns on mobile */
+  .groups-grid.compact {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.2rem;
+  }
+
+  /* Show only flags and pot indicators in live draw on mobile */
+  .groups-grid.compact .team-name {
+    display: none;
+  }
+
+  /* Make group teams more compact - show flags and pot indicators */
+  .groups-grid.compact .group-team {
+    padding: 4px;
+    gap: 2px;
+    justify-content: center;
+    font-size: 0.6rem;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .groups-grid.compact .team-pot {
+    font-size: 0.5rem;
+    font-weight: bold;
+    color: var(--fifa-dark-blue);
+  }
+
+  .groups-grid.compact .group-team .country-flag {
+    font-size: 1.1rem;
+  }
+
+  /* Show just group letter with bigger font in header on mobile */
+  .groups-grid.compact .group-header h5 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1;
+    text-indent: -5ch;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* This will effectively show just the letter by hiding "Group " */
+  .groups-grid.compact .group-header h5::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4ch;
+    height: 100%;
+    background: inherit;
   }
 
 }

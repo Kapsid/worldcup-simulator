@@ -80,15 +80,49 @@ class TeamManagementService {
 
       await tournamentTeam.save()
 
-      // Generate squad for the newly added team
+      // Generate squad for the newly added team only if they don't already have players
       try {
-        await PlayerGenerationService.generateSquad(
-          country.code,
-          tournamentId,
-          tournament.worldId ? tournament.worldId.toString() : null,
-          tournament.year || new Date().getFullYear()
-        )
-        console.log(`✓ Generated squad for ${country.name}`)
+        if (tournament.worldId) {
+          // For world tournaments, check if team already has world-level players
+          const existingWorldPlayers = await PlayerGenerationService.getTeamPlayers(
+            country.code,
+            null, // No tournament ID - check world level
+            tournament.worldId.toString()
+          )
+          
+          if (existingWorldPlayers.length > 0) {
+            console.log(`🔄 ROSTER: Team ${country.name} already has ${existingWorldPlayers.length} world players - preserving existing squad`)
+          } else {
+            console.log(`🔄 ROSTER: Generating initial squad for team: ${country.name} (${country.code}) at world level`)
+            await PlayerGenerationService.generateSquad(
+              country.code,
+              null, // No tournament ID - generate at world level
+              tournament.worldId.toString(),
+              tournament.year || new Date().getFullYear()
+            )
+            console.log(`✓ Generated world-level squad for ${country.name}`)
+          }
+        } else {
+          // For standalone tournaments, check tournament-specific players
+          const existingTournamentPlayers = await PlayerGenerationService.getTeamPlayers(
+            country.code,
+            tournamentId,
+            null
+          )
+          
+          if (existingTournamentPlayers.length > 0) {
+            console.log(`🔄 ROSTER: Team ${country.name} already has ${existingTournamentPlayers.length} tournament players - preserving existing squad`)
+          } else {
+            console.log(`🔄 ROSTER: Generating squad for team: ${country.name} (${country.code})`)
+            await PlayerGenerationService.generateSquad(
+              country.code,
+              tournamentId,
+              null,
+              tournament.year || new Date().getFullYear()
+            )
+            console.log(`✓ Generated tournament squad for ${country.name}`)
+          }
+        }
       } catch (squadError) {
         console.error(`Error generating squad for ${country.name}:`, squadError)
         // Don't throw error - team addition should still succeed
@@ -127,22 +161,25 @@ class TeamManagementService {
         throw new Error('Team not found in tournament')
       }
 
-      // Remove players for this team
-      try {
-        const { default: Player } = await import('../models/Player.js')
-        const deleteQuery = { 
-          teamId: countryCode,
-          tournamentId: tournamentId
+      // For world tournaments, DO NOT delete world-level players when removing a team
+      // For standalone tournaments, remove tournament-specific players for this team
+      if (!tournament.worldId) {
+        try {
+          const { default: Player } = await import('../models/Player.js')
+          const deleteQuery = { 
+            teamId: countryCode,
+            tournamentId: tournamentId,
+            worldId: { $exists: false } // Only delete tournament-specific players
+          }
+          
+          await Player.deleteMany(deleteQuery)
+          console.log(`✓ Removed tournament-specific players for ${countryCode}`)
+        } catch (playerError) {
+          console.error(`Error removing tournament players for ${countryCode}:`, playerError)
+          // Don't throw error - team removal should still succeed
         }
-        if (tournament.worldId) {
-          deleteQuery.worldId = tournament.worldId.toString()
-        }
-        
-        await Player.deleteMany(deleteQuery)
-        console.log(`✓ Removed players for ${countryCode}`)
-      } catch (playerError) {
-        console.error(`Error removing players for ${countryCode}:`, playerError)
-        // Don't throw error - team removal should still succeed
+      } else {
+        console.log(`🔄 ROSTER: Preserving world-level players for ${countryCode} in world tournament`)
       }
 
       // Update tournament team count and activation status
@@ -187,22 +224,27 @@ class TeamManagementService {
         throw new Error('Cannot modify teams in an active tournament')
       }
 
-      // Clear existing teams and their players
+      // Clear existing teams
       await TournamentTeam.deleteMany({ tournament: tournamentId })
       
-      // Clear existing players for this tournament
-      try {
-        const { default: Player } = await import('../models/Player.js')
-        const deleteQuery = { tournamentId: tournamentId }
-        if (tournament.worldId) {
-          deleteQuery.worldId = tournament.worldId.toString()
+      // For world tournaments, DO NOT delete world-level players - they persist across tournaments
+      // For standalone tournaments, clear tournament-specific players
+      if (!tournament.worldId) {
+        try {
+          const { default: Player } = await import('../models/Player.js')
+          const deleteQuery = { 
+            tournamentId: tournamentId,
+            worldId: { $exists: false } // Only delete tournament-specific players
+          }
+          
+          await Player.deleteMany(deleteQuery)
+          console.log(`✓ Cleared tournament-specific players`)
+        } catch (playerError) {
+          console.error(`Error clearing tournament players:`, playerError)
+          // Don't throw error - team clearing should still succeed
         }
-        
-        await Player.deleteMany(deleteQuery)
-        console.log(`✓ Cleared all players for tournament`)
-      } catch (playerError) {
-        console.error(`Error clearing players for tournament:`, playerError)
-        // Don't throw error - team clearing should still succeed
+      } else {
+        console.log(`🔄 ROSTER: Preserving world-level players for world tournament`)
       }
 
       // Load world data if tournament belongs to a world
@@ -250,23 +292,64 @@ class TeamManagementService {
 
       await TournamentTeam.insertMany(tournamentTeams)
 
-      // Generate squads for all teams
-      console.log(`Generating squads for ${bestTeams.length} teams...`)
+      // Generate squads for all teams only if they don't already have players
+      console.log(`Checking squads for ${bestTeams.length} teams...`)
+      let teamsGenerated = 0
+      let teamsSkipped = 0
+      
       for (const country of bestTeams) {
         try {
-          await PlayerGenerationService.generateSquad(
-            country.code,
-            tournamentId,
-            tournament.worldId ? tournament.worldId.toString() : null,
-            tournament.year || new Date().getFullYear()
-          )
-          console.log(`✓ Generated squad for ${country.name}`)
+          if (tournament.worldId) {
+            // For world tournaments, check if team already has world-level players
+            const existingWorldPlayers = await PlayerGenerationService.getTeamPlayers(
+              country.code,
+              null, // No tournament ID - check world level
+              tournament.worldId.toString()
+            )
+            
+            if (existingWorldPlayers.length > 0) {
+              console.log(`🔄 ROSTER: Team ${country.name} already has ${existingWorldPlayers.length} world players - preserving existing squad`)
+              teamsSkipped++
+            } else {
+              console.log(`🔄 ROSTER: Generating initial squad for team: ${country.name} (${country.code}) at world level`)
+              await PlayerGenerationService.generateSquad(
+                country.code,
+                null, // No tournament ID - generate at world level
+                tournament.worldId.toString(),
+                tournament.year || new Date().getFullYear()
+              )
+              console.log(`✓ Generated world-level squad for ${country.name}`)
+              teamsGenerated++
+            }
+          } else {
+            // For standalone tournaments, check tournament-specific players
+            const existingTournamentPlayers = await PlayerGenerationService.getTeamPlayers(
+              country.code,
+              tournamentId,
+              null
+            )
+            
+            if (existingTournamentPlayers.length > 0) {
+              console.log(`🔄 ROSTER: Team ${country.name} already has ${existingTournamentPlayers.length} tournament players - preserving existing squad`)
+              teamsSkipped++
+            } else {
+              console.log(`🔄 ROSTER: Generating squad for team: ${country.name} (${country.code})`)
+              await PlayerGenerationService.generateSquad(
+                country.code,
+                tournamentId,
+                null,
+                tournament.year || new Date().getFullYear()
+              )
+              console.log(`✓ Generated tournament squad for ${country.name}`)
+              teamsGenerated++
+            }
+          }
         } catch (squadError) {
-          console.error(`Error generating squad for ${country.name}:`, squadError)
+          console.error(`Error checking/generating squad for ${country.name}:`, squadError)
           // Continue with other teams even if one fails
         }
       }
-      console.log('Squad generation completed for all teams')
+      console.log(`Squad check completed: ${teamsGenerated} teams generated, ${teamsSkipped} teams preserved`)
 
       // Update tournament status
       await this.updateTournamentStatus(tournamentId)
@@ -294,19 +377,24 @@ class TeamManagementService {
       // Remove all teams
       await TournamentTeam.deleteMany({ tournament: tournamentId })
       
-      // Remove all players for this tournament
-      try {
-        const { default: Player } = await import('../models/Player.js')
-        const deleteQuery = { tournamentId: tournamentId }
-        if (tournament.worldId) {
-          deleteQuery.worldId = tournament.worldId.toString()
+      // For world tournaments, DO NOT delete world-level players - they persist across tournaments
+      // For standalone tournaments, clear tournament-specific players
+      if (!tournament.worldId) {
+        try {
+          const { default: Player } = await import('../models/Player.js')
+          const deleteQuery = { 
+            tournamentId: tournamentId,
+            worldId: { $exists: false } // Only delete tournament-specific players
+          }
+          
+          await Player.deleteMany(deleteQuery)
+          console.log(`✓ Cleared tournament-specific players`)
+        } catch (playerError) {
+          console.error(`Error clearing tournament players:`, playerError)
+          // Don't throw error - clearing should still succeed
         }
-        
-        await Player.deleteMany(deleteQuery)
-        console.log(`✓ Cleared all players for tournament`)
-      } catch (playerError) {
-        console.error(`Error clearing players for tournament:`, playerError)
-        // Don't throw error - clearing should still succeed
+      } else {
+        console.log(`🔄 ROSTER: Preserving world-level players for world tournament`)
       }
 
       // Update tournament status
@@ -397,10 +485,10 @@ class TeamManagementService {
         throw new Error('Tournament not found')
       }
 
-      // Check if tournament is already active (only allow draft)
-      if (tournament.status !== 'draft') {
-        throw new Error('Cannot modify teams in an active tournament')
-      }
+      // Allow adding qualified teams even if tournament is active (for auto-population)
+      // if (tournament.status !== 'draft') {
+      //   throw new Error('Cannot modify teams in an active tournament')
+      // }
 
       // Get qualification data
       const QualificationService = await import('./QualificationService.js')

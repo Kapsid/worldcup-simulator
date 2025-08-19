@@ -44,6 +44,20 @@
 
     <!-- List View -->
     <div v-else-if="viewMode === 'list'" class="roster-list">
+      <!-- No Players Found Message -->
+      <div v-if="players.length === 0" class="no-players-message">
+        <i class="fas fa-users"></i>
+        <h4>No Players Found</h4>
+        <p>Player roster is not available for this team yet.</p>
+        <div class="debug-info" v-if="error">
+          <small>{{ error }}</small>
+        </div>
+        <button @click="loadRoster" class="btn-primary" :disabled="loading">
+          <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+          Retry Loading
+        </button>
+      </div>
+      
       <!-- Position Groups -->
       <div v-for="positionGroup in positionGroups" :key="positionGroup.name" class="position-group">
         <h4 class="position-title">
@@ -74,7 +88,8 @@
                 <span class="rating">{{ player.overallRating }}</span>
               </div>
               <div class="player-stats">
-                <span class="caps">{{ player.internationalCaps }} caps</span>
+                <!-- Display format: overallMatches/internationalCaps -->
+                <span class="caps">{{ player.overallMatches || 0 }}/{{ player.internationalCaps }} caps</span>
                 <span v-if="player.position !== 'Goalkeeper'" class="goals">
                   {{ player.internationalGoals }} goals
                 </span>
@@ -119,6 +134,7 @@
 <script>
 import { getPlayerAvatarUrl } from '../utils/avatarGenerator.js'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TeamRoster',
@@ -213,17 +229,26 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
+        
+        // Try different team identifier properties
+        const teamIdentifier = this.team.code || this.team.countryCode || this.team._id || this.team.teamId
+        console.log('🏆 ROSTER: Team identifier:', teamIdentifier)
+        
+        if (!teamIdentifier) {
+          throw new Error('No valid team identifier found')
+        }
+        
         const params = new URLSearchParams({
-          teamCode: this.team.code
+          teamCode: teamIdentifier
         })
         
         if (this.tournamentId) params.append('tournamentId', this.tournamentId)
         if (this.worldId) params.append('worldId', this.worldId)
 
-        const apiUrl = `http://localhost:3001/api/players/team?${params}`
+        const apiUrl = `${API_URL}/players/team?${params}`
         console.log('🏆 ROSTER: API URL:', apiUrl)
 
-        const response = await fetch(apiUrl, {
+        let response = await fetch(apiUrl, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -231,17 +256,50 @@ export default {
 
         console.log('🏆 ROSTER: Response status:', response.status)
         
+        // If the primary endpoint fails, try alternative endpoints
+        if (!response.ok) {
+          console.log('🏆 ROSTER: Primary endpoint failed, trying alternatives...')
+          
+          // Try multiple alternative endpoints
+          const alternatives = [
+            `${API_URL}/teams/${teamIdentifier}/players`,
+            `${API_URL}/tournaments/${this.tournamentId}/teams/${teamIdentifier}/players`,
+            `${API_URL}/worlds/${this.worldId}/teams/${teamIdentifier}/players`,
+            `${API_URL}/players?teamCode=${teamIdentifier}`,
+            `${API_URL}/players?teamId=${teamIdentifier}`
+          ]
+          
+          for (const altUrl of alternatives) {
+            console.log('🏆 ROSTER: Trying alternative:', altUrl)
+            try {
+              response = await fetch(altUrl, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              })
+              console.log('🏆 ROSTER: Alternative response status:', response.status)
+              if (response.ok) {
+                console.log('🏆 ROSTER: Success with alternative endpoint!')
+                break
+              }
+            } catch (altError) {
+              console.log('🏆 ROSTER: Alternative failed:', altError.message)
+            }
+          }
+        }
+        
         if (response.ok) {
           const data = await response.json()
           console.log('🏆 ROSTER: Response data:', data)
-          console.log('🏆 ROSTER: Players found:', data.players?.length || 0)
+          console.log('🏆 ROSTER: Players found:', data.players?.length || data.length || 0)
           
-          this.players = data.players || []
+          // Handle different response formats
+          this.players = data.players || data || []
           this.tactics = data.tactics || this.tactics
         } else {
           const errorText = await response.text()
           console.error('🏆 ROSTER: API error:', response.status, errorText)
-          this.error = 'Failed to load team roster'
+          this.error = `Failed to load team roster (${response.status})`
         }
       } catch (error) {
         console.error('🏆 ROSTER: Network error:', error)
@@ -594,6 +652,37 @@ export default {
   margin-bottom: 1rem;
 }
 
+.no-players-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: rgba(0, 51, 102, 0.7);
+}
+
+.no-players-message i {
+  font-size: 3rem;
+  color: rgba(0, 51, 102, 0.3);
+  margin-bottom: 1rem;
+}
+
+.no-players-message h4 {
+  color: var(--fifa-dark-blue);
+  margin: 0 0 0.5rem 0;
+}
+
+.no-players-message p {
+  margin: 0 0 1rem 0;
+}
+
+.debug-info {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  margin: 1rem 0;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--fifa-red);
+}
 
 @media (max-width: 768px) {
   .roster-header {

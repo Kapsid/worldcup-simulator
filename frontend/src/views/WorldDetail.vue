@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
@@ -46,12 +47,12 @@
             <div class="step-info">
               <h3>Step 1: Generate Host Candidates</h3>
               <p>FIFA will select 3-8 candidate countries based on rankings and capabilities</p>
-              <div v-if="excludedConfederation" class="confederation-notice">
+              <div v-if="excludedConfederations.length > 0" class="confederation-notice">
                 <i class="fas fa-info-circle"></i>
-                Note: Countries from {{ getConfederationName(excludedConfederation) }} are excluded (previous host's confederation)
+                Note: Countries from {{ excludedConfederations.map(c => getConfederationName(c)).join(' and ') }} are excluded (previous {{ excludedConfederations.length > 1 ? 'hosts\' confederations' : 'host\'s confederation' }})
               </div>
             </div>
-            <button @click="generateCandidates" :disabled="generatingCandidates" class="btn-primary">
+            <button @click="generateCandidates" :disabled="generatingCandidates" class="btn-primary" ref="generateBtn">
               <i v-if="generatingCandidates" class="fas fa-spinner fa-spin"></i>
               <i v-else class="fas fa-dice"></i>
               {{ generatingCandidates ? 'Generating...' : 'Generate Candidates' }}
@@ -66,7 +67,7 @@
             </div>
             
             <div class="candidates-grid">
-              <div v-for="candidate in candidates" :key="candidate.code" class="candidate-card glass-white">
+              <div v-for="candidate in candidates" :key="candidate.code" class="candidate-card glass-white" :class="{ 'voting-active': voting }">
                 <div class="candidate-flag"><CountryFlag :country-code="candidate.code" :size="32" /></div>
                 <div class="candidate-info">
                   <h4>{{ candidate.name }}</h4>
@@ -76,13 +77,18 @@
                     <span class="chance">Win Chance: {{ candidate.winChance }}%</span>
                   </div>
                 </div>
+                <div v-if="voting" class="voting-overlay">
+                  <div class="voting-spinner">
+                    <i class="fas fa-vote-yea"></i>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <button @click="simulateVoting" :disabled="voting" class="btn-primary vote-btn">
+            <button @click="simulateVoting" :disabled="voting || showEnvelopeReveal" class="btn-primary vote-btn">
               <i v-if="voting" class="fas fa-spinner fa-spin"></i>
-              <i v-else class="fas fa-vote-yea"></i>
-              {{ voting ? 'Voting in Progress...' : 'Simulate FIFA Vote' }}
+              <i v-else class="fas fa-envelope"></i>
+              {{ voting ? 'Opening the Envelope...' : 'Open FIFA Envelope' }}
             </button>
           </div>
 
@@ -399,6 +405,14 @@
         </div>
       </div>
     </main>
+
+    <!-- Envelope Reveal Animation -->
+    <EnvelopeReveal 
+      :show="showEnvelopeReveal"
+      :winner="selectedHost"
+      :year="world.beginningYear"
+      @complete="onEnvelopeComplete"
+    />
   </div>
 </template>
 
@@ -406,18 +420,22 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import CountryFlag from '../components/CountryFlag.vue'
+import EnvelopeReveal from '../components/EnvelopeReveal.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'WorldDetail',
   components: {
     AppHeader,
     Breadcrumbs,
-    CountryFlag
+    CountryFlag,
+    EnvelopeReveal
   },
   data() {
     return {
       username: '',
       subscriptionTier: 'basic',
+      userAvatar: null,
       loading: true,
       world: {},
       currentPhase: 'host-selection', // 'host-selection' or 'tournament-management'
@@ -428,7 +446,8 @@ export default {
       voting: false,
       votingComplete: false,
       selectedHost: null,
-      excludedConfederation: null,
+      excludedConfederations: [],
+      showEnvelopeReveal: false,
       
       // Tournament Management
       activeTab: 'current',
@@ -563,7 +582,7 @@ export default {
         const worldId = this.$route.params.id
         const token = localStorage.getItem('token')
         
-        const response = await fetch(`http://localhost:3001/api/worlds/${worldId}`, {
+        const response = await fetch(`${API_URL}/worlds/${worldId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -594,7 +613,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -603,6 +622,7 @@ export default {
         if (response.ok) {
           const user = await response.json()
           this.subscriptionTier = user.subscriptionTier || 'basic'
+          this.userAvatar = user.avatar || null
         }
       } catch (error) {
         console.error('Error loading user profile:', error)
@@ -613,7 +633,7 @@ export default {
       try {
         console.log('Loading world-specific rankings for world:', this.world._id)
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/worlds/${this.world._id}/rankings`, {
+        const response = await fetch(`${API_URL}/worlds/${this.world._id}/rankings`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -626,7 +646,7 @@ export default {
         } else {
           console.error('Failed to load world rankings, falling back to FIFA rankings')
           // Fallback to FIFA rankings
-          const fallbackResponse = await fetch('http://localhost:3001/api/tournaments/countries')
+          const fallbackResponse = await fetch(`${API_URL}/tournaments/countries`)
           if (fallbackResponse.ok) {
             const countries = await fallbackResponse.json()
             this.countryRankings = countries
@@ -640,36 +660,35 @@ export default {
 
     async checkExcludedConfederation() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch(`${API_URL}/tournaments/countries`)
         if (response.ok) {
           const countries = await response.json()
-          this.excludedConfederation = this.getLastHostConfederation(countries)
+          this.excludedConfederations = this.getLastHostConfederations(countries)
         }
       } catch (error) {
         console.error('Error checking excluded confederation:', error)
       }
     },
 
-    getLastHostConfederation(countries) {
-      // Get the most recent tournament host from world's history
-      let lastHostCode = null
+    getLastHostConfederations(countries, count = 2) {
+      // Get the most recent tournament hosts' confederations from world's history
+      const hostConfederations = []
 
       // Check worldCupHistory first (this includes both real and simulated history and is always up-to-date)
+      let history = []
       if (this.worldCupHistory && this.worldCupHistory.length > 0) {
-        const sortedHistory = [...this.worldCupHistory].sort((a, b) => b.year - a.year)
-        lastHostCode = sortedHistory[0].host?.code
+        history = [...this.worldCupHistory].sort((a, b) => b.year - a.year)
       } 
       // Fallback: check world's simulatedHistory directly
       else if (this.world.simulatedHistory && this.world.simulatedHistory.length > 0) {
-        const sortedHistory = [...this.world.simulatedHistory].sort((a, b) => b.year - a.year)
-        lastHostCode = sortedHistory[0].host?.code
+        history = [...this.world.simulatedHistory].sort((a, b) => b.year - a.year)
       } 
       // If no simulated history, use real World Cup history up to the world's beginning year
       else if (this.world.useRealHistoricData) {
         // Use built-in real World Cup history and find the most recent tournament before this world's beginning
         const realHistory = [
           { year: 2022, host: { code: 'QAT' } },
-          { year: 2018, host: { code: 'RUS' } },
+          { year: 2018, host: { code: 'RUS' } }, // Russia - might not be in countries data
           { year: 2014, host: { code: 'BRA' } },
           { year: 2010, host: { code: 'RSA' } },
           { year: 2006, host: { code: 'GER' } },
@@ -684,29 +703,42 @@ export default {
           { year: 1970, host: { code: 'MEX' } }
         ]
         
-        const realHistoryBeforeWorld = realHistory
+        history = realHistory
           .filter(wc => wc.year < this.world.beginningYear)
           .sort((a, b) => b.year - a.year)
-        
-        if (realHistoryBeforeWorld.length > 0) {
-          lastHostCode = realHistoryBeforeWorld[0].host?.code
+      }
+
+      // Fallback confederation mapping for countries not in the data
+      const fallbackConfederations = {
+        'RUS': 'uefa',  // Russia
+        'KOR': 'afc',   // South Korea
+        'SUI': 'uefa',  // Switzerland
+        'AUT': 'uefa',  // Austria
+      }
+
+      // Get the last 'count' hosts' confederations
+      for (let i = 0; i < Math.min(count, history.length); i++) {
+        const hostCode = history[i]?.host?.code
+        if (hostCode) {
+          const hostCountry = countries.find(c => c.code === hostCode)
+          if (hostCountry && hostCountry.confederation && !hostConfederations.includes(hostCountry.confederation)) {
+            hostConfederations.push(hostCountry.confederation)
+            console.log(`Host ${i+1}: ${hostCountry.name} (${hostCode}) from ${hostCountry.confederation}`)
+          } else if (!hostCountry && fallbackConfederations[hostCode] && !hostConfederations.includes(fallbackConfederations[hostCode])) {
+            // Use fallback confederation for missing countries
+            hostConfederations.push(fallbackConfederations[hostCode])
+            console.log(`Host ${i+1}: ${hostCode} from ${fallbackConfederations[hostCode]} (using fallback)`)
+          }
         }
       }
 
-      if (!lastHostCode) {
-        console.log('No previous host found, allowing all confederations')
-        return null
+      if (hostConfederations.length === 0) {
+        console.log('No previous hosts found, allowing all confederations')
+      } else {
+        console.log(`Excluding confederations: ${hostConfederations.join(', ')}`)
       }
 
-      // Find the confederation of the last host
-      const lastHostCountry = countries.find(c => c.code === lastHostCode)
-      if (lastHostCountry) {
-        console.log(`Last host was ${lastHostCountry.name} (${lastHostCode}) from ${lastHostCountry.confederation}`)
-        return lastHostCountry.confederation
-      }
-
-      console.log('Last host country not found in countries data')
-      return null
+      return hostConfederations
     },
 
     getConfederationName(confederationCode) {
@@ -722,38 +754,67 @@ export default {
     },
     
     async generateCandidates() {
+      console.log('Generate candidates button clicked!')
       this.generatingCandidates = true
       
       try {
         // Load latest world cup history to get accurate last host info
-        await this.loadWorldCupHistory()
+        console.log('Loading world cup history...')
+        try {
+          await this.loadWorldCupHistory()
+        } catch (historyError) {
+          console.warn('Failed to load history, continuing anyway:', historyError)
+        }
         
         // Simulate delay
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        console.log('Simulating delay...')
+        await new Promise(resolve => setTimeout(resolve, 1000))
         
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        console.log('Fetching countries from:', `${API_URL}/tournaments/countries`)
+        const response = await fetch(`${API_URL}/tournaments/countries`, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        console.log('Response status:', response.status, response.statusText)
+        
         if (response.ok) {
           const countries = await response.json()
+          console.log('Countries loaded:', countries.length)
           
           // Determine the last host's confederation to exclude it
-          const lastHostConfederation = this.getLastHostConfederation(countries)
-          this.excludedConfederation = lastHostConfederation
-          console.log('Last host confederation:', lastHostConfederation)
+          let lastHostConfederations = []
+          try {
+            lastHostConfederations = this.getLastHostConfederations(countries)
+          } catch (confederationError) {
+            console.warn('Error getting last host confederations:', confederationError)
+          }
+          this.excludedConfederations = lastHostConfederations
+          console.log('Last host confederations:', lastHostConfederations)
           
-          // Select 3-8 candidates based on FIFA ranking, excluding last host's confederation
+          // Select 3-8 candidates based on FIFA ranking, excluding last hosts' confederations
           const candidateCount = Math.floor(Math.random() * 6) + 3 // 3-8
           const topCountries = countries
             .filter(c => c.worldRanking && c.worldRanking <= 50)
-            .filter(c => !lastHostConfederation || c.confederation !== lastHostConfederation)
+            .filter(c => !lastHostConfederations.includes(c.confederation))
             .sort((a, b) => a.worldRanking - b.worldRanking)
+          
+          console.log('Filtered top countries:', topCountries.length)
           
           const selectedCandidates = []
           const usedCountries = new Set()
           
+          // Ensure we have at least some candidates
+          if (topCountries.length === 0) {
+            console.warn('No top countries found, using all countries')
+            topCountries.push(...countries.slice(0, 20))
+          }
+          
           // Higher ranked countries have higher chance to be selected
           for (let i = 0; i < candidateCount && selectedCandidates.length < candidateCount; i++) {
-            let country
+            let country = null
             let attempts = 0
+            
             do {
               const rankingWeight = Math.random() * Math.random() // Bias toward better rankings
               const index = Math.floor(rankingWeight * Math.min(topCountries.length, 30))
@@ -770,7 +831,7 @@ export default {
               const winChance = Math.round(baseChance + rankingBonus + (Math.random() - 0.5) * 10)
               
               // Try to get world ranking for display if available
-              const worldRanking = this.countryRankings.find(c => c.code === country.code)
+              const worldRanking = this.countryRankings?.find(c => c.code === country.code)
               
               selectedCandidates.push({
                 ...country,
@@ -782,10 +843,29 @@ export default {
           }
           
           this.candidates = selectedCandidates
+          console.log('Generated candidates:', selectedCandidates.length, selectedCandidates)
+        } else {
+          console.error('Failed to fetch countries. Status:', response.status)
+          const errorText = await response.text()
+          console.error('Error response:', errorText)
+          
+          // Fallback with test data
+          this.candidates = [
+            { name: 'Germany', code: 'GER', rank: 14, points: 1650, winChance: 25 },
+            { name: 'France', code: 'FRA', rank: 3, points: 1840, winChance: 30 },
+            { name: 'Spain', code: 'ESP', rank: 2, points: 1860, winChance: 20 }
+          ]
         }
       } catch (error) {
         console.error('Error generating candidates:', error)
+        // Fallback with test data
+        this.candidates = [
+          { name: 'Germany', code: 'GER', rank: 14, points: 1650, winChance: 25 },
+          { name: 'France', code: 'FRA', rank: 3, points: 1840, winChance: 30 },
+          { name: 'Spain', code: 'ESP', rank: 2, points: 1860, winChance: 20 }
+        ]
       } finally {
+        console.log('Candidate generation finished')
         this.generatingCandidates = false
       }
     },
@@ -794,8 +874,8 @@ export default {
       this.voting = true
       
       try {
-        // Simulate voting delay
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Simulate brief preparation
+        await new Promise(resolve => setTimeout(resolve, 1000))
         
         // Select winner based on win chances
         const totalChance = this.candidates.reduce((sum, c) => sum + c.winChance, 0)
@@ -815,12 +895,21 @@ export default {
         winner.voteShare = Math.max(30, Math.min(70, winner.voteShare))
         
         this.selectedHost = winner
-        this.votingComplete = true
+        
+        // Show envelope animation instead of immediately showing results
+        this.showEnvelopeReveal = true
+        
       } catch (error) {
         console.error('Error simulating voting:', error)
-      } finally {
         this.voting = false
       }
+    },
+    
+    onEnvelopeComplete() {
+      // Called when envelope animation completes
+      this.showEnvelopeReveal = false
+      this.voting = false
+      this.votingComplete = true
     },
     
     async proceedToTournament() {
@@ -830,7 +919,7 @@ export default {
         // Create the tournament via API
         const token = localStorage.getItem('token')
         const tournamentYear = this.world.beginningYear
-        const response = await fetch('http://localhost:3001/api/tournaments', {
+        const response = await fetch(`${API_URL}/tournaments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -908,11 +997,13 @@ export default {
       try {
         console.log('Loading World Cup history for world:', this.world._id)
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/worlds/${this.world._id}/history`, {
+        console.log('Token available:', !!token)
+        const response = await fetch(`${API_URL}/worlds/${this.world._id}/history`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
+        console.log('History response status:', response.status)
         
         if (response.ok) {
           const data = await response.json()
@@ -963,7 +1054,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Update last opened timestamp
-        await fetch(`http://localhost:3001/api/tournaments/${tournament.id}/open`, {
+        await fetch(`${API_URL}/tournaments/${tournament.id}/open`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -993,7 +1084,7 @@ export default {
         const finalScore = `${Math.floor(Math.random() * 3) + 1}-${Math.floor(Math.random() * 3)}`
         
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${tournament.id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${tournament.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1232,10 +1323,57 @@ export default {
   border-radius: var(--radius-lg);
   text-align: center;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.candidate-card:hover {
+.candidate-card:hover:not(.voting-active) {
   transform: translateY(-2px);
+}
+
+.candidate-card.voting-active {
+  animation: votingPulse 2s ease-in-out infinite;
+}
+
+@keyframes votingPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.voting-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 215, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+}
+
+.voting-spinner {
+  background: rgba(255, 215, 0, 0.9);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: votingSpin 1.5s ease-in-out infinite;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.voting-spinner i {
+  color: #1a1a2e;
+  font-size: 18px;
+}
+
+@keyframes votingSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 .candidate-flag {
@@ -1271,6 +1409,41 @@ export default {
   margin-top: 2rem;
   padding: 16px 32px;
   font-size: 1.1rem;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border: none;
+  color: #1a1a2e;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.vote-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+}
+
+.vote-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.vote-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+
+.vote-btn:hover::before {
+  left: 100%;
 }
 
 .voting-results {
@@ -1852,11 +2025,30 @@ export default {
     text-align: center;
   }
   
+  /* Fix history items overflow - stack champion and host vertically on mobile */
+  .history-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .winner-section,
+  .host-section {
+    width: 100%;
+  }
+  
+  /* Make rankings table horizontally scrollable on mobile */
+  .rankings-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
   .rankings-header,
   .ranking-item {
     grid-template-columns: 50px 1fr 80px 80px;
     gap: 8px;
     padding: 12px 16px;
+    min-width: 300px; /* Ensure minimum width for scrolling */
   }
 }
 </style>

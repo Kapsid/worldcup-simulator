@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
@@ -47,7 +48,7 @@
               <div class="team-stats-summary">
                 <div class="stat-item">
                   <span class="stat-label">World Ranking</span>
-                  <span class="stat-value">#{{ countryInfo?.worldRanking || 'N/A' }}</span>
+                  <span class="stat-value">#{{ countryInfo?.worldRanking || countryInfo?.fifaRanking || team.worldRanking || team.fifaRanking || '--' }}</span>
                 </div>
                 <div class="stat-item" v-if="team.confederation">
                   <span class="stat-label">Confederation</span>
@@ -86,6 +87,14 @@
             >
               <i class="fas fa-history"></i>
               Tournament History
+            </button>
+            <button 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'about' }"
+              @click="activeTab = 'about'"
+            >
+              <i class="fas fa-map-marked-alt"></i>
+              About Country
             </button>
           </div>
           
@@ -204,8 +213,16 @@
                         <div class="stat-label">Runner-ups</div>
                       </div>
                       <div class="stat-card">
-                        <div class="stat-number">{{ tournamentHistory.statistics.groupStage }}</div>
-                        <div class="stat-label">Group Stage</div>
+                        <div class="stat-number">{{ tournamentHistory.statistics.semifinals }}</div>
+                        <div class="stat-label">1/2 Final</div>
+                      </div>
+                      <div class="stat-card">
+                        <div class="stat-number">{{ tournamentHistory.statistics.quarterFinals }}</div>
+                        <div class="stat-label">1/4 Final</div>
+                      </div>
+                      <div class="stat-card">
+                        <div class="stat-number">{{ tournamentHistory.statistics.roundOf16 }}</div>
+                        <div class="stat-label">1/8 Final</div>
                       </div>
                     </div>
 
@@ -226,23 +243,23 @@
                           <div class="tournament-info">
                             <div class="tournament-year">{{ tournament.year }}</div>
                             <div class="tournament-details">
-                              <div class="tournament-name">{{ tournament.name }}</div>
+                              <div class="tournament-name">{{ tournament.tournamentName }}</div>
                               <div class="tournament-host">
                                 <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
                                 {{ tournament.hostCountry }}
                               </div>
                               <div v-if="tournament.isWorldTournament" class="world-badge">
                                 <i class="fas fa-globe"></i>
-                                {{ tournament.worldName }}
+                                World Tournament
                               </div>
                             </div>
                           </div>
                           <div class="tournament-result">
-                            <div class="result-badge" :class="getResultClass(tournament.result)">
-                              {{ tournament.result }}
+                            <div class="result-badge" :class="getResultClass(tournament.achievement)">
+                              {{ tournament.achievement }}
                             </div>
-                            <div v-if="tournament.position" class="position-badge">
-                              {{ getPositionSuffix(tournament.position) }}
+                            <div v-if="tournament.finalPosition" class="position-badge">
+                              {{ getPositionSuffix(tournament.finalPosition) }}
                             </div>
                           </div>
                         </div>
@@ -253,6 +270,46 @@
                   <div v-else class="no-history-data">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Unable to load tournament history</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- About Tab -->
+            <div v-if="activeTab === 'about'" class="about-tab">
+              <div class="content-card glass-white">
+                <div class="card-header">
+                  <h3>Discover {{ countryPlaces.capital ? countryPlaces.capital + ', ' : '' }}{{ team.name }}</h3>
+                  <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <div class="card-content">
+                  <div class="country-intro">
+                    <p class="intro-text">
+                      Explore the beautiful landmarks and attractions that make {{ team.name }} unique. 
+                      From historic sites to natural wonders, discover what this amazing country has to offer.
+                    </p>
+                  </div>
+                  
+                  <div class="places-grid">
+                    <div 
+                      v-for="(place, index) in countryPlaces.places" 
+                      :key="index"
+                      class="place-card"
+                    >
+                      <div class="place-icon">{{ place.image }}</div>
+                      <div class="place-info">
+                        <h4 class="place-name">{{ place.name }}</h4>
+                        <span class="place-type">{{ place.type }}</span>
+                        <p class="place-description">{{ place.description }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-if="countryPlaces.capital" class="capital-info">
+                    <div class="capital-badge">
+                      <i class="fas fa-star"></i>
+                      Capital: {{ countryPlaces.capital }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -268,6 +325,8 @@
 import AppHeader from '../components/AppHeader.vue'
 import CountryFlag from '../components/CountryFlag.vue'
 import TeamRoster from '../components/TeamRoster.vue'
+import { API_URL } from '../config/api.js'
+import { getCountryPlaces } from '../data/countryPlaces.js'
 
 export default {
   name: 'QualifyingTeamDetail',
@@ -280,6 +339,7 @@ export default {
     return {
       username: '',
       subscriptionTier: 'basic',
+      userAvatar: null,
       team: null,
       tournament: null,
       qualificationMatches: [],
@@ -294,14 +354,55 @@ export default {
   computed: {
     countryInfo() {
       if (!this.team) return null
-      return this.countries.find(c => c.code === this.team.country || c.name === this.team.name)
+      
+      // Extract country code from teamId if available (format: "confederationId_countryCode")
+      let countryCode = null
+      if (this.team.teamId && this.team.teamId.includes('_')) {
+        countryCode = this.team.teamId.split('_')[1]
+      }
+      
+      // Try to find country by various properties
+      return this.countries.find(c => 
+        c.code === countryCode ||
+        c.code === this.team.country || 
+        c.code === this.team.countryCode ||
+        c.name === this.team.name ||
+        c.name === this.team.country
+      )
+    },
+
+    countryPlaces() {
+      if (!this.team) return { capital: '', places: [] }
+      
+      // Extract country code from teamId (format: "confederationId_countryCode")
+      let countryCode = null
+      if (this.team.teamId && this.team.teamId.includes('_')) {
+        countryCode = this.team.teamId.split('_')[1]
+      }
+      
+      // Fallback to other possible country code sources
+      countryCode = countryCode || this.team.country || this.team.countryCode || this.team.code
+      
+      return getCountryPlaces(countryCode)
     },
 
     rosterTeamData() {
       if (!this.team) return null
       
-      // Use country code from countryInfo, fallback to team data
-      const teamCode = this.countryInfo?.code || this.team.countryCode || this.team.code || this.team.country || this.team.name
+      // Extract country code from teamId (format: "confederationId_countryCode")
+      let teamCode = null
+      if (this.team.teamId && this.team.teamId.includes('_')) {
+        teamCode = this.team.teamId.split('_')[1]
+      }
+      
+      // Fallback to other properties
+      if (!teamCode) {
+        teamCode = this.countryInfo?.code || this.team.countryCode || this.team.code || this.team.country || this.team.name
+      }
+      
+      console.log('🏆 ROSTER DATA: Team ID:', this.team.teamId)
+      console.log('🏆 ROSTER DATA: Extracted code:', teamCode)
+      console.log('🏆 ROSTER DATA: Team name:', this.team.name)
       
       return {
         code: teamCode,
@@ -342,7 +443,7 @@ export default {
     async loadTournament() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.$route.params.tournamentId}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.$route.params.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -359,7 +460,7 @@ export default {
     async loadQualificationData() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.$route.params.tournamentId}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.$route.params.tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -415,7 +516,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch(`${API_URL}/tournaments/countries`)
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -469,7 +570,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -478,6 +579,7 @@ export default {
         if (response.ok) {
           const user = await response.json()
           this.subscriptionTier = user.subscriptionTier || 'basic'
+          this.userAvatar = user.avatar || null
         }
       } catch (error) {
         console.error('Error loading user profile:', error)
@@ -491,14 +593,22 @@ export default {
     },
     
     async loadTournamentHistory() {
-      if (!this.team || this.tournamentHistory) return
+      if (!this.team || this.tournamentHistory || !this.tournament?.worldId) return
       
       this.loadingHistory = true
       try {
         const token = localStorage.getItem('token')
         
-        // Try to find country code from the countries list
-        let countryCode = this.team.country || this.team.countryCode
+        // Extract country code from teamId (format: "confederationId_countryCode")
+        let countryCode = null
+        if (this.team.teamId && this.team.teamId.includes('_')) {
+          countryCode = this.team.teamId.split('_')[1]
+        }
+        
+        // Fallback to other properties
+        if (!countryCode) {
+          countryCode = this.team.country || this.team.countryCode
+        }
         
         if (!countryCode && this.countries.length > 0) {
           // Try to find by name match
@@ -516,8 +626,9 @@ export default {
           countryCode = this.team.name
         }
         
+        console.log('🏆 HISTORY: Loading tournament history for', countryCode, 'in world', this.tournament.worldId)
         
-        const response = await fetch(`http://localhost:3001/api/teams/history/${countryCode}`, {
+        const response = await fetch(`${API_URL}/countries/${countryCode}/tournament-history?worldId=${this.tournament.worldId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -525,6 +636,7 @@ export default {
         
         if (response.ok) {
           this.tournamentHistory = await response.json()
+          console.log('🏆 HISTORY: Loaded tournament history:', this.tournamentHistory)
         } else {
           const errorData = await response.json()
           console.error('API Error:', errorData)
@@ -536,14 +648,19 @@ export default {
       }
     },
     
-    getResultClass(result) {
-      switch (result.toLowerCase()) {
-        case 'winner': return 'result-winner'
-        case 'runner-up': return 'result-runner-up'
-        case 'semi-finals': return 'result-semi'
-        case 'quarter-finals': return 'result-quarter'
-        case 'round of 16': return 'result-round16'
-        case 'group stage': return 'result-group'
+    getResultClass(achievement) {
+      if (!achievement) return 'result-default'
+      
+      switch (achievement.toLowerCase()) {
+        case '1st place': return 'result-winner'
+        case '2nd place': return 'result-runner-up'
+        case '3rd place':
+        case '4th place': return 'result-semi'
+        case '1/4 final ended': return 'result-quarter'
+        case '1/8 final ended': return 'result-round16'
+        case 'group stage ended': return 'result-group'
+        case 'qualification ended':
+        case 'did not qualify': return 'result-qualification'
         default: return 'result-default'
       }
     },
@@ -1078,6 +1195,16 @@ export default {
   color: #6b7280;
 }
 
+.result-badge.result-qualification {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.result-badge.result-default {
+  background: rgba(156, 163, 175, 0.2);
+  color: #6b7280;
+}
+
 .position-badge {
   font-size: 0.8rem;
   color: var(--gray);
@@ -1140,6 +1267,23 @@ export default {
     flex-direction: column;
     gap: 8px;
   }
+  
+  .statistics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem;
+  }
 }
 
 .roster-section {
@@ -1150,5 +1294,153 @@ export default {
   border-radius: 0;
   border: none;
   background: transparent;
+}
+
+/* About Tab Styles */
+.about-tab .country-intro {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.intro-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--fifa-dark-blue);
+  opacity: 0.8;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.places-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.place-card {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid rgba(0, 102, 204, 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.place-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 102, 204, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.place-icon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.1), rgba(0, 102, 204, 0.05));
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(0, 102, 204, 0.1);
+}
+
+.place-info {
+  flex: 1;
+}
+
+.place-name {
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  margin: 0 0 0.5rem 0;
+}
+
+.place-type {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-dark-blue));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.place-description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--gray);
+  margin: 0;
+}
+
+.capital-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.capital-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #ffd700);
+  color: var(--fifa-dark-blue);
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  animation: capitalGlow 3s ease-in-out infinite alternate;
+}
+
+.capital-badge i {
+  font-size: 1.1rem;
+}
+
+@keyframes capitalGlow {
+  from {
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+  }
+}
+
+@media (max-width: 768px) {
+  .places-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .place-card {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .place-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+    align-self: center;
+  }
+  
+  .place-name {
+    font-size: 1.1rem;
+  }
+  
+  .intro-text {
+    font-size: 0.9rem;
+  }
+  
+  .capital-badge {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
 }
 </style>

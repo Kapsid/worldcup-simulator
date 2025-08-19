@@ -4,7 +4,7 @@
       <div class="fifa-logo">
         <i class="fas fa-futbol"></i>
       </div>
-      <h1>World Cup Simulator</h1>
+      <h1>Your Football World</h1>
       <p class="subtitle">Experience the beautiful game</p>
     </div>
     
@@ -40,10 +40,66 @@
       </button>
       
       <p v-if="error" class="error-message">{{ error }}</p>
+      
+      <!-- Forgot Password Link -->
+      <div class="forgot-password">
+        <button type="button" @click="showResetPassword = true" class="forgot-password-link">
+          <i class="fas fa-key"></i>
+          Forgot your password?
+        </button>
+      </div>
     </form>
     
+    <!-- Password Reset Modal -->
+    <div v-if="showResetPassword" class="modal-overlay" @click.self="showResetPassword = false">
+      <div class="reset-password-modal">
+        <div class="modal-header">
+          <h3>Reset Password</h3>
+          <button @click="showResetPassword = false" class="close-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <form @submit.prevent="handlePasswordReset" class="reset-form">
+          <div class="form-group">
+            <label for="reset-username">Username</label>
+            <input 
+              type="text" 
+              id="reset-username" 
+              v-model="resetUsername" 
+              required
+              placeholder="Enter your username"
+              class="input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-password">New Password</label>
+            <input 
+              type="password" 
+              id="new-password" 
+              v-model="newPassword" 
+              required
+              placeholder="Enter new password"
+              class="input"
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="button" @click="showResetPassword = false" class="btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" :disabled="resetLoading" class="btn-primary">
+              <i v-if="resetLoading" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-key"></i>
+              {{ resetLoading ? 'Resetting...' : 'Reset Password' }}
+            </button>
+          </div>
+        </form>
+        <p v-if="resetError" class="error-message">{{ resetError }}</p>
+        <p v-if="resetSuccess" class="success-message">{{ resetSuccess }}</p>
+      </div>
+    </div>
+    
     <div class="divider">
-      <span>New to the tournament?</span>
+      <span>Don't have an account?</span>
     </div>
     
     <button @click="$emit('switch-to-register')" class="btn-secondary register-btn">
@@ -55,6 +111,8 @@
 </template>
 
 <script>
+import apiClient from '../utils/apiClient.js'
+
 export default {
   name: 'LoginForm',
   data() {
@@ -62,7 +120,13 @@ export default {
       username: '',
       password: '',
       loading: false,
-      error: ''
+      error: '',
+      showResetPassword: false,
+      resetUsername: '',
+      newPassword: '',
+      resetLoading: false,
+      resetError: '',
+      resetSuccess: ''
     }
   },
   methods: {
@@ -71,28 +135,43 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch('http://localhost:3001/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            username: this.username,
-            password: this.password
-          })
+        const { data } = await apiClient.post('/login', {
+          username: this.username,
+          password: this.password
         })
         
-        const data = await response.json()
-        
-        if (response.ok) {
-          this.$emit('login-success', data)
-        } else {
-          this.error = data.error || 'Login failed'
-        }
+        this.$emit('login-success', data)
       } catch (error) {
-        this.error = 'Network error. Please try again.'
+        this.error = error.data?.error || 'Login failed'
       } finally {
         this.loading = false
+      }
+    },
+    
+    async handlePasswordReset() {
+      this.resetLoading = true
+      this.resetError = ''
+      this.resetSuccess = ''
+      
+      try {
+        await apiClient.post('/reset-password', {
+          username: this.resetUsername,
+          newPassword: this.newPassword
+        })
+        
+        this.resetSuccess = 'Password reset successfully! You can now login with your new password.'
+        this.resetUsername = ''
+        this.newPassword = ''
+        
+        // Auto close modal after success
+        setTimeout(() => {
+          this.showResetPassword = false
+          this.resetSuccess = ''
+        }, 3000)
+      } catch (error) {
+        this.resetError = error.data?.error || 'Password reset failed'
+      } finally {
+        this.resetLoading = false
       }
     }
   }
@@ -218,6 +297,121 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* Forgot Password Styles */
+.forgot-password {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.forgot-password-link {
+  background: none;
+  border: none;
+  color: var(--fifa-blue);
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  padding: 8px;
+  border-radius: var(--radius-md);
+}
+
+.forgot-password-link:hover {
+  color: var(--fifa-dark-blue);
+  background: rgba(0, 102, 204, 0.05);
+  text-decoration: underline;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.reset-password-modal {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--fifa-dark-blue);
+  font-size: 1.3rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  color: var(--fifa-red);
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.reset-form {
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-actions .btn-secondary,
+.modal-actions .btn-primary {
+  flex: 1;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.success-message {
+  color: var(--success-color, #00b894);
+  text-align: center;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 184, 148, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 184, 148, 0.2);
+  font-weight: var(--font-weight-medium);
 }
 
 

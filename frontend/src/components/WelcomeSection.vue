@@ -82,6 +82,7 @@
 
 <script>
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'WelcomeSection',
@@ -110,7 +111,7 @@ export default {
     async loadLastTournament() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/tournaments/last-opened', {
+        const response = await fetch(`${API_URL}/tournaments/last-opened`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -127,7 +128,7 @@ export default {
     async loadLastWorld() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/worlds', {
+        const response = await fetch(`${API_URL}/worlds`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -147,7 +148,7 @@ export default {
 
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -523,9 +524,93 @@ export default {
     justify-content: center;
   }
   
+  .tiles-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .access-tile {
+    padding: 20px;
+    gap: 16px;
+  }
+  
+  .tile-icon {
+    font-size: 2rem;
+  }
+  
+  .world-name,
+  .tournament-name {
+    font-size: 0.9rem;
+  }
+  
+  .world-stats,
+  .tournament-stats {
+    font-size: 0.75rem;
+  }
   
   .trophy-icon {
     font-size: 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-card {
+    padding: 24px 16px;
+  }
+  
+  .hero-content h2 {
+    font-size: 1.5rem;
+  }
+  
+  .hero-content p {
+    font-size: 0.9rem;
+  }
+  
+  .quick-access-section {
+    margin-top: 24px;
+  }
+  
+  .quick-access-section h3 {
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+  }
+  
+  .tiles-grid {
+    gap: 12px;
+  }
+  
+  .access-tile {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .tile-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+  
+  .tile-content h4 {
+    font-size: 1rem;
+  }
+  
+  .world-name,
+  .tournament-name {
+    font-size: 0.85rem;
+  }
+  
+  .world-stats,
+  .tournament-stats {
+    font-size: 0.7rem;
+    gap: 6px;
+  }
+  
+  .separator {
+    display: none;
+  }
+  
+  .tile-action {
+    font-size: 1rem;
   }
 }
 </style>

@@ -453,15 +453,15 @@ class MatchService {
         simulatedMatches.push(simulatedMatch)
       }
       
-      // Generate news for matchday completion
-      if (simulatedMatches.length > 0) {
-        await TournamentNewsService.notifyRoundCompleted(
-          tournamentId,
-          'group',
-          matchday,
-          simulatedMatches.length
-        )
-      }
+      // Generate news for matchday completion - DISABLED
+      // if (simulatedMatches.length > 0) {
+      //   await TournamentNewsService.notifyRoundCompleted(
+      //     tournamentId,
+      //     'group',
+      //     matchday,
+      //     simulatedMatches.length
+      //   )
+      // }
       
       await this.checkGroupStageCompletion(tournamentId)
       

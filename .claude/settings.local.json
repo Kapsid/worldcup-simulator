@@ -36,7 +36,10 @@
       "Bash(cat:*)",
       "Bash(sed:*)",
       "Bash(/dev/null)",
-      "Bash(echo)"
+      "Bash(echo)",
+      "Bash(mv:*)",
+      "Bash(git checkout:*)",
+      "Bash(./restore-to-railway.sh:*)"
     ],
     "deny": []
   }

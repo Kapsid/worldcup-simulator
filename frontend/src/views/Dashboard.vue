@@ -3,10 +3,11 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
-    <main class="main-content">
+    <main class="main-content container">
       <WelcomeSection :username="username" />
     </main>
   </div>
@@ -15,6 +16,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue'
 import WelcomeSection from '../components/WelcomeSection.vue'
+import api from '../services/api.js'
 
 export default {
   name: 'Dashboard',
@@ -25,7 +27,8 @@ export default {
   data() {
     return {
       username: '',
-      subscriptionTier: 'basic'
+      subscriptionTier: 'basic',
+      userAvatar: null
     }
   },
   mounted() {
@@ -43,17 +46,9 @@ export default {
   methods: {
     async loadUserProfile() {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          const user = await response.json()
-          this.subscriptionTier = user.subscriptionTier || 'basic'
-        }
+        const { data: user } = await api.profile.get()
+        this.subscriptionTier = user.subscriptionTier || 'basic'
+        this.userAvatar = user.avatar || null
       } catch (error) {
         console.error('Error loading user profile:', error)
       }

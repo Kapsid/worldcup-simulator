@@ -222,7 +222,14 @@ export default {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .standings-tooltip {
-    display: none; /* Hide tooltip on mobile */
+    /* Keep tooltip visible on mobile */
+    font-size: 0.8rem;
+    min-width: 180px;
+  }
+  
+  .mini-standings th,
+  .mini-standings td {
+    padding: 3px 6px;
   }
 }
 </style>

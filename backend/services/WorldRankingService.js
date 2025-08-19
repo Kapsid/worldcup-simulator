@@ -307,20 +307,25 @@ class WorldRankingService {
 
       const rankings = await this.getWorldRankings(worldId)
       
-      // Get last host countries to exclude
-      const recentHosts = []
+      // Get last host confederations to exclude
+      const recentHostConfederations = []
       if (world.simulatedHistory && world.simulatedHistory.length > 0) {
         const sortedHistory = world.simulatedHistory.sort((a, b) => b.year - a.year)
         for (let i = 0; i < Math.min(excludeLastHosts, sortedHistory.length); i++) {
-          recentHosts.push(sortedHistory[i].host.code)
+          const hostCode = sortedHistory[i].host.code
+          // Find the confederation of this host country
+          const hostCountry = countries.find(c => c.code === hostCode)
+          if (hostCountry && hostCountry.confederation) {
+            recentHostConfederations.push(hostCountry.confederation)
+          }
         }
       }
 
-      console.log('Excluding recent hosts:', recentHosts)
+      console.log('Excluding confederations from recent hosts:', recentHostConfederations)
 
-      // Filter eligible countries (exclude recent hosts)
+      // Filter eligible countries (exclude countries from recent host confederations)
       const eligibleCountries = rankings.filter(country => 
-        !recentHosts.includes(country.code)
+        !recentHostConfederations.includes(country.confederation)
       )
 
       // Select 3-8 candidates with bias toward lower-ranked countries
@@ -373,7 +378,8 @@ class WorldRankingService {
         weights.splice(selectedIndex, 1)
       }
 
-      console.log('Selected host candidates:', candidates.map(c => `${c.name} (Rank: ${c.rank}, Chance: ${c.winChance}%)`))
+      console.log('Selected host candidates:', candidates.map(c => `${c.name} (${c.confederation}, Rank: ${c.rank}, Chance: ${c.winChance}%)`))
+      console.log('Rotation ensures no confederation hosts twice in', excludeLastHosts, 'tournaments')
       
       return candidates
     } catch (error) {

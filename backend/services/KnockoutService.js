@@ -2,6 +2,8 @@ import KnockoutMatch from '../models/KnockoutMatch.js'
 import KnockoutRound from '../models/KnockoutRound.js'
 import Standing from '../models/Standing.js'
 import Tournament from '../models/Tournament.js'
+import PlayerStatsUpdateService from './PlayerStatsUpdateService.js'
+import PlayerGenerationService from './PlayerGenerationService.js'
 
 class KnockoutService {
   constructor() {
@@ -185,6 +187,10 @@ class KnockoutService {
       match.simulatedAt = new Date()
       
       await match.save()
+      
+      // Update player statistics for international caps and goals
+      await this.updatePlayerStatsForMatch(match, result)
+      
       await this.updateNextMatch(match)
       await this.updateRoundStatus(match.tournament, match.round)
       
@@ -580,6 +586,49 @@ class KnockoutService {
     
     tournament.status = 'completed'
     tournament.completedAt = new Date()
+    
+    // Calculate and set MVP before saving
+    const mvpPlayer = await this.calculateMVP(tournamentId)
+    if (mvpPlayer) {
+      // Safety check for player data
+      if (!mvpPlayer.player) {
+        console.error('🏆 MVP player data is missing! Attempting to fetch player directly...')
+        
+        // Try to fetch player data directly
+        const Player = (await import('../models/Player.js')).default
+        const playerId = mvpPlayer.player || (mvpPlayer._id ? mvpPlayer.player : null)
+        
+        if (playerId) {
+          const playerData = await Player.findById(playerId)
+          if (playerData) {
+            console.log('🏆 Successfully fetched player data:', playerData.displayName)
+            mvpPlayer.player = playerData
+          }
+        }
+      }
+      
+      if (mvpPlayer.player && mvpPlayer.player.displayName) {
+      
+      tournament.mvp = {
+        playerId: mvpPlayer.player._id || mvpPlayer.player,
+        playerName: mvpPlayer.player.displayName || 'Unknown Player',
+        teamId: mvpPlayer.player.teamId || 'Unknown Team',
+        nationality: mvpPlayer.player.nationality || 'Unknown',
+        position: mvpPlayer.player.position || mvpPlayer.player.detailedPosition || 'Unknown',
+        goals: mvpPlayer.goals || 0,
+        assists: mvpPlayer.assists || 0,
+        averageRating: mvpPlayer.averageRating || 0,
+        matchesPlayed: mvpPlayer.matchesPlayed || 0
+      }
+      console.log('🏆 MVP calculated:', tournament.mvp)
+      console.log('🏆 Raw MVP player data:', {
+        mvpPlayer: mvpPlayer,
+        playerExists: !!mvpPlayer.player,
+        playerDetails: mvpPlayer.player
+      })
+      }
+    }
+    
     const savedTournament = await tournament.save()
     
     console.log('✅ Tournament completed and saved with results:', {
@@ -638,7 +687,50 @@ class KnockoutService {
 
     const simulatedMatches = []
     for (const match of matches) {
+      console.log(`🏆 ROUND SIM: Simulating match ${match._id} with enhanced details`)
+      
+      // First simulate the basic knockout match 
       const simulatedMatch = await this.simulateKnockoutMatch(match._id)
+      
+      // Now run enhanced simulation to create detailed match data (same as individual match route)
+      try {
+        console.log('🏆 ROUND SIM: Starting enhanced simulation')
+        
+        // Import BasicEnhancedMatchService
+        const BasicEnhancedMatchService = (await import('./BasicEnhancedMatchService.js')).default
+        const Tournament = (await import('../models/Tournament.js')).default
+        
+        // Get tournament and world info
+        const tournament = await Tournament.findById(tournamentId)
+        const world = tournament?.worldId ? { _id: tournament.worldId } : null
+        
+        // Create a properly structured match object for enhanced simulation
+        const enhancedMatch = {
+          _id: simulatedMatch._id,
+          tournament: tournamentId,
+          homeTeam: {
+            countryCode: simulatedMatch.homeTeam.countryCode,
+            name: simulatedMatch.homeTeam.countryName || simulatedMatch.homeTeam.name,
+            code: simulatedMatch.homeTeam.countryCode
+          },
+          awayTeam: {
+            countryCode: simulatedMatch.awayTeam.countryCode,
+            name: simulatedMatch.awayTeam.countryName || simulatedMatch.awayTeam.name,
+            code: simulatedMatch.awayTeam.countryCode
+          },
+          homeScore: simulatedMatch.homeScore,
+          awayScore: simulatedMatch.awayScore,
+          status: 'completed',
+          city: simulatedMatch.city
+        }
+        
+        await BasicEnhancedMatchService.simulateBasicMatchDetails(enhancedMatch, 'tournament', world)
+        console.log(`🏆 ROUND SIM: Enhanced simulation completed for match ${match._id}`)
+      } catch (enhancedError) {
+        console.error('🏆 ROUND SIM: Enhanced simulation failed:', enhancedError.message)
+        // Continue even if enhanced simulation fails
+      }
+      
       simulatedMatches.push(simulatedMatch)
     }
 
@@ -745,6 +837,297 @@ class KnockoutService {
     } catch (error) {
       console.error('Error fixing bracket:', error.message)
       throw new Error(`Failed to fix bracket: ${error.message}`)
+    }
+  }
+
+  async calculateMVP(tournamentId) {
+    try {
+      const PlayerStats = (await import('../models/PlayerStats.js')).default
+      
+      console.log('🏆 Calculating MVP for tournament:', tournamentId)
+      
+      // Get all player stats for this tournament
+      const allPlayerStats = await PlayerStats.find({
+        tournamentId: tournamentId,
+        competitionType: 'tournament',
+        matchesPlayed: { $gte: 1 } // Must have played at least one match
+      }).populate('player', 'displayName teamId nationality position detailedPosition')
+      
+      if (!allPlayerStats || allPlayerStats.length === 0) {
+        console.log('🏆 No player stats found for MVP calculation')
+        return null
+      }
+      
+      console.log(`🏆 Found ${allPlayerStats.length} players for MVP consideration`)
+      
+      // Enhanced MVP calculation formula considering:
+      // 1. Individual performance (rating, goals, assists)
+      // 2. Team progression (how far their team went)
+      // 3. Position-specific contributions
+      
+      // First, calculate team achievements for each team
+      const teamAchievements = await this.calculateTeamAchievements(tournamentId)
+      
+      let topMVPCandidate = null
+      let highestScore = 0
+      
+      for (const playerStat of allPlayerStats) {
+        if (!playerStat.player) continue
+        
+        const goals = playerStat.goals || 0
+        const assists = playerStat.assists || 0
+        const rating = playerStat.averageRating || 0
+        const matches = playerStat.matchesPlayed || 0
+        const teamId = playerStat.player.teamId
+        
+        // Base performance score (rating is now primary factor)
+        let performanceScore = (rating * 15) + (goals * 8) + (assists * 5) + (matches * 1)
+        
+        // Team progression multiplier based on how far the team went
+        const teamAchievement = teamAchievements[teamId] || { stage: 'Group stage', multiplier: 1.0 }
+        let progressionMultiplier = teamAchievement.multiplier
+        
+        // Position-specific bonuses
+        let positionBonus = 0
+        if (playerStat.player.position === 'Goalkeeper' && playerStat.cleanSheets) {
+          positionBonus = playerStat.cleanSheets * 12 // Goalkeeper clean sheets very valuable
+        } else if (playerStat.tacklesWon || playerStat.interceptions) {
+          positionBonus = ((playerStat.tacklesWon || 0) + (playerStat.interceptions || 0)) * 2 // Defensive contributions
+        }
+        
+        // Final MVP score: Performance × Team Success + Position Bonus
+        let mvpScore = (performanceScore * progressionMultiplier) + positionBonus
+        
+        // Normalize score based on matches played to avoid penalizing players from teams eliminated early
+        if (matches > 0) {
+          mvpScore = mvpScore * Math.min(1.2, matches / 7) // Cap bonus, normalize for tournament length
+        }
+        
+        console.log(`🏆 MVP candidate: ${playerStat.player.displayName} - Score: ${mvpScore.toFixed(2)} (Performance: ${performanceScore.toFixed(1)}, Team: ${teamAchievement.stage}, Multiplier: ${progressionMultiplier}x, Goals: ${goals}, Rating: ${rating.toFixed(2)})`)
+        console.log(`🏆 MVP candidate details:`, {
+          playerId: playerStat.player._id,
+          playerName: playerStat.player.displayName,
+          teamId: playerStat.player.teamId,
+          nationality: playerStat.player.nationality,
+          position: playerStat.player.position
+        })
+        
+        if (mvpScore > highestScore) {
+          highestScore = mvpScore
+          topMVPCandidate = {
+            ...playerStat.toObject(),
+            mvpScore: mvpScore
+          }
+        }
+      }
+      
+      if (topMVPCandidate) {
+        console.log(`🏆 MVP Winner: ${topMVPCandidate.player?.displayName || 'Unknown'} with score ${highestScore.toFixed(2)}`)
+        
+        // If player data is missing, try to fetch it directly
+        if (!topMVPCandidate.player || !topMVPCandidate.player.displayName) {
+          console.log('🏆 Player data missing, attempting to fetch directly...')
+          const Player = (await import('../models/Player.js')).default
+          const playerData = await Player.findById(topMVPCandidate.player?._id || topMVPCandidate.player)
+          
+          if (playerData) {
+            console.log('🏆 Found player data directly:', playerData.displayName)
+            topMVPCandidate.player = playerData
+          } else {
+            console.log('🏆 Could not find player data at all')
+          }
+        }
+        
+        return topMVPCandidate
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error calculating MVP:', error)
+      return null
+    }
+  }
+
+  async calculateTeamAchievements(tournamentId) {
+    try {
+      console.log('🏆 Calculating team achievements for tournament:', tournamentId)
+      
+      // Get tournament final results
+      const Tournament = (await import('../models/Tournament.js')).default
+      const KnockoutMatch = (await import('../models/KnockoutMatch.js')).default
+      const Standing = (await import('../models/Standing.js')).default
+      
+      const tournament = await Tournament.findById(tournamentId)
+      if (!tournament) return {}
+      
+      const teamAchievements = {}
+      
+      // Initialize all teams with group stage achievement
+      const standings = await Standing.find({ tournament: tournamentId }).populate('team')
+      for (const standing of standings) {
+        if (standing.team && standing.team.teamId) {
+          teamAchievements[standing.team.teamId] = { stage: 'Group stage', multiplier: 1.0 }
+        }
+      }
+      
+      // Get knockout matches to determine progression
+      const knockoutMatches = await KnockoutMatch.find({ 
+        tournament: tournamentId, 
+        status: 'completed' 
+      }).populate('homeTeam awayTeam winner loser')
+      
+      // Analyze knockout progression
+      const rounds = ['round16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+      const roundMultipliers = {
+        'round16': 1.2,        // Made it to Round of 16
+        'quarterfinal': 1.4,   // Made it to Quarter-finals
+        'semifinal': 1.7,      // Made it to Semi-finals
+        'third_place': 1.9,    // Played in 3rd place playoff
+        'final': 2.2           // Made it to Final
+      }
+      
+      const roundNames = {
+        'round16': 'Round of 16',
+        'quarterfinal': 'Quarter-finals',
+        'semifinal': 'Semi-finals',
+        'third_place': 'Third place playoff',
+        'final': 'Final'
+      }
+      
+      for (const round of rounds) {
+        const roundMatches = knockoutMatches.filter(m => m.round === round)
+        
+        for (const match of roundMatches) {
+          // Both teams that played in this round reached this stage
+          const homeTeamId = this.extractTeamId(match.homeTeam)
+          const awayTeamId = this.extractTeamId(match.awayTeam)
+          
+          if (homeTeamId && roundMultipliers[round] > (teamAchievements[homeTeamId]?.multiplier || 0)) {
+            teamAchievements[homeTeamId] = { 
+              stage: roundNames[round], 
+              multiplier: roundMultipliers[round] 
+            }
+          }
+          
+          if (awayTeamId && roundMultipliers[round] > (teamAchievements[awayTeamId]?.multiplier || 0)) {
+            teamAchievements[awayTeamId] = { 
+              stage: roundNames[round], 
+              multiplier: roundMultipliers[round] 
+            }
+          }
+        }
+      }
+      
+      // Special bonuses for tournament winner and runner-up
+      if (tournament.winner && tournament.winner.code) {
+        const winnerTeamId = tournament.winner.code
+        teamAchievements[winnerTeamId] = { stage: 'Winner', multiplier: 2.5 }
+      }
+      
+      if (tournament.runnerUp && tournament.runnerUp.code) {
+        const runnerUpTeamId = tournament.runnerUp.code
+        if (!teamAchievements[runnerUpTeamId] || teamAchievements[runnerUpTeamId].multiplier < 2.3) {
+          teamAchievements[runnerUpTeamId] = { stage: 'Runner-up', multiplier: 2.3 }
+        }
+      }
+      
+      console.log('🏆 Team achievements calculated:', teamAchievements)
+      return teamAchievements
+      
+    } catch (error) {
+      console.error('Error calculating team achievements:', error)
+      return {}
+    }
+  }
+
+  extractTeamId(team) {
+    if (!team) return null
+    
+    // Handle different team ID formats
+    if (team.teamId && team.teamId.includes('_')) {
+      return team.teamId.split('_')[1] // Extract from "CONF_COUNTRY" format
+    }
+    
+    return team.code || team.countryCode || team.teamId || team.country || team.name
+  }
+
+  /**
+   * Update player statistics after a knockout match
+   */
+  async updatePlayerStatsForMatch(match, result) {
+    try {
+      // Get tournament info
+      const tournament = await Tournament.findById(match.tournament)
+      if (!tournament || !tournament.worldId) {
+        console.log('Skipping player stats update - not a world tournament')
+        return
+      }
+
+      // Get all players from both teams (basic implementation - all starting players get +1 cap)
+      const homeTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+        match.homeTeam.code || match.homeTeam.countryCode,
+        null, // Get world-level players
+        tournament.worldId.toString()
+      )
+
+      const awayTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+        match.awayTeam.code || match.awayTeam.countryCode,
+        null, // Get world-level players
+        tournament.worldId.toString()
+      )
+
+      // Simulate basic goal distribution (this is a simplified approach)
+      const homeGoals = (result.homeScore || 0) + (result.homeExtraTimeScore || 0)
+      const awayGoals = (result.awayScore || 0) + (result.awayExtraTimeScore || 0)
+      
+      const goalScorers = {}
+      const assistProviders = {}
+      
+      // Randomly distribute goals to forwards and midfielders (simple simulation)
+      if (homeGoals > 0) {
+        const homeScorers = homeTeamPlayers.filter(p => ['Forward', 'Midfielder'].includes(p.position))
+        for (let i = 0; i < homeGoals; i++) {
+          const scorer = homeScorers[Math.floor(Math.random() * homeScorers.length)]
+          goalScorers[scorer._id] = (goalScorers[scorer._id] || 0) + 1
+        }
+      }
+
+      if (awayGoals > 0) {
+        const awayScorers = awayTeamPlayers.filter(p => ['Forward', 'Midfielder'].includes(p.position))
+        for (let i = 0; i < awayGoals; i++) {
+          const scorer = awayScorers[Math.floor(Math.random() * awayScorers.length)]
+          goalScorers[scorer._id] = (goalScorers[scorer._id] || 0) + 1
+        }
+      }
+
+      // Determine clean sheet keeper
+      let cleanSheetKeeper = null
+      if (awayGoals === 0) {
+        const homeKeeper = homeTeamPlayers.find(p => p.position === 'Goalkeeper')
+        cleanSheetKeeper = homeKeeper?._id
+      } else if (homeGoals === 0) {
+        const awayKeeper = awayTeamPlayers.find(p => p.position === 'Goalkeeper')
+        cleanSheetKeeper = awayKeeper?._id
+      }
+
+      // Update stats for all players (assume starting XI for each team)
+      const homePlayerIds = homeTeamPlayers.slice(0, 11).map(p => p._id)
+      const awayPlayerIds = awayTeamPlayers.slice(0, 11).map(p => p._id)
+
+      await PlayerStatsUpdateService.updateTeamMatchStats(
+        homePlayerIds,
+        awayPlayerIds,
+        goalScorers,
+        assistProviders,
+        cleanSheetKeeper,
+        tournament.worldId.toString(),
+        tournament._id.toString()
+      )
+
+      console.log(`✅ Updated player stats for knockout match: ${match.homeTeam.name} vs ${match.awayTeam.name}`)
+
+    } catch (error) {
+      console.error('Error updating player stats for knockout match:', error)
     }
   }
 }

@@ -37,6 +37,18 @@ const userSchema = new mongoose.Schema({
   },
   subscriptionExpiresAt: {
     type: Date
+  },
+  avatar: {
+    type: {
+      type: String,
+      enum: ['predefined', 'upload'],
+      default: 'predefined'
+    },
+    avatarId: Number,
+    icon: String,
+    color: String,
+    url: String,
+    filename: String
   }
 }, {
   timestamps: true

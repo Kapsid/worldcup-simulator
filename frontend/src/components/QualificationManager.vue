@@ -7,27 +7,44 @@
     
     <div v-else class="qualification-content">
 
-      <!-- Confederation Tabs -->
-      <div class="confederation-tabs">
-        <button 
-          @click="activeConfederation = 'all'"
-          :class="['tab-button', { active: activeConfederation === 'all' }]"
-          :style="{ '--conf-color': '#2c3e50' }"
-        >
-          <span class="tab-flag">🌍</span>
-          <span class="tab-name">All Confederations</span>
-        </button>
-        <button 
-          v-for="confederation in confederations" 
-          :key="confederation.id"
-          @click="activeConfederation = confederation.id"
-          :class="['tab-button', { active: activeConfederation === confederation.id }]"
-          :style="{ '--conf-color': confederation.color }"
-        >
-          <span class="tab-flag">{{ confederation.flag }}</span>
-          <span class="tab-name">{{ confederation.name }}</span>
-          <span class="tab-slots">{{ Math.floor(confederation.qualificationSlots) }} slots</span>
-        </button>
+      <!-- Confederation Selection -->
+      <div class="confederation-selector">
+        <!-- Desktop Tabs -->
+        <div class="confederation-tabs desktop-tabs">
+          <button 
+            @click="activeConfederation = 'all'"
+            :class="['tab-button', { active: activeConfederation === 'all' }]"
+            :style="{ '--conf-color': '#2c3e50' }"
+          >
+            <span class="tab-flag">🌍</span>
+            <span class="tab-name">All</span>
+          </button>
+          <button 
+            v-for="confederation in confederations" 
+            :key="confederation.id"
+            @click="activeConfederation = confederation.id"
+            :class="['tab-button', { active: activeConfederation === confederation.id }]"
+            :style="{ '--conf-color': confederation.color }"
+          >
+            <span class="tab-flag">{{ confederation.flag }}</span>
+            <span class="tab-name">{{ confederation.shortName || confederation.name }}</span>
+            <span class="tab-slots">{{ Math.floor(confederation.qualificationSlots) }}</span>
+          </button>
+        </div>
+        
+        <!-- Mobile Dropdown -->
+        <div class="confederation-dropdown mobile-dropdown">
+          <select v-model="activeConfederation" class="confederation-select">
+            <option value="all">🌍 All Confederations</option>
+            <option 
+              v-for="confederation in confederations" 
+              :key="confederation.id"
+              :value="confederation.id"
+            >
+              {{ confederation.flag }} {{ confederation.name }} ({{ Math.floor(confederation.qualificationSlots) }} slots)
+            </option>
+          </select>
+        </div>
       </div>
 
       <!-- Finalization Status Box - Always Visible -->
@@ -168,14 +185,14 @@
               <div v-if="simulationProgress.currentMatch" class="current-match">
                 <span class="match-teams">
                   <span class="team">
-                    <CountryFlag :country-code="simulationProgress.currentMatch.homeTeam?.country || simulationProgress.currentMatch.homeTeam?.countryCode" :size="16" class="team-flag" />
-                    {{ simulationProgress.currentMatch.homeTeam }}
+                    <CountryFlag :country-code="simulationProgress.currentMatch.homeTeam?.countryCode" :size="16" class="team-flag" />
+                    {{ simulationProgress.currentMatch.homeTeam?.name }}
                   </span>
                   <span v-if="!simulationProgress.lastResult" class="vs">vs</span>
-                  <span v-else class="result-in-vs">{{ simulationProgress.lastResult }}</span>
+                  <span v-else class="result-in-vs">{{ simulationProgress.lastResult }}</span>  
                   <span class="team">
-                    {{ simulationProgress.currentMatch.awayTeam }}
-                    <CountryFlag :country-code="simulationProgress.currentMatch.awayTeam?.country || simulationProgress.currentMatch.awayTeam?.countryCode" :size="16" class="team-flag" />
+                    {{ simulationProgress.currentMatch.awayTeam?.name }}
+                    <CountryFlag :country-code="simulationProgress.currentMatch.awayTeam?.countryCode" :size="16" class="team-flag" />
                   </span>
                 </span>
               </div>
@@ -360,7 +377,12 @@
                 
                 <div class="qual-match-teams">
                   <div class="team home-team">
-                    <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                    <div class="team-info">
+                      <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                      <div class="team-position">
+                        {{ getQualifyingTeamPosition(match.homeTeam.teamId) || '?' }}
+                      </div>
+                    </div>
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                       class="team-name clickable-team"
@@ -397,7 +419,12 @@
                   </div>
                   
                   <div class="team away-team">
-                    <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                    <div class="team-info">
+                      <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                      <div class="team-position">
+                        {{ getQualifyingTeamPosition(match.awayTeam.teamId) || '?' }}
+                      </div>
+                    </div>
                     <router-link 
                       :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                       class="team-name clickable-team"
@@ -434,42 +461,54 @@
               
               <!-- Sub-navigation tabs -->
               <div class="sub-navigation">
-                <button 
-                  @click="activeSubTab = 'groups'"
-                  :class="['sub-tab', { active: activeSubTab === 'groups' }]"
-                >
-                  <i class="fas fa-layer-group"></i>
-                  Groups & Standings
-                </button>
-                <button 
-                  @click="activeSubTab = 'matches'"
-                  :class="['sub-tab', { active: activeSubTab === 'matches' }]"
-                >
-                  <i class="fas fa-futbol"></i>
-                  Matches
-                </button>
-                <button 
-                  @click="activeSubTab = 'statistics'"
-                  :class="['sub-tab', { active: activeSubTab === 'statistics' }]"
-                >
-                  <i class="fas fa-chart-line"></i>
-                  Statistics
-                </button>
-                <button 
-                  v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)"
-                  @click="activeSubTab = 'playoff'"
-                  :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
-                >
-                  <i class="fas fa-medal"></i>
-                  Play off
-                </button>
-                <button 
-                  @click="activeSubTab = 'qualified'"
-                  :class="['sub-tab', { active: activeSubTab === 'qualified' }]"
-                >
-                  <i class="fas fa-trophy"></i>
-                  Qualified ({{ getQualifiedFromConfederation(activeConfederation).length }})
-                </button>
+                <div class="sub-tabs-desktop">
+                  <button 
+                    @click="activeSubTab = 'groups'"
+                    :class="['sub-tab', { active: activeSubTab === 'groups' }]"
+                  >
+                    <i class="fas fa-layer-group"></i>
+                    <span class="sub-tab-text">Groups</span>
+                  </button>
+                  <button 
+                    @click="activeSubTab = 'matches'"
+                    :class="['sub-tab', { active: activeSubTab === 'matches' }]"
+                  >
+                    <i class="fas fa-futbol"></i>
+                    <span class="sub-tab-text">Matches</span>
+                  </button>
+                  <button 
+                    @click="activeSubTab = 'statistics'"
+                    :class="['sub-tab', { active: activeSubTab === 'statistics' }]"
+                  >
+                    <i class="fas fa-chart-line"></i>
+                    <span class="sub-tab-text">Stats</span>
+                  </button>
+                  <button 
+                    v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)"
+                    @click="activeSubTab = 'playoff'"
+                    :class="['sub-tab', { active: activeSubTab === 'playoff' }]"
+                  >
+                    <i class="fas fa-medal"></i>
+                    <span class="sub-tab-text">Playoff</span>
+                  </button>
+                  <button 
+                    @click="activeSubTab = 'qualified'"
+                    :class="['sub-tab', { active: activeSubTab === 'qualified' }]"
+                  >
+                    <i class="fas fa-trophy"></i>
+                    <span class="sub-tab-text">Qualified ({{ getQualifiedFromConfederation(activeConfederation).length }})</span>
+                  </button>
+                </div>
+                
+                <div class="sub-tabs-mobile">
+                  <select v-model="activeSubTab" class="sub-tab-select">
+                    <option value="groups">📊 Groups & Standings</option>
+                    <option value="matches">⚽ Matches</option>
+                    <option value="statistics">📈 Statistics</option>
+                    <option v-if="['ofc', 'caf', 'afc'].includes(activeConfederation)" value="playoff">🏅 Playoff</option>
+                    <option value="qualified">🏆 Qualified ({{ getQualifiedFromConfederation(activeConfederation).length }})</option>
+                  </select>
+                </div>
               </div>
 
               <!-- Sub-tab content -->
@@ -575,9 +614,11 @@
                         :key="matchday.matchday"
                         @click="activeMatchday = matchday.matchday"
                         :class="['matchday-tab', { active: activeMatchday === matchday.matchday }]"
+                        :data-matchday="matchday.matchday"
                       >
                         <span class="tab-title">Matchday {{ matchday.matchday }}</span>
                         <span class="tab-count">{{ matchday.matches.length }} matches</span>
+                        <span class="mobile-tab-label">M{{ matchday.matchday }}</span>
                       </button>
                     </div>
 
@@ -620,7 +661,12 @@
                           
                           <div class="qual-match-teams">
                             <div class="team home-team">
-                              <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                              <div class="team-info">
+                                <CountryFlag :country-code="match.homeTeam.country || match.homeTeam.countryCode" :size="20" class="team-flag" />
+                                <div class="team-position">
+                                  {{ getQualifyingTeamPosition(match.homeTeam.teamId) || '?' }}
+                                </div>
+                              </div>
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.homeTeam.teamId}`" 
                                 class="team-name clickable-team"
@@ -657,7 +703,12 @@
                             </div>
                             
                             <div class="team away-team">
-                              <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                              <div class="team-info">
+                                <CountryFlag :country-code="match.awayTeam.country || match.awayTeam.countryCode" :size="20" class="team-flag" />
+                                <div class="team-position">
+                                  {{ getQualifyingTeamPosition(match.awayTeam.teamId) || '?' }}
+                                </div>
+                              </div>
                               <router-link 
                                 :to="`/tournament/${tournament._id}/qualifying-team/${match.awayTeam.teamId}`" 
                                 class="team-name clickable-team"
@@ -973,6 +1024,7 @@
 import StandingsTooltip from './StandingsTooltip.vue'
 import QualificationStatistics from './QualificationStatistics.vue'
 import CountryFlag from './CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'QualificationManager',
@@ -1162,23 +1214,33 @@ export default {
   },
   methods: {
     async loadQualificationData() {
+      console.log('Loading qualification data...')
       this.loading = true
+      
       try {
         // Load confederation data
-        const response = await fetch('http://localhost:3001/api/qualification/confederations')
+        console.log('Fetching confederations from:', `${API_URL}/qualification/confederations`)
+        const response = await fetch(`${API_URL}/qualification/confederations`)
+        console.log('Confederations response status:', response.status)
+        
         if (response.ok) {
           this.confederations = await response.json()
+          console.log('Loaded confederations:', this.confederations.length)
         }
         
         // Load qualification status for this tournament
         const token = localStorage.getItem('token')
-        const qualResponse = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+        console.log('Fetching qualification data from:', `${API_URL}/qualification/${this.tournament._id}`)
+        const qualResponse = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
+        console.log('Qualification response status:', qualResponse.status)
+        
         if (qualResponse.ok) {
           this.qualificationData = await qualResponse.json()
+          console.log('Loaded qualification data:', this.qualificationData)
           this.qualificationStarted = this.qualificationData.started
           this.qualificationFinalized = this.qualificationData.completed
           this.qualifiedTeams = this.qualificationData.qualifiedTeams || []
@@ -1187,6 +1249,9 @@ export default {
           // Set default matchday after loading data
           this.activeMatchday = this.defaultActiveMatchday()
           // Tab switching is only handled on initial mount, not during refreshes
+        } else {
+          const errorData = await qualResponse.json()
+          console.error('Failed to load qualification data:', errorData)
         }
       } catch (error) {
         this.error = 'Failed to load qualification data'
@@ -1197,11 +1262,17 @@ export default {
     },
     
     async startQualification() {
+      console.log('Start qualification button clicked!')
       this.starting = true
       this.error = ''
+      
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/start`, {
+        console.log('Tournament ID:', this.tournament._id)
+        console.log('Token available:', !!token)
+        console.log('Making request to:', `${API_URL}/qualification/${this.tournament._id}/start`)
+        
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/start`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1209,16 +1280,23 @@ export default {
           }
         })
         
+        console.log('Response status:', response.status, response.statusText)
+        
         if (response.ok) {
+          const data = await response.json()
+          console.log('Qualification started successfully:', data)
           await this.loadQualificationData()
           this.$emit('qualification-started')
         } else {
           const data = await response.json()
+          console.error('Failed to start qualification:', data)
           this.error = data.error || 'Failed to start qualification'
         }
       } catch (error) {
+        console.error('Error starting qualification:', error)
         this.error = 'Network error. Please try again.'
       } finally {
+        console.log('Start qualification finished')
         this.starting = false
       }
     },
@@ -1228,7 +1306,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-matchday`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-matchday`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1255,7 +1333,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-confederation-matchday/${this.activeConfederation}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-confederation-matchday/${this.activeConfederation}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1289,7 +1367,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/finalize`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/finalize`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1324,7 +1402,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Add qualified teams to tournament
-        const response = await fetch(`http://localhost:3001/api/teams/${this.tournament._id}/add-qualified`, {
+        const response = await fetch(`${API_URL}/teams/${this.tournament._id}/add-qualified`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1508,7 +1586,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/regenerate`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/regenerate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1536,7 +1614,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1647,7 +1725,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1677,7 +1755,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-confederation/${this.activeConfederation}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-confederation/${this.activeConfederation}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1781,7 +1859,7 @@ export default {
       this.error = ''
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-matchday/${this.activeConfederation}/${matchday}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-matchday/${this.activeConfederation}/${matchday}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1913,7 +1991,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1953,6 +2031,9 @@ export default {
     // Tooltip methods
     showTooltip(event, teamId) {
       if (!teamId) return
+      
+      // Only show tooltip on desktop (screens wider than 768px)
+      if (window.innerWidth <= 768) return
       
       // Get standings for the team's group
       const standings = this.getStandingsForTeam(teamId)
@@ -2157,6 +2238,79 @@ export default {
       return false
     },
 
+    // Get team position in qualifying standings
+    getQualifyingTeamPosition(teamId) {
+      if (!this.qualificationData || !this.qualificationData.confederations) {
+        return null
+      }
+      
+      // Use the same logic as getStandingsForTeam but just return position
+      for (const confederation of this.qualificationData.confederations) {
+        if (!confederation.groups) continue
+        
+        for (const group of confederation.groups) {
+          const teamInGroup = group.teams?.find(team => team.teamId === teamId)
+          if (teamInGroup) {
+            // Get sorted standings for this group (same logic as getStandingsForTeam)
+            const sortedStandings = [...group.teams].sort((a, b) => {
+              if (b.points !== a.points) return b.points - a.points
+              if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+              return b.goalsFor - a.goalsFor
+            })
+            
+            // Find position of this team in sorted standings
+            const position = sortedStandings.findIndex(team => team.teamId === teamId) + 1
+            return position
+          }
+        }
+      }
+      
+      return null
+    },
+    
+    // Fallback method to calculate position from match results
+    calculateTeamPositionFromMatches(teamId) {
+      if (!this.qualificationData || !this.qualificationData.confederations) return null
+      
+      // Find all matches for this team and calculate simple position
+      let teamMatches = []
+      let teamGroup = null
+      
+      for (const conf of this.qualificationData.confederations) {
+        if (conf.matches) {
+          const matches = conf.matches.filter(m => 
+            m.homeTeam?.teamId === teamId || m.awayTeam?.teamId === teamId
+          )
+          if (matches.length > 0) {
+            teamMatches = matches
+            teamGroup = matches[0].group || matches[0].groupId
+            break
+          }
+        }
+      }
+      
+      if (teamMatches.length === 0) return null
+      
+      // Calculate simple points
+      let points = 0
+      for (const match of teamMatches) {
+        if (match.played) {
+          const isHome = match.homeTeam?.teamId === teamId
+          const teamScore = isHome ? match.homeScore : match.awayScore
+          const opponentScore = isHome ? match.awayScore : match.homeScore
+          
+          if (teamScore > opponentScore) points += 3
+          else if (teamScore === opponentScore) points += 1
+        }
+      }
+      
+      // For now, return a simple position based on points (this is a rough estimate)
+      if (points >= 9) return 1
+      if (points >= 6) return 2
+      if (points >= 3) return 3
+      return 4
+    },
+
     // Get confederations that have matches in the specified matchday
     getConfederationsWithMatchesInMatchday(matchday) {
       if (!this.qualificationData || !this.qualificationData.confederations) return []
@@ -2205,8 +2359,18 @@ export default {
             unplayedMatches.push(...matchesToSimulate.map(m => ({
               matchId: m.matchId,
               confederationId: conf.confederationId,
-              homeTeam: m.homeTeam.name,
-              awayTeam: m.awayTeam.name,
+              homeTeam: {
+                name: m.homeTeam.name,
+                country: m.homeTeam.country,
+                countryCode: m.homeTeam.countryCode,
+                flag: m.homeTeam.flag
+              },
+              awayTeam: {
+                name: m.awayTeam.name,
+                country: m.awayTeam.country,
+                countryCode: m.awayTeam.countryCode,
+                flag: m.awayTeam.flag
+              },
               homeFlag: m.homeTeam.flag,
               awayFlag: m.awayTeam.flag
             })))
@@ -2235,8 +2399,16 @@ export default {
           
           // Update current match being simulated
           this.simulationProgress.currentMatch = {
-            homeTeam: match.homeTeam,
-            awayTeam: match.awayTeam,
+            homeTeam: {
+              ...match.homeTeam,
+              countryCode: match.homeTeam.country || match.homeTeam.countryCode,
+              name: match.homeTeam.name
+            },
+            awayTeam: {
+              ...match.awayTeam,
+              countryCode: match.awayTeam.country || match.awayTeam.countryCode,
+              name: match.awayTeam.name
+            },
             homeFlag: match.homeFlag,
             awayFlag: match.awayFlag
           }
@@ -2290,7 +2462,7 @@ export default {
     async simulateMatchWithResult(matchId) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-match`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-match`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -2365,7 +2537,7 @@ export default {
       if (this.areAllGroupMatchesComplete()) {
         // Trigger a partial data refresh to generate playoffs
         try {
-          const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+          const response = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
           })
           
@@ -2493,7 +2665,7 @@ export default {
       this.error = ''
       
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}/simulate-playoff`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}/simulate-playoff`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -2544,7 +2716,7 @@ export default {
     // Refresh only completion status without full data reload
     async refreshCompletionStatus() {
       try {
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournament._id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         
@@ -2676,12 +2848,33 @@ export default {
   letter-spacing: 0.5px;
 }
 
+.confederation-selector {
+  margin-bottom: 1rem;
+}
+
+.desktop-tabs {
+  display: flex;
+}
+
+.mobile-dropdown {
+  display: none;
+}
+
 .confederation-tabs {
   display: flex;
   gap: 0.25rem;
-  margin-bottom: 1rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
+}
+
+.confederation-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: 14px;
+  color: var(--fifa-dark-blue);
 }
 
 .tab-button {
@@ -3363,22 +3556,218 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .qualification-manager {
+    padding: 8px;
+    overflow-x: hidden;
+  }
+  
+  .qualification-content {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
   .qualification-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 12px;
+  }
+  
+  /* Make confederation content full width on mobile */
+  .confederation-content {
+    padding: 0.75rem !important;
+    margin: 0 -8px !important;
+    width: calc(100% + 16px) !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Make tables more compact and scrollable */
+  .standings-table {
+    font-size: 0.75rem !important;
+  }
+  
+  .standings-table th,
+  .standings-table td {
+    padding: 0.3rem 0.25rem !important;
+    white-space: nowrap;
+  }
+  
+  /* Change multi-letter column headers to single letters on mobile */
+  .standings-table th:nth-child(6)::after {
+    content: "F";
+  }
+  .standings-table th:nth-child(7)::after {
+    content: "A";
+  }
+  .standings-table th:nth-child(8)::after {
+    content: "D";
+  }
+  .standings-table th:nth-child(6),
+  .standings-table th:nth-child(7),
+  .standings-table th:nth-child(8) {
+    text-indent: -9999px;
+    position: relative;
+  }
+  .standings-table th:nth-child(6)::after,
+  .standings-table th:nth-child(7)::after,
+  .standings-table th:nth-child(8)::after {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-indent: 0;
+  }
+  
+  /* Make table container scrollable horizontally */
+  .group-standings,
+  .runners-up-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Team cell adjustments */
+  .team-cell {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .team-flag {
+    font-size: 1rem !important;
+    margin-right: 0.25rem !important;
+  }
+  
+  /* Hide matchday header info on mobile, keep only button */
+  .matchday-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem;
+  }
+  
+  .matchday-header h5,
+  .matchday-info {
+    display: none !important;
+  }
+  
+  .matchday-actions {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  
+  .simulate-matchday-btn {
+    font-size: 0.85rem !important;
+    padding: 0.75rem 1rem !important;
   }
   
   .progress-stats {
     flex-direction: column;
-    gap: 1rem;
+    gap: 12px;
   }
   
-  .confederation-tabs {
-    flex-direction: column;
+  .desktop-tabs {
+    display: none;
   }
   
-  .tab-button {
-    min-width: auto;
+  .mobile-dropdown {
+    display: block;
+  }
+  
+  .confederation-select {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  .sub-tabs-desktop {
+    display: flex !important;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .sub-tabs-mobile {
+    display: none !important;
+  }
+  
+  /* Icon-only sub tabs on mobile */
+  .sub-tab {
+    padding: 0.75rem !important;
+    min-width: 60px !important;
+    flex: 1 !important;
+    max-width: 80px !important;
+    background: var(--white) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .sub-tab:not(.active) {
+    background: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
+  }
+  
+  .sub-tab.active {
+    background: var(--fifa-blue) !important;
+    border-color: var(--fifa-blue) !important;
+    color: white !important;
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3) !important;
+  }
+  
+  .sub-tab .sub-tab-text {
+    display: none !important;
+  }
+  
+  .sub-tab i {
+    font-size: 1.2rem !important;
+  }
+  
+  /* Matchday tabs - 4 per row with M1, M2 format */
+  .matchday-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .matchday-tab {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    background: var(--white) !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .matchday-tab:not(.active) {
+    background: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
+  }
+  
+  .matchday-tab.active {
+    background: var(--fifa-blue) !important;
+    border-color: var(--fifa-blue) !important;
+    color: white !important;
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3) !important;
+  }
+  
+  .matchday-tab .tab-title {
+    display: none !important;
+  }
+  
+  .matchday-tab .tab-count {
+    display: none !important;
+  }
+  
+  .matchday-tab .mobile-tab-label {
+    display: block !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
   }
   
   .status-cards {
@@ -3428,7 +3817,10 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  min-width: 100px;
+}
+
+.mobile-tab-label {
+  display: none;
 }
 
 .matchday-tab:hover {
@@ -3483,11 +3875,29 @@ export default {
 
 /* Sub-navigation */
 .sub-navigation {
-  display: flex;
-  gap: 0.5rem;
   margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 1rem;
+}
+
+.sub-tabs-desktop {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sub-tabs-mobile {
+  display: none;
+}
+
+.sub-tab-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: 14px;
+  color: var(--fifa-dark-blue);
 }
 
 .sub-tab {
@@ -4244,8 +4654,32 @@ export default {
   flex: 1;
 }
 
+.qual-match-teams .team-info {
+  position: relative;
+  display: inline-block;
+}
+
 .qual-match-teams .team-flag {
   font-size: 1.5rem;
+}
+
+.qual-match-teams .team-position {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--fifa-blue);
+  color: var(--white);
+  font-size: 0.6rem;
+  font-weight: var(--font-weight-bold);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: none; /* Hidden on desktop by default */
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .qual-match-teams .team-name {
@@ -4347,32 +4781,134 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .qual-matches-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .qualification-manager .qual-matches-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
   }
-  .all-confederations-content .qual-matches-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .qual-match-card {
-    padding: 10px;
+  
+  .qualification-manager .all-confederations-content .qual-matches-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
   }
 
-  .qual-match-teams .team-flag {
-    font-size: 1.2rem;
+  /* Simplified mobile match cards */
+  .qualification-manager .qual-match-card {
+    padding: 8px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+  }
+  
+  .qualification-manager .qual-match-header {
+    margin-bottom: 6px !important;
+  }
+  
+  .qualification-manager .qual-match-header .group-label {
+    font-size: 0.7rem !important;
+  }
+  
+  .qualification-manager .qual-match-header .match-status {
+    font-size: 0.65rem !important;
+    padding: 2px 6px !important;
+  }
+  
+  .qualification-manager .qual-match-teams {
+    gap: 12px !important;
+    margin-bottom: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .qualification-manager .qual-match-teams .team {
+    gap: 0 !important;
+    min-width: 40px !important;
   }
 
-  .qual-match-teams .team-name {
-    font-size: 0.7rem;
+  /* Hide team names on mobile, show only flags */
+  .qualification-manager .qual-match-teams .team-name {
+    display: none !important;
   }
 
-  .qual-match-score .score-display {
-    font-size: 1rem;
+  /* Show position indicators only on mobile */
+  .qualification-manager .qual-match-teams .team-position {
+    display: flex !important;
   }
 
-  .qual-match-score {
-    margin: 0 8px;
+  /* Override CountryFlag component size on mobile */
+  .qualification-manager .qual-match-teams .team-flag {
+    font-size: 2.75rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+  
+  .qualification-manager .qual-match-teams .team .country-flag {
+    font-size: 2.75rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+  
+  /* Target the span element inside CountryFlag */
+  .qualification-manager .qual-match-teams .team-flag span,
+  .qualification-manager .qual-match-teams .country-flag span {
+    font-size: 2.75rem !important;
+    line-height: 1 !important;
+  }
+
+  .qualification-manager .qual-match-score {
+    margin: 0 8px !important;
+  }
+  
+  .qualification-manager .qual-match-score .score-display {
+    font-size: 1.3rem !important;
+    gap: 6px !important;
+    font-weight: bold !important;
+  }
+  
+  .qualification-manager .qual-match-score .btn-small {
+    min-width: 36px !important;
+    height: 36px !important;
+    font-size: 0.8rem !important;
+    padding: 4px !important;
+    border-radius: 50% !important;
+  }
+  
+  .qualification-manager .qual-match-score .match-actions {
+    gap: 4px !important;
+  }
+  
+  /* All Confederations View Mobile Styles */
+  .qualification-manager .all-confederations-content {
+    padding: 8px !important;
+  }
+  
+  .qualification-manager .confederations-matches {
+    gap: 12px !important;
+  }
+  
+  .qualification-manager .confederation-matches-section {
+    padding: 12px !important;
+    margin: 0 !important;
+  }
+  
+  .qualification-manager .confederation-matches-section .confederation-header {
+    font-size: 1rem !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .qualification-manager .confederation-matches-section .match-count {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Simplified confederation match cards on mobile */
+  .qualification-manager .confederation-matches-section .qual-match-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 8px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -4973,4 +5509,5 @@ export default {
   width: 100%;
   padding: 0;
 }
+
 </style>

@@ -3,7 +3,7 @@
     <div class="group-header">
       <h5>{{ group.name }}</h5>
     </div>
-    <div class="group-standings">
+    <div class="group-standings table-responsive">
       <table class="standings-table">
         <thead>
           <tr>

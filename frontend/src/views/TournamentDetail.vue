@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
@@ -145,7 +146,10 @@
                 v-if="tournament.type === 'manual'" 
                 @click="toggleTeamManagement" 
                 class="sidebar-action" 
-                :class="{ 'active': showTeamManagement }" 
+                :class="{ 
+                  'active': showTeamManagement,
+                  'highlight-action': nextRequiredAction === 'team-selection'
+                }" 
                 :disabled="tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Team Selection' : ''"
               >
@@ -156,7 +160,10 @@
                 v-else 
                 @click="toggleQualifying" 
                 class="sidebar-action" 
-                :class="{ 'active': showQualifying }" 
+                :class="{ 
+                  'active': showQualifying,
+                  'highlight-action': nextRequiredAction === 'qualifying'
+                }" 
                 :disabled="tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Qualifying' : ''"
               >
@@ -167,6 +174,9 @@
               <!-- Start Tournament -->
               <button 
                 class="sidebar-action" 
+                :class="{ 
+                  'highlight-action': nextRequiredAction === 'start-tournament'
+                }"
                 :disabled="!tournament.canActivate || tournament.status !== 'draft'" 
                 @click="activateTournament"
                 :title="sidebarCollapsed ? 'Start Tournament' : ''"
@@ -179,8 +189,10 @@
               <button 
                 @click="toggleDraw" 
                 class="sidebar-action" 
-                :class="{ 'active': showDraw }" 
-                :disabled="tournament.status === 'draft' || tournament.status === 'cancelled' || (anyGroupMatchPlayed && tournament.status !== 'completed')"
+                :class="{ 
+                  'active': showDraw,
+                  'highlight-action': nextRequiredAction === 'draw'
+                }"
                 :title="sidebarCollapsed ? 'World Cup Draw' : ''"
               >
                 <i class="fas fa-random"></i>
@@ -191,7 +203,10 @@
               <button 
                 @click="toggleGroupStage" 
                 class="sidebar-action" 
-                :class="{ 'active': showGroupStage }" 
+                :class="{ 
+                  'active': showGroupStage,
+                  'highlight-action': nextRequiredAction === 'group-stage'
+                }" 
                 :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Group Stage' : ''"
               >
@@ -203,7 +218,10 @@
               <button 
                 @click="toggleKnockout" 
                 class="sidebar-action" 
-                :class="{ 'active': showKnockout }" 
+                :class="{ 
+                  'active': showKnockout,
+                  'highlight-action': nextRequiredAction === 'knockout'
+                }" 
                 :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Knockout Stage' : ''"
               >
@@ -400,65 +418,11 @@
           </div>
           
           <!-- Tournament Information Section -->
-          <TournamentBranding 
+          <TournamentBrandingSimplified 
             v-if="tournament.mascot || tournament.logo || tournament.anthem || tournament.hostCities"
             :tournament="tournament" 
           />
           
-          <!-- Tournament Settings Section (moved to bottom) -->
-          <div class="tournament-details-bottom glass-white">
-            <div class="card-header">
-              <h3>Tournament Settings</h3>
-              <i class="fas fa-cog"></i>
-            </div>
-            <div class="tournament-details-grid">
-              <div class="detail-item">
-                <i class="fas fa-calendar"></i>
-                <div>
-                  <span class="detail-label">Status</span>
-                  <span class="detail-value" :class="`status-${tournament.status}`">{{ formatStatus(tournament.status) }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-users"></i>
-                <div>
-                  <span class="detail-label">Teams</span>
-                  <span class="detail-value">{{ tournament.teamCount || 0 }}/{{ tournament.settings?.maxTeams || 32 }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-globe"></i>
-                <div>
-                  <span class="detail-label">Type</span>
-                  <span class="detail-value">{{ formatTournamentType(tournament.type) }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <span class="detail-label">Host Country</span>
-                  <span class="detail-value">
-                    <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
-                    {{ tournament.hostCountry }}
-                  </span>
-                </div>
-              </div>
-              <div class="detail-item" v-if="tournament.createdAt">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <span class="detail-label">Created</span>
-                  <span class="detail-value">{{ formatDate(tournament.createdAt) }}</span>
-                </div>
-              </div>
-              <div class="detail-item" v-if="tournament.year">
-                <i class="fas fa-calendar-alt"></i>
-                <div>
-                  <span class="detail-label">Year</span>
-                  <span class="detail-value">{{ tournament.year }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </main>
@@ -477,8 +441,9 @@ import GroupStandings from '../components/GroupStandings.vue'
 import KnockoutBracket from '../components/KnockoutBracket.vue'
 import TournamentNews from '../components/TournamentNews.vue'
 import TournamentStats from '../components/TournamentStats.vue'
-import TournamentBranding from '../components/TournamentBranding.vue'
+import TournamentBrandingSimplified from '../components/TournamentBrandingSimplified.vue'
 import { applyTournamentTheme, removeTournamentTheme } from '../styles/tournament-theme.js'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'TournamentDetail',
@@ -494,12 +459,13 @@ export default {
     KnockoutBracket,
     TournamentNews,
     TournamentStats,
-    TournamentBranding
+    TournamentBrandingSimplified
   },
   data() {
     return {
       username: '',
       subscriptionTier: 'basic',
+      userAvatar: null,
       tournament: null,
       countries: [],
       loading: false,
@@ -565,6 +531,36 @@ export default {
       }
       
       return null
+    },
+    nextRequiredAction() {
+      if (!this.tournament) return null
+      
+      // If tournament is in draft and ready to start
+      if (this.tournament.status === 'draft' && this.tournament.canActivate) {
+        return 'start-tournament'
+      }
+      
+      // If tournament is in draft and still needs team selection/qualification
+      if (this.tournament.status === 'draft' && !this.tournament.canActivate) {
+        return this.tournament.type === 'manual' ? 'team-selection' : 'qualifying'
+      }
+      
+      // If tournament is active but draw hasn't been done
+      if (this.tournament.status === 'active' && !this.tournament.drawCompleted && this.tournament.teamCount >= 32) {
+        return 'draw'
+      }
+      
+      // If draw is complete but no matches have been played
+      if (this.tournament.status === 'active' && this.tournament.drawCompleted && !this.anyGroupMatchPlayed) {
+        return 'group-stage'
+      }
+      
+      // If all group matches are complete but knockout hasn't started
+      if (this.tournament.status === 'active' && this.allGroupMatchesCompleted && !this.knockoutPhaseDetected) {
+        return 'knockout'
+      }
+      
+      return null
     }
   },
   async mounted() {
@@ -615,7 +611,46 @@ export default {
     applyTournamentTheming() {
       if (this.tournament?.logo?.colorScheme) {
         applyTournamentTheme(this.tournament)
+      } else if (this.tournament?.hostCountryCode) {
+        // Generate color scheme based on country code for tournaments without color schemes
+        const colorScheme = this.generateColorSchemeForCountry(this.tournament.hostCountryCode)
+        if (colorScheme) {
+          const mockTournament = {
+            ...this.tournament,
+            logo: {
+              ...this.tournament.logo,
+              colorScheme
+            }
+          }
+          applyTournamentTheme(mockTournament)
+        }
       }
+    },
+    
+    generateColorSchemeForCountry(countryCode) {
+      const schemes = {
+        KSA: { primary: '#006C35', secondary: '#006C35', accent: '#FFFFFF', description: 'Saudi green' },
+        NGA: { primary: '#008751', secondary: '#008751', accent: '#FFFFFF', description: 'Nigerian green' },
+        BRA: { primary: '#009739', secondary: '#FEDD00', accent: '#002776', description: 'Brazilian flag colors' },
+        ARG: { primary: '#74ACDF', secondary: '#F6B40E', accent: '#74ACDF', description: 'Argentine sky blue and sun' },
+        GER: { primary: '#000000', secondary: '#DD0000', accent: '#FFCE00', description: 'German tricolor' },
+        FRA: { primary: '#002395', secondary: '#ED2939', accent: '#002395', description: 'French blue and red' },
+        ESP: { primary: '#AA151B', secondary: '#F1BF00', accent: '#AA151B', description: 'Spanish red and gold' },
+        ITA: { primary: '#009246', secondary: '#CE2B37', accent: '#009246', description: 'Italian green and red' },
+        ENG: { primary: '#CF142B', secondary: '#00247D', accent: '#CF142B', description: 'English red and blue' },
+        POR: { primary: '#006600', secondary: '#FF0000', accent: '#FFCC00', description: 'Portuguese green and red' },
+        NED: { primary: '#FF6600', secondary: '#0033CC', accent: '#FF6600', description: 'Dutch orange and blue' },
+        USA: { primary: '#002868', secondary: '#BF0A30', accent: '#002868', description: 'American blue and red' },
+        MEX: { primary: '#006847', secondary: '#CE1126', accent: '#006847', description: 'Mexican green and red' },
+        JPN: { primary: '#BC002D', secondary: '#BC002D', accent: '#FFFFFF', description: 'Japanese red' },
+        AUS: { primary: '#002868', secondary: '#FFCD00', accent: '#002868', description: 'Australian blue and gold' },
+        MAR: { primary: '#C1272D', secondary: '#006233', accent: '#C1272D', description: 'Moroccan red and green' },
+        EGY: { primary: '#CE1126', secondary: '#000000', accent: '#CE1126', description: 'Egyptian red and black' },
+        RSA: { primary: '#007749', secondary: '#FFB612', accent: '#DE3831', description: 'South African flag colors' },
+        DEFAULT: { primary: '#1E88E5', secondary: '#FFC107', accent: '#4CAF50', description: 'vibrant international colors' }
+      }
+      
+      return schemes[countryCode] || schemes.DEFAULT
     },
     
     goBack() {
@@ -631,7 +666,7 @@ export default {
       this.loading = true
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.$route.params.id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.$route.params.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -657,7 +692,7 @@ export default {
     
     async loadCountries() {
       try {
-        const response = await fetch('http://localhost:3001/api/tournaments/countries')
+        const response = await fetch('${API_URL}/tournaments/countries')
         if (response.ok) {
           this.countries = await response.json()
         }
@@ -704,7 +739,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -816,7 +851,8 @@ export default {
     async handleQualificationCompleted() {
       // Reload tournament data when qualification is completed
       await this.loadTournament()
-      // Potentially show a success message or redirect
+      // After qualification is completed, automatically show the draw phase
+      this.showCurrentPhase()
     },
 
     handleProceedToMatches() {
@@ -957,7 +993,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/tournaments/${this.tournament._id}`, {
+        const response = await fetch(`${API_URL}/tournaments/${this.tournament._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -984,7 +1020,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -993,6 +1029,7 @@ export default {
         if (response.ok) {
           const user = await response.json()
           this.subscriptionTier = user.subscriptionTier || 'basic'
+          this.userAvatar = user.avatar || null
         }
       } catch (error) {
         console.error('Error loading user profile:', error)
@@ -1017,7 +1054,7 @@ export default {
     async checkGroupMatchesCompletion() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/matches`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1040,7 +1077,7 @@ export default {
     async checkKnockoutPhase() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/knockout/${this.tournament._id}/bracket`, {
+        const response = await fetch(`${API_URL}/knockout/${this.tournament._id}/bracket`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1063,7 +1100,7 @@ export default {
     async loadUnreadNewsCount() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/news/${this.tournament._id}/unread-count`, {
+        const response = await fetch(`${API_URL}/news/${this.tournament._id}/unread-count`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1096,6 +1133,7 @@ export default {
 .tournament-container {
   width: 100%;
   max-width: 1200px;
+  overflow-x: hidden;
 }
 
 .loading-state, .error-state {
@@ -1774,6 +1812,38 @@ export default {
   justify-content: center;
 }
 
+/* Highlight next required action */
+.sidebar-action.highlight-action {
+  animation: pulse-highlight 2s ease-in-out infinite;
+  background: linear-gradient(135deg, var(--fifa-gold), #FFD700);
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  border: 1px solid var(--fifa-gold);
+}
+
+.sidebar-action.highlight-action:hover {
+  animation: none;
+  background: linear-gradient(135deg, #FFD700, var(--fifa-gold));
+  transform: translateX(4px) scale(1.05);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes pulse-highlight {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(255, 215, 0, 0.9), 0 0 60px rgba(255, 215, 0, 0.4);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    transform: scale(1);
+  }
+}
+
 .collapsed .sidebar-action {
   justify-content: center;
   padding: 12px 6px;
@@ -1815,78 +1885,6 @@ export default {
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Tournament Settings Bottom Section */
-.tournament-details-bottom {
-  margin-top: 32px;
-  padding: 24px;
-  border-radius: var(--radius-xl);
-}
-
-.tournament-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: rgba(0, 102, 204, 0.05);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(0, 102, 204, 0.1);
-  transition: all 0.3s ease;
-}
-
-.detail-item:hover {
-  background: rgba(0, 102, 204, 0.08);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
-}
-
-.detail-item i {
-  color: var(--fifa-gold);
-  font-size: 1.2rem;
-  min-width: 20px;
-}
-
-.detail-item div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detail-label {
-  font-size: 0.8rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.detail-value {
-  font-size: 1rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--fifa-dark-blue);
-}
-
-.detail-value.status-draft {
-  color: #6c757d;
-}
-
-.detail-value.status-active {
-  color: #28a745;
-}
-
-.detail-value.status-completed {
-  color: #007bff;
-}
-
-.detail-value.status-cancelled {
-  color: #dc3545;
-}
 
 /* Tab Navigation Styles */
 .tab-navigation {
@@ -1943,6 +1941,35 @@ export default {
     padding: 16px;
   }
   
+  /* Make tournament header compact and single column */
+  .tournament-title-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+  
+  .title-and-host {
+    flex: none !important;
+  }
+  
+  .title-and-host h1 {
+    font-size: 1.5rem !important;
+    margin: 0 0 8px 0 !important;
+  }
+  
+  .host-info {
+    gap: 6px !important;
+  }
+  
+  .host-details p {
+    font-size: 0.85rem !important;
+    margin: 0 !important;
+  }
+  
+  .status-section {
+    align-self: flex-start !important;
+  }
+  
   .host-section {
     flex-direction: column;
     gap: 16px;
@@ -1963,6 +1990,17 @@ export default {
   
   .content-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .content-card {
+    padding: 16px;
+    overflow-x: hidden;
+  }
+  
+  .content-card.full-width {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   .form-row {
@@ -1992,61 +2030,152 @@ export default {
     font-size: 0.85rem;
   }
   
-  /* Floating Sidebar Mobile */
+  /* Mobile Quick Actions Bar - Override all desktop styles */
   .floating-sidebar {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    transform: none;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 60vh;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 56px !important;
+    max-height: 56px !important;
+    background: white !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
+    z-index: 1000 !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
   
   .floating-sidebar.collapsed {
-    width: 100%;
-    max-height: 80px;
+    transform: none !important;
+    height: 56px !important;
   }
   
   .sidebar-header {
-    padding: 16px 20px;
-  }
-  
-  .sidebar-actions {
-    padding: 12px 16px 24px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-  }
-  
-  .sidebar-action {
-    flex: 0 0 auto;
-    min-width: 120px;
-    padding: 12px;
-    text-align: center;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .collapsed .sidebar-actions {
     display: none;
   }
   
-  .tournament-content.sidebar-open {
-    margin-left: 0;
-    padding-bottom: 120px;
+  .sidebar-toggle {
+    display: none;
+  }
+  
+  .sidebar-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-evenly !important;
+    align-items: center !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    height: 56px !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .sidebar-action {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    height: 56px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: #666 !important;
+    transition: color 0.2s ease !important;
+    position: relative !important;
+    text-align: center !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+  
+  .sidebar-action:disabled {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+  }
+  
+  .sidebar-action.active {
+    color: var(--fifa-blue) !important;
+    background: none !important;
+  }
+  
+  .sidebar-action.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--fifa-blue);
+  }
+  
+  /* Mobile highlight styles */
+  .sidebar-action.highlight-action {
+    animation: pulse-highlight-mobile 2s ease-in-out infinite !important;
+    background: linear-gradient(135deg, var(--fifa-gold), #FFD700) !important;
+    color: var(--fifa-dark-blue) !important;
+  }
+  
+  .sidebar-action.highlight-action::before {
+    background: var(--fifa-gold) !important;
+    height: 4px !important;
+  }
+  
+  @keyframes pulse-highlight-mobile {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  .sidebar-action i {
+    font-size: 1.3rem !important;
+    line-height: 1 !important;
+  }
+  
+  .sidebar-action span {
+    display: none !important;
+  }
+  
+  .news-action .news-icon-container {
+    position: relative;
+  }
+  
+  .news-action .unread-news-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+  }
+  
+  .tournament-content {
+    padding-bottom: 60px;
+  }
+  
+  .tournament-container {
+    padding: 0 8px;
   }
   
   .tournament-content {
     margin-left: 0;
-    padding-bottom: 80px;
-  }
-  
-  .tournament-details-grid {
-    grid-template-columns: 1fr;
+    overflow-x: hidden;
   }
 }
+</style>
+
+<style>
+/* Import tournament theme styles */
+@import '../styles/tournament-theme.css';
 </style>

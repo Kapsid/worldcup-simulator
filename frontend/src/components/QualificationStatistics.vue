@@ -62,6 +62,8 @@
 </template>
 
 <script>
+import { API_URL } from '../config/api.js'
+
 export default {
   name: 'QualificationStatistics',
   props: {
@@ -94,7 +96,7 @@ export default {
         this.loading = true
         const token = localStorage.getItem('token')
         
-        const response = await fetch(`http://localhost:3001/api/qualification/${this.tournamentId}/top-scorers/${this.confederationId.toLowerCase()}?limit=20`, {
+        const response = await fetch(`${API_URL}/qualification/${this.tournamentId}/top-scorers/${this.confederationId.toLowerCase()}?limit=20`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -343,21 +345,73 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .confederation-card {
-    padding: 1rem;
+  /* Reduce padding around component */
+  .qualification-statistics {
+    padding: 0.5rem !important;
   }
   
+  /* Smaller heading and less margin */
+  .statistics-header {
+    margin-bottom: 1rem !important;
+  }
+  
+  .statistics-header h2 {
+    font-size: 1.5rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  /* Make card wider and reduce padding */
+  .confederation-card {
+    padding: 0.75rem !important;
+    margin: 0 -0.5rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  
+  /* Much more compact table on mobile */
   .table-header, .scorer-row {
-    grid-template-columns: 40px 1fr 80px 50px 50px 50px;
-    gap: 0.25rem;
+    grid-template-columns: 30px 1fr 40px;
+    gap: 0.15rem;
+    padding: 0.5rem 0;
+    font-size: 0.75rem;
+  }
+  
+  /* Hide some columns on mobile */
+  .team-col, .games-col, .avg-col {
+    display: none;
+  }
+  
+  /* Keep only rank, player, goals on mobile */
+  .table-header .team-col,
+  .table-header .games-col,
+  .table-header .avg-col {
+    display: none;
+  }
+  
+  .rank-col {
+    font-size: 0.7rem;
+  }
+  
+  /* Hide medals on mobile */
+  .rank-col i {
+    display: none;
   }
   
   .player-name {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
   }
   
-  .team-name {
-    font-size: 0.75rem;
+  .player-position {
+    font-size: 0.65rem;
+  }
+  
+  .goals-count {
+    font-size: 0.9rem;
+  }
+  
+  /* Reduce row height */
+  .scorer-row {
+    padding: 0.4rem 0;
   }
 }
 </style>

@@ -76,11 +76,26 @@
             
             <div class="match-teams">
               <div class="team home-team">
-                <CountryFlag :country-code="match.homeTeam.countryCode || match.homeTeam.code" :size="24" />
+                <div class="team-info">
+                  <CountryFlag 
+                    :country-code="match.homeTeam.countryCode || match.homeTeam.code" 
+                    :size="24" 
+                  />
+                  <div 
+                    class="team-position" 
+                    :class="{
+                      'advancing': isAdvancingPosition(getTeamPosition(match.homeTeam._id, match.group._id)),
+                      'non-advancing': !isAdvancingPosition(getTeamPosition(match.homeTeam._id, match.group._id))
+                    }"
+                    v-if="getTeamPosition(match.homeTeam._id, match.group._id)"
+                  >
+                    {{ getTeamPosition(match.homeTeam._id, match.group._id) }}
+                  </div>
+                </div>
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.homeTeam._id}`"
                   class="team-name clickable-team"
-                  @mouseenter="showTooltip($event, match.homeTeam._id, match.awayTeam._id)"
+                  @mouseenter="showTooltip($event, match.homeTeam._id, match.group._id)"
                   @mouseleave="hideTooltip"
                 >
                   {{ match.homeTeam.countryName }}
@@ -112,11 +127,26 @@
               </div>
               
               <div class="team away-team">
-                <CountryFlag :country-code="match.awayTeam.countryCode || match.awayTeam.code" :size="24" />
+                <div class="team-info">
+                  <CountryFlag 
+                    :country-code="match.awayTeam.countryCode || match.awayTeam.code" 
+                    :size="24" 
+                  />
+                  <div 
+                    class="team-position" 
+                    :class="{
+                      'advancing': isAdvancingPosition(getTeamPosition(match.awayTeam._id, match.group._id)),
+                      'non-advancing': !isAdvancingPosition(getTeamPosition(match.awayTeam._id, match.group._id))
+                    }"
+                    v-if="getTeamPosition(match.awayTeam._id, match.group._id)"
+                  >
+                    {{ getTeamPosition(match.awayTeam._id, match.group._id) }}
+                  </div>
+                </div>
                 <router-link 
                   :to="`/tournament/${tournament._id}/team/${match.awayTeam._id}`"
                   class="team-name clickable-team"
-                  @mouseenter="showTooltip($event, match.awayTeam._id, match.homeTeam._id)"
+                  @mouseenter="showTooltip($event, match.awayTeam._id, match.group._id)"
                   @mouseleave="hideTooltip"
                 >
                   {{ match.awayTeam.countryName }}
@@ -137,7 +167,7 @@
 
     <p v-if="error" class="error-message">{{ error }}</p>
     
-    <!-- Standings Tooltip - teleported to body to avoid container positioning issues -->
+    <!-- Standings Tooltip - teleported to body -->
     <Teleport to="body">
       <StandingsTooltip
         :visible="tooltip.visible"
@@ -152,14 +182,15 @@
 
 <script>
 
-import StandingsTooltip from './StandingsTooltip.vue'
 import CountryFlag from './CountryFlag.vue'
+import StandingsTooltip from './StandingsTooltip.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'GroupMatches',
   components: {
-    StandingsTooltip,
-    CountryFlag
+    CountryFlag,
+    StandingsTooltip
   },
 
   props: {
@@ -178,14 +209,14 @@ export default {
       activeMatchday: 1,
       loading: false,
       error: '',
-      // Tooltip data
+      groupStandings: {},
       tooltip: {
         visible: false,
         teamId: null,
+        rivalTeamId: null,
         position: { x: 0, y: 0 },
         standings: []
-      },
-      tooltipTimeout: null
+      }
     }
   },
   computed: {
@@ -209,7 +240,7 @@ export default {
     async loadMatches() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/matches`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -219,6 +250,8 @@ export default {
           this.matches = await response.json()
           // Set active matchday to first unfinished one
           this.activeMatchday = this.firstUnfinishedMatchday
+          // Load standings for position indicators
+          await this.loadStandings()
         }
       } catch (error) {
         console.error('Error loading matches:', error)
@@ -236,7 +269,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/generate`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/generate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -264,7 +297,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/simulate/match/${matchId}`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/simulate/match/${matchId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -295,7 +328,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/simulate/matchday/${matchday}`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/simulate/matchday/${matchday}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -349,65 +382,10 @@ export default {
       return matchdayMatches.length > 0 && matchdayMatches.every(match => match.status === 'completed')
     },
 
-    // Tooltip methods
-    async showTooltip(event, teamId, rivalTeamId = null) {
-      if (!teamId) return
-      
-      // Clear any existing timeout
-      if (this.tooltipTimeout) {
-        clearTimeout(this.tooltipTimeout)
-        this.tooltipTimeout = null
-      }
-      
-      // Get standings for the team's group
-      const standings = await this.getStandingsForTeam(teamId)
-      if (!standings || standings.length === 0) return
-      
-      // Position near where you hover
-      this.tooltip = {
-        visible: true,
-        teamId: teamId,
-        rivalTeamId: rivalTeamId,
-        position: {
-          x: event.clientX + 15,  // 15px to the right of mouse
-          y: event.clientY - 40   // 40px above mouse
-        },
-        standings: standings
-      }
-      
-      // Auto-hide after 5 seconds
-      this.tooltipTimeout = setTimeout(() => {
-        this.hideTooltip()
-      }, 5000)
-    },
-    
-    hideTooltip() {
-      // Clear any existing timeout
-      if (this.tooltipTimeout) {
-        clearTimeout(this.tooltipTimeout)
-        this.tooltipTimeout = null
-      }
-      
-      this.tooltip.visible = false
-      this.tooltip.teamId = null
-    },
-    
-    async getStandingsForTeam(teamId) {
-      if (!teamId || !this.tournament._id) return []
-      
+    async loadStandings() {
       try {
-        // Find the team in current matches to get the group
-        const teamMatch = this.matches.find(match => 
-          match.homeTeam._id === teamId || match.awayTeam._id === teamId
-        )
-        
-        if (!teamMatch) return []
-        
-        const groupId = teamMatch.group._id
-        
-        // Fetch group standings from API
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/${this.tournament._id}/standings`, {
+        const response = await fetch(`${API_URL}/matches/${this.tournament._id}/standings`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -415,34 +393,99 @@ export default {
         
         if (response.ok) {
           const allStandings = await response.json()
-          // Filter standings for the specific group and transform data
-          const groupStandings = allStandings
-            .filter(standing => standing.group._id === groupId)
-            .map(standing => ({
+          
+          // Organize standings by group
+          this.groupStandings = {}
+          allStandings.forEach(standing => {
+            const groupId = standing.group._id
+            if (!this.groupStandings[groupId]) {
+              this.groupStandings[groupId] = []
+            }
+            this.groupStandings[groupId].push({
               teamId: standing.team._id,
               name: standing.team.countryName,
-              flag: standing.team.countryFlag,
-              played: standing.played || 0,
-              points: standing.points || 0
-            }))
+              country: standing.team.countryCode,
+              countryCode: standing.team.countryCode,
+              position: this.groupStandings[groupId].length + 1,
+              points: standing.points || 0,
+              played: standing.played || 0
+            })
+          })
           
-          return groupStandings
+          // Sort each group by points (descending), then by other criteria if needed
+          Object.keys(this.groupStandings).forEach(groupId => {
+            this.groupStandings[groupId].sort((a, b) => b.points - a.points)
+            // Update positions after sorting
+            this.groupStandings[groupId].forEach((team, index) => {
+              team.position = index + 1
+            })
+          })
         }
-        
-        return []
       } catch (error) {
-        console.error('Error fetching group standings:', error)
-        return []
+        console.error('Error loading standings:', error)
       }
+    },
+    
+    getTeamPosition(teamId, groupId) {
+      if (!this.groupStandings[groupId]) return null
+      const team = this.groupStandings[groupId].find(t => t.teamId === teamId)
+      return team ? team.position : null
+    },
+    
+    isAdvancingPosition(position) {
+      // In tournament groups, top 2 positions advance (green), others are blue
+      return position <= 2
+    },
+
+    showTooltip(event, teamId, groupId) {
+      if (!teamId || !groupId) return
+      
+      // Only show tooltip on desktop (screens wider than 768px)
+      if (window.innerWidth <= 768) return
+      
+      // Get standings for the group
+      const standings = this.groupStandings[groupId] || []
+      if (standings.length === 0) {
+        console.log('No standings found for group:', groupId)
+        return
+      }
+      
+      // Find rival team in current match being displayed
+      let rivalTeamId = null
+      // Get matches for current matchday
+      const currentMatchdayMatches = this.getMatchesByMatchday(this.activeMatchday)
+      const currentMatch = currentMatchdayMatches.find(match => 
+        (match.homeTeam._id === teamId || match.awayTeam._id === teamId) &&
+        match.group._id === groupId
+      )
+      if (currentMatch) {
+        rivalTeamId = currentMatch.homeTeam._id === teamId 
+          ? currentMatch.awayTeam._id 
+          : currentMatch.homeTeam._id
+      }
+      
+      // Position tooltip near cursor
+      this.tooltip = {
+        visible: true,
+        teamId: teamId,
+        rivalTeamId: rivalTeamId,
+        position: {
+          x: event.clientX + 15,
+          y: event.clientY - 40
+        },
+        standings: standings
+      }
+    },
+    
+    hideTooltip() {
+      this.tooltip.visible = false
+      this.tooltip.teamId = null
+      this.tooltip.rivalTeamId = null
     }
 
   },
   beforeUnmount() {
-    // Clean up any pending tooltip timeout
-    if (this.tooltipTimeout) {
-      clearTimeout(this.tooltipTimeout)
-      this.tooltipTimeout = null
-    }
+    // Component cleanup
   }
 }
 </script>
@@ -613,6 +656,39 @@ export default {
   flex: 1;
 }
 
+.team-info {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-position {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  color: var(--white);
+  font-size: 0.6rem;
+  font-weight: var(--font-weight-bold);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: none; /* Hidden by default on desktop */
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.team-position.advancing {
+  background: #00AA44; /* Green for advancing positions */
+}
+
+.team-position.non-advancing {
+  background: var(--fifa-blue); /* Blue for non-advancing positions */
+}
+
 .team-flag {
   font-size: 1.5rem;
 }
@@ -748,6 +824,33 @@ export default {
 
   .match-score {
     margin: 0 8px;
+  }
+
+  /* Remove venue/place from group matches on mobile */
+  .match-venue {
+    display: none;
+  }
+
+  /* Show position indicators on mobile */
+  .team-position {
+    display: flex !important;
+  }
+
+  /* Make flags bigger in group matches on mobile */
+  .team .country-flag {
+    font-size: 1.8rem !important;
+  }
+
+  /* Make buttons bigger in group matches on mobile */
+  .btn-small {
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+    min-width: 40px;
+    height: 36px;
+  }
+
+  .btn-small i {
+    font-size: 1rem;
   }
 }
 </style>

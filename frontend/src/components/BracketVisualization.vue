@@ -11,7 +11,8 @@
     </div>
 
     <div v-if="showBracketView" class="tournament-bracket">
-      <div class="bracket-container">
+      <div class="bracket-responsive-wrapper">
+        <div class="bracket-container">
         <!-- Round of 16 -->
         <div class="bracket-round round-16">
           <div class="round-header">Round of 16</div>
@@ -140,6 +141,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       <!-- Legend -->
@@ -518,11 +520,18 @@ export default {
 }
 
 .tournament-bracket {
-  overflow-x: auto;
-  padding: 20px;
   background: var(--white);
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.bracket-responsive-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px;
+  max-width: 100vw;
+  position: relative;
 }
 
 .bracket-container {
@@ -817,6 +826,13 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .bracket-responsive-wrapper {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 10px;
+    width: calc(100% + 32px);
+  }
+  
   .bracket-container {
     gap: 40px;
     min-width: 800px;
@@ -842,6 +858,36 @@ export default {
   .bracket-legend {
     flex-direction: column;
     align-items: center;
+  }
+  
+  .bracket-responsive-wrapper {
+    padding: 10px;
+    margin: 0 -16px;
+    width: calc(100% + 32px);
+  }
+  
+  .bracket-container {
+    gap: 30px;
+    min-width: 800px;
+    padding: 20px 10px;
+  }
+  
+  .bracket-match {
+    min-width: 80px;
+    min-height: 60px;
+  }
+  
+  .team-code {
+    font-size: 0.7rem;
+  }
+  
+  .team-score {
+    font-size: 0.8rem;
+  }
+  
+  .round-header {
+    font-size: 0.75rem;
+    margin-bottom: 10px;
   }
 }
 </style>

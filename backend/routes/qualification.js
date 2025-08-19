@@ -410,12 +410,9 @@ router.get('/:tournamentId/top-scorers/:confederationId', authenticateToken, asy
     const PlayerStats = await import('../models/PlayerStats.js').then(m => m.default)
     const Player = await import('../models/Player.js').then(m => m.default)
     
-    // Get all qualification stats for this tournament
+    // Get all qualification stats for this tournament ONLY
     const playerStats = await PlayerStats.find({
-      $or: [
-        { tournamentId: tournamentId },
-        { worldId: { $exists: true } } // Include worldId queries for broader coverage
-      ],
+      tournamentId: tournamentId,
       competitionType: 'qualification',
       goals: { $gt: 0 } // Only players who scored
     })

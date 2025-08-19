@@ -1,5 +1,6 @@
 import express from 'express'
 import TournamentService from '../services/TournamentService.js'
+import MembershipService from '../services/MembershipService.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { countries } from '../data/countries.js'
 import TournamentTeam from '../models/TournamentTeam.js'
@@ -353,17 +354,11 @@ router.get('/:id/top-scorers', authenticateToken, async (req, res) => {
     // Import PlayerStats model
     const PlayerStats = (await import('../models/PlayerStats.js')).default
     
-    // Build query for tournament stats
+    // Build query for tournament stats - only current tournament
     const query = { 
+      tournamentId: tournament._id,
       competitionType: 'tournament',
       goals: { $gt: 0 } // Only include players with goals
-    }
-    
-    // Add tournament or world context
-    if (tournament.worldId) {
-      query.worldId = tournament.worldId
-    } else {
-      query.tournamentId = tournament._id
     }
 
     // Get top scorers with player details
@@ -396,6 +391,78 @@ router.get('/:id/top-scorers', authenticateToken, async (req, res) => {
     })
   } catch (error) {
     console.error('Error getting tournament top scorers:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+
+// Fix MVP data endpoint - recalculate MVP for completed tournaments
+router.post('/:id/fix-mvp', authenticateToken, async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id)
+    
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' })
+    }
+    
+    if (tournament.status !== 'completed') {
+      return res.status(400).json({ error: 'Tournament must be completed to fix MVP' })
+    }
+
+    // Import KnockoutService and recalculate MVP
+    const KnockoutService = (await import('../services/KnockoutService.js')).default
+    const mvpPlayer = await KnockoutService.calculateMVP(req.params.id)
+    
+    if (mvpPlayer && mvpPlayer.player && mvpPlayer.player.displayName) {
+      tournament.mvp = {
+        playerId: mvpPlayer.player._id,
+        playerName: mvpPlayer.player.displayName,
+        teamId: mvpPlayer.player.teamId,
+        nationality: mvpPlayer.player.nationality,
+        position: mvpPlayer.player.position || mvpPlayer.player.detailedPosition,
+        goals: mvpPlayer.goals || 0,
+        assists: mvpPlayer.assists || 0,
+        averageRating: mvpPlayer.averageRating || 0,
+        matchesPlayed: mvpPlayer.matchesPlayed || 0
+      }
+      
+      await tournament.save()
+      
+      console.log('🏆 MVP recalculated and fixed:', tournament.mvp)
+      
+      res.json({
+        message: 'MVP recalculated successfully',
+        mvp: tournament.mvp
+      })
+    } else {
+      res.status(400).json({ error: 'Could not calculate MVP - no valid player data found' })
+    }
+    
+  } catch (error) {
+    console.error('Error fixing MVP:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// List tournaments with MVP status
+router.get('/list-mvp-status', authenticateToken, async (req, res) => {
+  try {
+    const tournaments = await Tournament.find({ createdBy: req.user.userId })
+      .select('name status mvp winner runnerUp')
+      .lean()
+    
+    const tournamentsWithMVPStatus = tournaments.map(t => ({
+      _id: t._id,
+      name: t.name,
+      status: t.status,
+      hasWinner: !!t.winner,
+      hasMVP: !!t.mvp,
+      mvpComplete: !!(t.mvp && t.mvp.playerName)
+    }))
+    
+    res.json(tournamentsWithMVPStatus)
+  } catch (error) {
+    console.error('Error listing MVP status:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
@@ -486,6 +553,7 @@ router.get('/:tournamentId/debug-stats', authenticateToken, async (req, res) => 
   }
 })
 
+
 // Get Clean Sheets for tournament
 router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) => {
   try {
@@ -504,17 +572,12 @@ router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Tournament not found' })
     }
     
-    // Build query based on whether tournament has worldId
+    // Build query for current tournament only
     const query = {
+      tournamentId: tournamentId,
       competitionType: { $in: ['tournament', 'world_cup'] },
       matchesPlayed: { $gte: 1 }, // At least 1 match
       cleanSheets: { $gt: 0 } // Only players with clean sheets
-    }
-    
-    if (tournament.worldId) {
-      query.worldId = tournament.worldId
-    } else {
-      query.tournamentId = tournamentId
     }
     
     console.log('Clean Sheets Query:', query)
@@ -557,6 +620,250 @@ router.get('/:tournamentId/clean-sheets', authenticateToken, async (req, res) =>
   }
 })
 
+// Get Tournament Surprises and Disappointments
+router.get('/:tournamentId/surprises', authenticateToken, async (req, res) => {
+  console.log('Surprises endpoint hit for tournament:', req.params.tournamentId)
+  try {
+    const { tournamentId } = req.params
+    
+    // Import models
+    const Tournament = (await import('../models/Tournament.js')).default
+    const TournamentTeam = (await import('../models/TournamentTeam.js')).default
+    const Standing = (await import('../models/Standing.js')).default
+    const KnockoutMatch = (await import('../models/KnockoutMatch.js')).default
+    const CountryTournamentHistory = (await import('../models/CountryTournamentHistory.js')).default
+    
+    // Get tournament
+    const tournament = await Tournament.findById(tournamentId)
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' })
+    }
+    
+    // Only calculate surprises/disappointments for completed tournaments
+    // or tournaments with significant progress (at least knockout stage started)
+    if (tournament.status !== 'completed') {
+      // Check if knockout stage has started
+      const knockoutMatches = await KnockoutMatch.find({ 
+        tournament: tournamentId,
+        status: 'completed'
+      })
+      
+      if (knockoutMatches.length === 0) {
+        return res.json({
+          surprises: [],
+          disappointments: [],
+          message: 'Analysis will be available once knockout stage begins',
+          tournamentStatus: tournament.status
+        })
+      }
+    }
+    
+    // Get all teams in tournament with their rankings
+    const teams = await TournamentTeam.find({ tournament: tournamentId })
+      .sort({ worldRanking: 1 })
+    
+    if (teams.length === 0) {
+      return res.json({
+        surprises: [],
+        disappointments: [],
+        message: 'No teams in tournament yet'
+      })
+    }
+    
+    // Get tournament results if available
+    const standings = await Standing.find({ tournament: tournamentId })
+    const knockoutMatches = await KnockoutMatch.find({ 
+      tournament: tournamentId,
+      status: 'completed'
+    })
+    
+    // Analyze surprises and disappointments
+    const surprises = []
+    const disappointments = []
+    
+    // Helper function to determine team's actual achievement
+    const getTeamAchievement = async (teamCode) => {
+      // Check if winner
+      if (tournament.winner && tournament.winner.code === teamCode) {
+        return { level: 'winner', stage: 'Winner', points: 100 }
+      }
+      
+      // Check if runner-up
+      if (tournament.runnerUp && tournament.runnerUp.code === teamCode) {
+        return { level: 'final', stage: 'Runner-up', points: 90 }
+      }
+      
+      // Check knockout progress - find the furthest stage reached
+      let furthestStage = null
+      const stageOrder = ['round16', 'quarterfinal', 'semifinal', 'final']
+      const stagePoints = { 'round16': 30, 'quarterfinal': 50, 'semifinal': 70, 'final': 90 }
+      const stageNames = { 
+        'round16': 'Round of 16', 
+        'quarterfinal': 'Quarter-finals', 
+        'semifinal': 'Semi-finals', 
+        'final': 'Final'
+      }
+      
+      for (const stage of stageOrder) {
+        const stageMatches = knockoutMatches.filter(m => m.round === stage)
+        const teamMatch = stageMatches.find(match => 
+          match.homeTeam?.code === teamCode || match.awayTeam?.code === teamCode
+        )
+        
+        if (teamMatch) {
+          // Team participated in this stage
+          furthestStage = stage
+          
+          // Check if they won this match to advance further
+          const wonMatch = (teamMatch.homeTeam?.code === teamCode && teamMatch.homeScore > teamMatch.awayScore) ||
+                          (teamMatch.awayTeam?.code === teamCode && teamMatch.awayScore > teamMatch.homeScore)
+          
+          // If they lost, this is their furthest stage (where they were eliminated)
+          if (!wonMatch) {
+            break
+          }
+        } else {
+          // Team didn't reach this stage, so previous stage was their furthest
+          break
+        }
+      }
+      
+      if (furthestStage) {
+        return { 
+          level: furthestStage, 
+          stage: stageNames[furthestStage], 
+          points: stagePoints[furthestStage] 
+        }
+      }
+      
+      // Check group stage
+      const teamStanding = standings.find(s => s.teamCode === teamCode)
+      if (teamStanding) {
+        if (teamStanding.position <= 2) {
+          // If tournament is not completed and they qualified, they're still active
+          if (tournament.status !== 'completed') {
+            return { level: 'active', stage: 'Still in tournament', points: 25, isActive: true }
+          }
+          return { level: 'qualified', stage: 'Qualified from group', points: 20 }
+        }
+        return { level: 'group', stage: 'Group stage exit', points: 10 }
+      }
+      
+      return { level: 'none', stage: 'Did not qualify', points: 0 }
+    }
+    
+    // Calculate expected performance based on ranking
+    const getExpectedPerformance = (ranking) => {
+      if (ranking <= 4) return { level: 'semifinal', minPoints: 70 }
+      if (ranking <= 8) return { level: 'quarterfinal', minPoints: 50 }
+      if (ranking <= 16) return { level: 'round16', minPoints: 30 }
+      if (ranking <= 24) return { level: 'qualified', minPoints: 20 }
+      return { level: 'group', minPoints: 10 }
+    }
+    
+    // Analyze each team
+    for (const team of teams) {
+      const achievement = await getTeamAchievement(team.countryCode)
+      const expected = getExpectedPerformance(team.worldRanking)
+      
+      // Skip teams that are still active in an ongoing tournament
+      if (achievement.isActive) {
+        continue
+      }
+      
+      // Calculate performance difference
+      const performanceDiff = achievement.points - expected.minPoints
+      
+      // Determine if surprise or disappointment
+      if (performanceDiff >= 40) {
+        // Big surprise
+        surprises.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: Math.min(100, 50 + performanceDiff),
+          description: team.worldRanking > 20 && achievement.level === 'winner' 
+            ? 'Fairytale victory!' 
+            : team.worldRanking > 16 && ['final', 'semifinal'].includes(achievement.level)
+            ? 'Incredible run!'
+            : 'Major overachievement!'
+        })
+      } else if (performanceDiff >= 20) {
+        // Moderate surprise
+        surprises.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: 30 + performanceDiff,
+          description: 'Exceeded expectations'
+        })
+      } else if (performanceDiff <= -40) {
+        // Major disappointment
+        disappointments.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: Math.min(100, 50 + Math.abs(performanceDiff)),
+          description: team.worldRanking <= 5 && achievement.level === 'group'
+            ? 'Shocking early exit!'
+            : team.worldRanking <= 8 && achievement.level === 'group'
+            ? 'Major upset!'
+            : 'Disappointing campaign'
+        })
+      } else if (performanceDiff <= -20) {
+        // Moderate disappointment
+        disappointments.push({
+          team: {
+            code: team.countryCode,
+            name: team.countryName,
+            flag: team.countryFlag,
+            ranking: team.worldRanking
+          },
+          achievement: achievement.stage,
+          expectedLevel: expected.level,
+          impactScore: 30 + Math.abs(performanceDiff),
+          description: 'Below expectations'
+        })
+      }
+    }
+    
+    // Sort by impact score
+    surprises.sort((a, b) => b.impactScore - a.impactScore)
+    disappointments.sort((a, b) => b.impactScore - a.impactScore)
+    
+    // Limit to top results
+    const topSurprises = surprises.slice(0, 5)
+    const topDisappointments = disappointments.slice(0, 5)
+    
+    res.json({
+      tournamentId,
+      surprises: topSurprises,
+      disappointments: topDisappointments,
+      totalTeams: teams.length,
+      tournamentStatus: tournament.status
+    })
+    
+  } catch (error) {
+    console.error('Error fetching surprises:', error)
+    res.status(500).json({ error: 'Failed to fetch tournament surprises' })
+  }
+})
+
 // Get All Stars XI for tournament
 router.get('/:tournamentId/all-stars-xi', authenticateToken, async (req, res) => {
   console.log('All Stars XI endpoint hit for tournament:', req.params.tournamentId)
@@ -573,17 +880,12 @@ router.get('/:tournamentId/all-stars-xi', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Tournament not found' })
     }
     
-    // Build query based on whether tournament has worldId
+    // Build query for current tournament only
     const query = {
+      tournamentId: tournamentId,
       competitionType: { $in: ['tournament', 'world_cup'] },
       matchesPlayed: { $gte: 1 }, // At least 1 match
       averageRating: { $gt: 0 }
-    }
-    
-    if (tournament.worldId) {
-      query.worldId = tournament.worldId
-    } else {
-      query.tournamentId = tournamentId
     }
     
     console.log('All Stars XI Query:', query)
@@ -727,6 +1029,18 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     
     if (!tournament) {
       return res.status(404).json({ error: 'Tournament not found' })
+    }
+
+    // Decrement tournament usage counter after successful deletion
+    try {
+      const membership = await MembershipService.getMembership(req.user.userId)
+      if (membership && membership.tournamentsCreated > 0) {
+        membership.tournamentsCreated -= 1
+        await membership.save()
+      }
+    } catch (membershipError) {
+      console.error('Error updating membership usage after tournament deletion:', membershipError)
+      // Don't fail the deletion if membership update fails
     }
 
     res.json({ message: 'Tournament deleted successfully' })

@@ -1,39 +1,78 @@
 <template>
   <header class="header glass">
-    <div class="brand-section">
-      <div class="logo">
-        <i class="fas fa-futbol"></i>
+    <div class="header-top">
+      <div class="brand-section">
+        <div class="logo">
+          <i class="fas fa-futbol"></i>
+        </div>
+      </div>
+      
+      <button class="mobile-menu-toggle" @click="mobileMenuOpen = !mobileMenuOpen">
+        <i :class="mobileMenuOpen ? 'fas fa-times' : 'fas fa-bars'"></i>
+      </button>
+      
+      <nav class="navigation desktop-nav">
+        <router-link to="/dashboard" class="nav-link" :class="{ active: $route.path === '/dashboard' }">
+          <i class="fas fa-home"></i>
+          Dashboard
+        </router-link>
+        <router-link to="/worlds" class="nav-link" :class="{ active: $route.path.startsWith('/worlds') }">
+          <i class="fas fa-globe"></i>
+          Worlds
+        </router-link>
+        <router-link to="/tournaments" class="nav-link" :class="{ active: $route.path.startsWith('/tournament') }">
+          <i class="fas fa-trophy"></i>
+          Tournament
+        </router-link>
+      </nav>
+      
+      <div class="user-section desktop-user">
+        <div class="user-info clickable" @click="goToProfile">
+          <div class="user-avatar">
+            <template v-if="userAvatar && userAvatar.type === 'predefined'">
+              <i :class="userAvatar.icon" :style="{ color: userAvatar.color }"></i>
+            </template>
+            <template v-else-if="userAvatar && userAvatar.type === 'upload' && userAvatar.url">
+              <img :src="userAvatar.url" alt="User Avatar" class="avatar-image" />
+            </template>
+            <template v-else>
+              {{ username.charAt(0).toUpperCase() }}
+            </template>
+          </div>
+          <div class="user-details">
+            <span class="username">{{ username }}</span>
+            <span class="user-role">{{ formatSubscriptionTier(subscriptionTier) }}</span>
+          </div>
+        </div>
+        <button @click="handleLogout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Sign Out</span>
+        </button>
       </div>
     </div>
     
-    <nav class="navigation">
-      <router-link to="/dashboard" class="nav-link" :class="{ active: $route.path === '/dashboard' }">
+    <nav class="mobile-nav" :class="{ open: mobileMenuOpen }">
+      <router-link to="/dashboard" class="nav-link" :class="{ active: $route.path === '/dashboard' }" @click="mobileMenuOpen = false">
         <i class="fas fa-home"></i>
         Dashboard
       </router-link>
-      <router-link to="/worlds" class="nav-link" :class="{ active: $route.path.startsWith('/worlds') }">
+      <router-link to="/worlds" class="nav-link" :class="{ active: $route.path.startsWith('/worlds') }" @click="mobileMenuOpen = false">
         <i class="fas fa-globe"></i>
         Worlds
       </router-link>
-      <router-link to="/tournaments" class="nav-link" :class="{ active: $route.path.startsWith('/tournament') }">
+      <router-link to="/tournaments" class="nav-link" :class="{ active: $route.path.startsWith('/tournament') }" @click="mobileMenuOpen = false">
         <i class="fas fa-trophy"></i>
         Tournament
       </router-link>
-    </nav>
-    
-    <div class="user-section">
-      <div class="user-info clickable" @click="goToProfile">
-        <div class="user-avatar">{{ username.charAt(0).toUpperCase() }}</div>
-        <div class="user-details">
-          <span class="username">{{ username }}</span>
-          <span class="user-role">{{ formatSubscriptionTier(subscriptionTier) }}</span>
-        </div>
-      </div>
-      <button @click="handleLogout" class="logout-btn">
+      <router-link to="/profile" class="nav-link" :class="{ active: $route.path === '/profile' }" @click="mobileMenuOpen = false">
+        <i class="fas fa-user"></i>
+        Profile
+      </router-link>
+      <button @click="handleLogout" class="logout-btn mobile-logout">
         <i class="fas fa-sign-out-alt"></i>
-        <span>Sign Out</span>
+        Sign Out
       </button>
-    </div>
+    </nav>
   </header>
 </template>
 
@@ -48,10 +87,20 @@ export default {
     subscriptionTier: {
       type: String,
       default: 'basic'
+    },
+    userAvatar: {
+      type: Object,
+      default: null
+    }
+  },
+  data() {
+    return {
+      mobileMenuOpen: false
     }
   },
   methods: {
     handleLogout() {
+      this.mobileMenuOpen = false
       this.$emit('logout')
     },
     goToProfile() {
@@ -65,27 +114,35 @@ export default {
       }
       return tierNames[tier] || tier
     }
+  },
+  watch: {
+    '$route'() {
+      this.mobileMenuOpen = false
+    }
   }
 }
 </script>
 
 <style scoped>
 .header {
-  padding: 16px 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--glass-border);
   position: sticky;
   top: 0;
   z-index: 100;
-  height: var(--header-height, 66px);
-  box-sizing: border-box;
+  border-bottom: 1px solid var(--glass-border);
   background: rgba(0, 51, 102, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   transition: all 0.3s ease;
   color: white;
+}
+
+.header-top {
+  padding: 16px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height, 66px);
+  box-sizing: border-box;
 }
 
 .brand-section {
@@ -118,9 +175,57 @@ export default {
   letter-spacing: 1px;
 }
 
-.navigation {
+.desktop-nav {
   display: flex;
   gap: 32px;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.mobile-nav {
+  display: none;
+  flex-direction: column;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  border-top: none;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.mobile-nav.open {
+  max-height: 400px;
+  padding: 16px;
+  background: rgba(0, 51, 102, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav .nav-link {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 12px 16px;
+  margin: 4px 0;
+}
+
+.mobile-logout {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.desktop-user {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .nav-link {
@@ -195,6 +300,14 @@ export default {
   font-weight: var(--font-weight-bold);
   font-size: 1.1rem;
   box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.user-avatar .avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .user-details {
@@ -236,38 +349,41 @@ export default {
 }
 
 @media (max-width: 1024px) {
-  .navigation {
+  .desktop-nav {
     display: none;
   }
   
-  .header {
+  .desktop-user {
+    display: none;
+  }
+  
+  .mobile-menu-toggle {
+    display: block;
+  }
+  
+  .mobile-nav {
+    display: flex;
+  }
+  
+  .header-top {
     padding: 12px 24px;
   }
 }
 
 @media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    gap: 14px;
-    padding: 14px 18px;
-    height: var(--header-height-mobile, 132px);
-  }
-  
-  .brand-section {
-    justify-content: center;
-  }
-  
-  .user-section {
-    width: 100%;
-    justify-content: space-between;
+  .header-top {
+    padding: 12px 16px;
+    height: 60px;
   }
   
   .logo {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
   
-  .brand-text h1 {
-    font-size: 1.25rem;
+  /* Border is now handled by the .open state */
+  
+  .logout-btn span {
+    display: inline;
   }
 }
 </style>

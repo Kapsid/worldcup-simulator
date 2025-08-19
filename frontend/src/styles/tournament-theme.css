@@ -1,0 +1,440 @@
+/* Tournament Theme Styles */
+
+/* When tournament theme is active */
+.tournament-themed {
+  /* Header gradient using tournament colors */
+  --header-gradient: linear-gradient(135deg, var(--tournament-primary, var(--fifa-blue)) 0%, var(--tournament-accent, var(--fifa-gold)) 100%);
+  --header-gradient-subtle: linear-gradient(135deg, var(--tournament-primary-light, rgba(30, 136, 229, 0.1)) 0%, var(--tournament-primary-medium, rgba(255, 193, 7, 0.3)) 100%);
+  
+  /* Subtle background pattern */
+  position: relative;
+}
+
+.tournament-themed::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: 
+    radial-gradient(circle at 20% 80%, var(--tournament-primary, var(--fifa-blue)) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, var(--tournament-accent, var(--fifa-gold)) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, var(--tournament-secondary, #ffffff) 0%, transparent 50%);
+  z-index: -1;
+}
+
+/* Tournament Header */
+.tournament-themed .tournament-header {
+  background: var(--header-gradient-subtle);
+  border-top: 3px solid var(--tournament-primary, var(--fifa-blue));
+  position: relative;
+  overflow: hidden;
+}
+
+.tournament-themed .tournament-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--tournament-primary-light, rgba(30, 136, 229, 0.05)) 50%, 
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Status badges with tournament colors */
+.tournament-themed .status-badge {
+  background: var(--tournament-primary, var(--fifa-blue));
+  color: white;
+  box-shadow: 0 2px 8px var(--tournament-primary-light, rgba(30, 136, 229, 0.3));
+}
+
+.tournament-themed .status-badge.status-active {
+  background: var(--tournament-accent, var(--fifa-gold));
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+/* Sidebar with theme */
+.tournament-themed .floating-sidebar {
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 3px solid var(--tournament-primary, var(--fifa-blue));
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.tournament-themed .sidebar-header {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-bottom: 1px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+}
+
+.tournament-themed .sidebar-action {
+  border-left: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.tournament-themed .sidebar-action:hover {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-left-color: var(--tournament-primary, var(--fifa-blue));
+  color: var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .sidebar-action.active {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-left-color: var(--tournament-accent, var(--fifa-gold));
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+.tournament-themed .sidebar-action i {
+  color: var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .sidebar-action.active i {
+  color: var(--tournament-accent, var(--fifa-gold));
+}
+
+/* Content cards with subtle theming */
+.tournament-themed .content-card {
+  border-top: 2px solid var(--tournament-primary, var(--fifa-blue));
+  box-shadow: 0 4px 20px var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+}
+
+.tournament-themed .card-header {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.05));
+  border-bottom: 1px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.2));
+}
+
+.tournament-themed .card-header h3 {
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+/* Tab navigation with theme */
+.tournament-themed .tab-navigation {
+  border-bottom: 2px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+}
+
+.tournament-themed .tab-btn {
+  color: var(--tournament-primary, var(--fifa-blue));
+  border-bottom: 3px solid transparent;
+}
+
+.tournament-themed .tab-btn:hover {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-bottom-color: var(--tournament-primary-medium, rgba(30, 136, 229, 0.5));
+}
+
+.tournament-themed .tab-btn.active {
+  border-bottom-color: var(--tournament-accent, var(--fifa-gold));
+  color: var(--tournament-primary-dark, #1565C0);
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.05));
+}
+
+/* Buttons with theme */
+.tournament-themed .btn-primary {
+  background: var(--tournament-primary, var(--fifa-blue));
+  box-shadow: 0 4px 12px var(--tournament-primary-light, rgba(30, 136, 229, 0.3));
+}
+
+.tournament-themed .btn-primary:hover {
+  background: var(--tournament-primary-dark, #1565C0);
+  box-shadow: 0 6px 20px var(--tournament-primary-medium, rgba(30, 136, 229, 0.4));
+}
+
+.tournament-themed .btn-secondary {
+  color: var(--tournament-primary, var(--fifa-blue));
+  border-color: var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .btn-secondary:hover {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-color: var(--tournament-primary-dark, #1565C0);
+}
+
+/* Match cards with theme accents */
+.tournament-themed .match-card {
+  border-left: 3px solid var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .match-card:hover {
+  box-shadow: 0 4px 16px var(--tournament-primary-light, rgba(30, 136, 229, 0.2));
+  border-left-color: var(--tournament-accent, var(--fifa-gold));
+}
+
+.tournament-themed .match-score {
+  color: var(--tournament-primary-dark, #1565C0);
+  font-weight: 700;
+}
+
+/* Group standings with theme */
+.tournament-themed .standings-table-header,
+.tournament-themed .table-header {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+.tournament-themed .table-row:hover {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.05));
+}
+
+.tournament-themed .position-1 {
+  background: linear-gradient(90deg, var(--tournament-accent, var(--fifa-gold)) 3px, transparent 3px);
+}
+
+.tournament-themed .position-2 {
+  background: linear-gradient(90deg, var(--tournament-primary, var(--fifa-blue)) 3px, transparent 3px);
+}
+
+/* Tournament branding section */
+.tournament-themed .branding-header {
+  background: linear-gradient(135deg, var(--tournament-primary-light, #f8f9fa) 0%, var(--tournament-primary-medium, #e9ecef) 100%);
+}
+
+.tournament-themed .branding-header h3 i {
+  color: var(--tournament-accent, var(--fifa-gold));
+}
+
+.tournament-themed .item-badge {
+  background: var(--tournament-primary, var(--fifa-blue));
+}
+
+/* Country flags with theme border */
+.tournament-themed .country-flag-img {
+  border: 2px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+}
+
+/* News badge with theme */
+.tournament-themed .unread-news-badge {
+  background: var(--tournament-accent, var(--fifa-gold));
+  color: var(--tournament-primary-dark, #1565C0);
+  box-shadow: 0 2px 8px var(--tournament-accent, rgba(255, 193, 7, 0.4));
+}
+
+/* Knockout bracket theming */
+.tournament-themed .bracket-round {
+  border-left: 2px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+}
+
+.tournament-themed .bracket-match {
+  border: 1px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.2));
+}
+
+.tournament-themed .bracket-match:hover {
+  border-color: var(--tournament-accent, var(--fifa-gold));
+  box-shadow: 0 4px 12px var(--tournament-primary-light, rgba(30, 136, 229, 0.2));
+}
+
+.tournament-themed .winner-highlight {
+  background: var(--tournament-accent, var(--fifa-gold));
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+/* Draw ceremony theming */
+.tournament-themed .pot-card {
+  border-top: 3px solid var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .pot-header {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-bottom: 1px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.2));
+}
+
+.tournament-themed .team-item {
+  border-left: 3px solid transparent;
+}
+
+.tournament-themed .team-item:hover {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+  border-left-color: var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .team-item.host-team {
+  background: linear-gradient(135deg, var(--tournament-accent, rgba(255, 193, 7, 0.2)), transparent);
+  border-left-color: var(--tournament-accent, var(--fifa-gold));
+}
+
+/* Stats section theming */
+.tournament-themed .stat-card {
+  border-left: 3px solid var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .stat-value {
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+.tournament-themed .stat-icon {
+  color: var(--tournament-accent, var(--fifa-gold));
+}
+
+/* Loading states with theme */
+.tournament-themed .loading-spinner {
+  color: var(--tournament-primary, var(--fifa-blue));
+}
+
+/* Hover effects with theme colors */
+.tournament-themed a:hover {
+  color: var(--tournament-primary, var(--fifa-blue));
+}
+
+.tournament-themed .clickable:hover {
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+/* Selection color */
+.tournament-themed ::selection {
+  background: var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+  color: var(--tournament-primary-dark, #1565C0);
+}
+
+/* Scrollbar theming (webkit browsers) */
+.tournament-themed ::-webkit-scrollbar-thumb {
+  background: var(--tournament-primary-medium, rgba(30, 136, 229, 0.5));
+}
+
+.tournament-themed ::-webkit-scrollbar-thumb:hover {
+  background: var(--tournament-primary, var(--fifa-blue));
+}
+
+/* Input focus states */
+.tournament-themed input:focus,
+.tournament-themed select:focus,
+.tournament-themed textarea:focus {
+  border-color: var(--tournament-primary, var(--fifa-blue));
+  box-shadow: 0 0 0 3px var(--tournament-primary-light, rgba(30, 136, 229, 0.1));
+}
+
+/* Tournament details grid items */
+.tournament-themed .detail-item i {
+  color: var(--tournament-accent, var(--fifa-gold));
+}
+
+/* Edit mode form */
+.tournament-themed .edit-form {
+  border: 2px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.05));
+}
+
+/* Color swatches in branding */
+.tournament-themed .color-swatch-large:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px var(--tournament-primary-medium, rgba(30, 136, 229, 0.3));
+}
+
+/* Tournament navigation breadcrumbs */
+.tournament-themed .breadcrumbs {
+  background: var(--tournament-primary-light, rgba(30, 136, 229, 0.05));
+  border-bottom: 1px solid var(--tournament-primary-medium, rgba(30, 136, 229, 0.2));
+}
+
+.tournament-themed .breadcrumb-item a:hover {
+  color: var(--tournament-primary, var(--fifa-blue));
+}
+
+/* Animations with theme colors */
+@keyframes tournament-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--tournament-primary-medium, rgba(30, 136, 229, 0.4));
+  }
+  70% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.tournament-themed .pulse-animation {
+  animation: tournament-pulse 2s infinite;
+}
+
+/* Special effects for active tournament */
+.tournament-themed .status-badge.status-active {
+  position: relative;
+  overflow: hidden;
+}
+
+.tournament-themed .status-badge.status-active::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: badge-shine 3s infinite;
+}
+
+@keyframes badge-shine {
+  to {
+    left: 100%;
+  }
+}
+
+/* Animated border for active sections */
+.tournament-themed .sidebar-action.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--tournament-accent, var(--fifa-gold));
+  animation: border-pulse 2s ease-in-out infinite;
+}
+
+@keyframes border-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Goal celebration animation */
+.tournament-themed .match-score .score-value {
+  transition: all 0.3s ease;
+}
+
+.tournament-themed .match-score .score-value.goal-scored {
+  animation: goal-celebration 0.5s ease;
+  color: var(--tournament-accent, var(--fifa-gold));
+}
+
+@keyframes goal-celebration {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .tournament-themed .tournament-header {
+    border-top-width: 2px;
+  }
+  
+  .tournament-themed .content-card {
+    border-top-width: 1px;
+  }
+  
+  .tournament-themed::before {
+    opacity: 0.02;
+  }
+}

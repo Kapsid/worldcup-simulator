@@ -33,6 +33,7 @@ router.post('/:tournamentId/simulate/match/:matchId', async (req, res) => {
     const match = await KnockoutService.simulateKnockoutMatch(matchId)
     
     // Now run enhanced simulation to create detailed match data
+    let enhancedMatch = null
     try {
       console.error('🚨 KNOCKOUT SIM: Starting enhanced simulation')
       console.error('🚨 KNOCKOUT SIM: Match data before enhancement:', {
@@ -57,11 +58,12 @@ router.post('/:tournamentId/simulate/match/:matchId', async (req, res) => {
       
       // Get tournament and world info
       const tournament = await Tournament.findById(tournamentId)
-      const world = tournament?.world ? { _id: tournament.world } : null
+      const world = tournament?.worldId ? { _id: tournament.worldId } : null
+      console.error('🚨 KNOCKOUT SIM: Tournament:', tournament?.name, tournament?.worldId)
       console.error('🚨 KNOCKOUT SIM: World context:', world)
       
       // Create a properly structured match object for enhanced simulation
-      const enhancedMatch = {
+      enhancedMatch = {
         _id: match._id,
         tournament: tournamentId,
         homeTeam: {
@@ -85,7 +87,7 @@ router.post('/:tournamentId/simulate/match/:matchId', async (req, res) => {
     } catch (enhancedError) {
       console.error('🚨 KNOCKOUT SIM: Enhanced simulation failed:', enhancedError.message)
       console.error('🚨 KNOCKOUT SIM: Full error stack:', enhancedError.stack)
-      console.error('🚨 KNOCKOUT SIM: Enhanced match object:', JSON.stringify(enhancedMatch, null, 2))
+      console.error('🚨 KNOCKOUT SIM: Enhanced match object:', enhancedMatch ? JSON.stringify(enhancedMatch, null, 2) : 'enhancedMatch was null')
       // Continue even if enhanced simulation fails
     }
     

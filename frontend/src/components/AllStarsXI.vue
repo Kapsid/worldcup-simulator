@@ -21,8 +21,110 @@
         <p class="subtitle">{{ allStarsData.formation }} Formation - Best performing players of the tournament</p>
       </div>
       
+      <!-- Mobile List View -->
+      <div class="mobile-player-list">
+        <div v-if="allStarsData.players.GK" class="player-list-item">
+          <div class="position-badge gk">GK</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.GK.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.GK.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.GK.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.LB" class="player-list-item">
+          <div class="position-badge def">LB</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.LB.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.LB.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.LB.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.CB1" class="player-list-item">
+          <div class="position-badge def">CB</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.CB1.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.CB1.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.CB1.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.CB2" class="player-list-item">
+          <div class="position-badge def">CB</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.CB2.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.CB2.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.CB2.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.RB" class="player-list-item">
+          <div class="position-badge def">RB</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.RB.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.RB.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.RB.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.LM" class="player-list-item">
+          <div class="position-badge mid">LM</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.LM.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.LM.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.LM.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.CM1" class="player-list-item">
+          <div class="position-badge mid">CM</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.CM1.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.CM1.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.CM1.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.CM2" class="player-list-item">
+          <div class="position-badge mid">CM</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.CM2.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.CM2.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.CM2.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.RM" class="player-list-item">
+          <div class="position-badge mid">RM</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.RM.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.RM.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.RM.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.ST1" class="player-list-item">
+          <div class="position-badge att">ST</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.ST1.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.ST1.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.ST1.stats?.averageRating || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="allStarsData.players.ST2" class="player-list-item">
+          <div class="position-badge att">ST</div>
+          <div class="player-info">
+            <div class="player-name">{{ allStarsData.players.ST2.displayName }}</div>
+            <div class="player-team">{{ allStarsData.players.ST2.teamId }}</div>
+          </div>
+          <div class="player-rating">{{ allStarsData.players.ST2.stats?.averageRating || 'N/A' }}</div>
+        </div>
+      </div>
+
       <!-- Formation Display -->
-      <div class="formation-display">
+      <div class="formation-display desktop-only">
         <!-- Forwards -->
         <div class="formation-line forwards">
           <div class="formation-players">
@@ -366,29 +468,96 @@ export default {
 }
 
 
-@media (max-width: 768px) {
-  .formation-display {
-    padding: 20px 15px;
-  }
-  
-  .formation-players {
-    gap: 15px;
-  }
-  
-  .player-card {
-    min-width: 100px;
-    max-width: 120px;
-    padding: 10px;
-  }
-  
-  .player-name {
-    font-size: 13px;
-  }
+/* Mobile Player List Styles */
+.mobile-player-list {
+  display: none;
+}
+
+.player-list-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.position-badge {
+  font-weight: bold;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-align: center;
+  min-width: 35px;
+  color: white;
+}
+
+.position-badge.gk {
+  background: #f59e0b;
+}
+
+.position-badge.def {
+  background: #3b82f6;
+}
+
+.position-badge.mid {
+  background: #10b981;
+}
+
+.position-badge.att {
+  background: #ef4444;
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-info .player-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.player-info .player-team {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.player-list-item .player-rating {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 0.5rem;
+  border-radius: 6px;
+  min-width: 45px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
-  .pitch {
-    min-height: 400px;
+  /* Hide formation display on mobile */
+  .formation-display {
+    display: none;
+  }
+  
+  /* Show mobile list on mobile */
+  .mobile-player-list {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Hide mobile list on desktop */
+  .mobile-player-list {
+    display: none;
+  }
+  
+  /* Show formation display on desktop */
+  .formation-display {
+    display: block;
   }
 }
 </style>

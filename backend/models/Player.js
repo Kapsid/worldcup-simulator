@@ -71,6 +71,10 @@ const PlayerSchema = new mongoose.Schema({
     type: Number,
     default: 0  // For goalkeepers
   },
+  overallMatches: {
+    type: Number,
+    default: 0  // Total matches played across all competitions
+  },
   debutYear: {
     type: Number
   },

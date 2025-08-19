@@ -4,6 +4,7 @@ import World from '../models/World.js'
 import TournamentNewsService from './TournamentNewsService.js'
 import PlayerGenerationService from './PlayerGenerationService.js'
 import BasicEnhancedMatchService from './BasicEnhancedMatchService.js'
+import PlayerStatsUpdateService from './PlayerStatsUpdateService.js'
 import { confederations } from '../data/confederations.js'
 import { countries } from '../data/countries.js'
 
@@ -633,36 +634,84 @@ class QualificationService {
       }
 
       // Generate player squads for all qualifying teams
-      console.log('Generating player squads for all qualifying teams...')
+      console.log('Starting player squad generation for all qualifying teams...')
       let totalTeamsGenerated = 0
+      let totalTeamsToGenerate = 0
+      
+      // Count total teams first
+      for (const confederationData of qualificationData.confederations) {
+        for (const group of confederationData.groups) {
+          totalTeamsToGenerate += group.teams.length
+        }
+      }
+      
+      console.log(`Need to generate squads for ${totalTeamsToGenerate} teams total`)
       
       for (const confederationData of qualificationData.confederations) {
+        console.log(`Generating squads for ${confederationData.name} confederation...`)
         for (const group of confederationData.groups) {
           for (const team of group.teams) {
             try {
               // Extract country code from team data
               const countryCode = countries.find(c => c.name === team.country)?.code || team.name.substring(0, 3).toUpperCase()
               
-              await PlayerGenerationService.generateSquad(
-                countryCode,
-                tournamentId,
-                tournament.worldId ? tournament.worldId.toString() : null,
-                tournament.year || new Date().getFullYear()
-              )
+              // Check if team already has players for this world/tournament
+              if (tournament.worldId) {
+                // For world tournaments, check if team has world-level players
+                const existingWorldPlayers = await PlayerGenerationService.getTeamPlayers(
+                  countryCode,
+                  null, // No tournament ID - get world-level players
+                  tournament.worldId.toString()
+                )
+                
+                if (existingWorldPlayers.length > 0) {
+                  console.log(`🔄 ROSTER: Team ${team.country} already has ${existingWorldPlayers.length} world players - preserving roster`)
+                  continue // Skip generation, preserve existing players
+                } else {
+                  console.log(`🔄 ROSTER: Generating initial squad for team: ${team.country} (${countryCode}) at world level`)
+                  await PlayerGenerationService.generateSquad(
+                    countryCode,
+                    null, // No tournament ID - generate at world level
+                    tournament.worldId.toString(),
+                    tournament.year || new Date().getFullYear()
+                  )
+                }
+              } else {
+                // For standalone tournaments, check tournament-specific players
+                const existingTournamentPlayers = await PlayerGenerationService.getTeamPlayers(
+                  countryCode,
+                  tournamentId,
+                  null
+                )
+                
+                if (existingTournamentPlayers.length > 0) {
+                  console.log(`🔄 ROSTER: Team ${team.country} already has ${existingTournamentPlayers.length} tournament players - preserving roster`)
+                  continue // Skip generation, preserve existing players
+                } else {
+                  console.log(`🔄 ROSTER: Generating squad for team: ${team.country} (${countryCode})`)
+                  await PlayerGenerationService.generateSquad(
+                    countryCode,
+                    tournamentId,
+                    null,
+                    tournament.year || new Date().getFullYear()
+                  )
+                }
+              }
+              
               totalTeamsGenerated++
               
-              if (totalTeamsGenerated % 10 === 0) {
-                console.log(`✓ Generated squads for ${totalTeamsGenerated} teams...`)
+              if (totalTeamsGenerated % 5 === 0) {
+                console.log(`✓ Generated squads for ${totalTeamsGenerated}/${totalTeamsToGenerate} teams... (${Math.round(totalTeamsGenerated/totalTeamsToGenerate*100)}%)`)
               }
             } catch (squadError) {
-              console.error(`Error generating squad for ${team.country}:`, squadError)
+              console.error(`❌ Error generating squad for ${team.country}:`, squadError)
               // Continue with other teams even if one fails
             }
           }
         }
       }
       
-      console.log(`✅ Player squad generation completed for ${totalTeamsGenerated} qualifying teams`)
+      console.log(`✅ Player squad generation completed for ${totalTeamsGenerated}/${totalTeamsToGenerate} qualifying teams`)
 
       return qualification
     } catch (error) {
@@ -1557,6 +1606,9 @@ class QualificationService {
           match.awayScore = result.awayScore
           match.played = true
           
+          // Update player statistics for international caps and goals
+          await this.updatePlayerStatsForQualificationMatch(match, result, tournamentId)
+          
           // Apply enhanced simulation for qualification matches
           try {
             console.log(`About to run enhanced simulation for qualification match: ${match.matchId}`)
@@ -1632,6 +1684,9 @@ class QualificationService {
         match.homeScore = result.homeScore
         match.awayScore = result.awayScore
         match.played = true
+        
+        // Update player statistics for international caps and goals
+        await this.updatePlayerStatsForQualificationMatch(match, result, tournamentId)
         
         // Apply enhanced simulation for qualification matches
         try {
@@ -1723,6 +1778,9 @@ class QualificationService {
         match.homeScore = result.homeScore
         match.awayScore = result.awayScore
         match.played = true
+        
+        // Update player statistics for international caps and goals
+        await this.updatePlayerStatsForQualificationMatch(match, result, tournamentId)
         
         // Apply enhanced simulation for qualification matches
         try {
@@ -1886,6 +1944,9 @@ class QualificationService {
         match.homeScore = result.homeScore
         match.awayScore = result.awayScore
         match.played = true
+        
+        // Update player statistics for international caps and goals
+        await this.updatePlayerStatsForQualificationMatch(match, result, tournamentId)
         
         // Apply enhanced simulation for qualification matches
         try {
@@ -2389,6 +2450,133 @@ class QualificationService {
     } catch (error) {
       console.error('Error in enhanced qualification match simulation:', error)
       throw error
+    }
+  }
+
+  /**
+   * Update player statistics after a qualification match
+   */
+  async updatePlayerStatsForQualificationMatch(match, result, tournamentId) {
+    try {
+      console.log(`🔥 STATS: Starting player stats update for qualification match`)
+      console.log(`🔥 STATS: Match:`, match.homeTeam.country || match.homeTeam.name, 'vs', match.awayTeam.country || match.awayTeam.name)
+      console.log(`🔥 STATS: Result:`, result)
+      console.log(`🔥 STATS: Tournament ID:`, tournamentId)
+      
+      // Get tournament info
+      const tournament = await Tournament.findById(tournamentId)
+      if (!tournament || !tournament.worldId) {
+        console.log('🔥 STATS: Skipping player stats update - not a world tournament')
+        return
+      }
+      
+      console.log(`🔥 STATS: Tournament found:`, tournament.name, 'World ID:', tournament.worldId)
+
+      // Get team country codes
+      const homeCountryCode = match.homeTeam.country || match.homeTeam.name
+      const awayCountryCode = match.awayTeam.country || match.awayTeam.name
+
+      // Convert team names to country codes
+      const homeCode = countries.find(c => c.name === homeCountryCode)?.code || homeCountryCode
+      const awayCode = countries.find(c => c.name === awayCountryCode)?.code || awayCountryCode
+
+      // Get all players from both teams - try tournament-specific first, then world-level
+      let homeTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+        homeCode,
+        tournament._id.toString(), // Try tournament-specific first
+        null
+      )
+      
+      if (homeTeamPlayers.length === 0) {
+        homeTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+          homeCode,
+          null, // Fall back to world-level players
+          tournament.worldId.toString()
+        )
+      }
+
+      let awayTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+        awayCode,
+        tournament._id.toString(), // Try tournament-specific first
+        null
+      )
+      
+      if (awayTeamPlayers.length === 0) {
+        awayTeamPlayers = await PlayerGenerationService.getTeamPlayers(
+          awayCode,
+          null, // Fall back to world-level players
+          tournament.worldId.toString()
+        )
+      }
+
+      if (homeTeamPlayers.length === 0 || awayTeamPlayers.length === 0) {
+        console.log(`Warning: No players found for teams ${homeCode} or ${awayCode}`)
+        console.log(`Home team ${homeCode}: ${homeTeamPlayers.length} players`)
+        console.log(`Away team ${awayCode}: ${awayTeamPlayers.length} players`)
+        return
+      }
+      
+      console.log(`✅ Found players - Home team ${homeCode}: ${homeTeamPlayers.length}, Away team ${awayCode}: ${awayTeamPlayers.length}`)
+
+      // Simulate basic goal distribution
+      const homeGoals = result.homeScore || 0
+      const awayGoals = result.awayScore || 0
+      
+      const goalScorers = {}
+      const assistProviders = {}
+      
+      // Randomly distribute goals to forwards and midfielders
+      if (homeGoals > 0) {
+        const homeScorers = homeTeamPlayers.filter(p => ['Forward', 'Midfielder'].includes(p.position))
+        for (let i = 0; i < homeGoals; i++) {
+          const scorer = homeScorers[Math.floor(Math.random() * homeScorers.length)]
+          goalScorers[scorer._id] = (goalScorers[scorer._id] || 0) + 1
+        }
+      }
+
+      if (awayGoals > 0) {
+        const awayScorers = awayTeamPlayers.filter(p => ['Forward', 'Midfielder'].includes(p.position))
+        for (let i = 0; i < awayGoals; i++) {
+          const scorer = awayScorers[Math.floor(Math.random() * awayScorers.length)]
+          goalScorers[scorer._id] = (goalScorers[scorer._id] || 0) + 1
+        }
+      }
+
+      // Determine clean sheet keeper
+      let cleanSheetKeeper = null
+      if (awayGoals === 0) {
+        const homeKeeper = homeTeamPlayers.find(p => p.position === 'Goalkeeper')
+        cleanSheetKeeper = homeKeeper?._id
+      } else if (homeGoals === 0) {
+        const awayKeeper = awayTeamPlayers.find(p => p.position === 'Goalkeeper')
+        cleanSheetKeeper = awayKeeper?._id
+      }
+
+      // Update stats for all players (assume starting XI for each team)
+      const homePlayerIds = homeTeamPlayers.slice(0, 11).map(p => p._id)
+      const awayPlayerIds = awayTeamPlayers.slice(0, 11).map(p => p._id)
+
+      console.log(`🔥 STATS: About to call updateTeamMatchStats with:`)
+      console.log(`🔥 STATS: Home player IDs:`, homePlayerIds.slice(0, 3), '... (showing first 3)')
+      console.log(`🔥 STATS: Away player IDs:`, awayPlayerIds.slice(0, 3), '... (showing first 3)')
+      console.log(`🔥 STATS: Goal scorers:`, goalScorers)
+      console.log(`🔥 STATS: World ID:`, tournament.worldId.toString())
+      console.log(`🔥 STATS: Tournament ID:`, tournament._id.toString())
+
+      await PlayerStatsUpdateService.updateTeamMatchStats(
+        homePlayerIds,
+        awayPlayerIds,
+        goalScorers,
+        assistProviders,
+        cleanSheetKeeper,
+        tournament.worldId.toString(),
+        tournament._id.toString()
+      )
+
+      console.log(`✅ Updated player stats for qualification match: ${homeCountryCode} vs ${awayCountryCode}`)
+
+    } catch (error) {
+      console.error('Error updating player stats for qualification match:', error)
     }
   }
 }

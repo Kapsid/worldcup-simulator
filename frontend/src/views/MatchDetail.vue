@@ -3,6 +3,7 @@
     <AppHeader 
       :username="username" 
       :subscription-tier="subscriptionTier"
+      :user-avatar="userAvatar"
       @logout="handleLogout" 
     />
     
@@ -31,6 +32,7 @@
           <div v-if="hasPreviousMatch || hasNextMatch" class="match-navigation">
             <button v-if="hasPreviousMatch" @click="navigateToPreviousMatch" class="nav-btn prev">
               <i class="fas fa-chevron-left"></i>
+              <span class="nav-text">Previous Match</span>
               <div class="nav-info">
                 <span class="nav-label">Previous Match</span>
                 <span class="nav-teams">{{ previousMatch.homeTeam.name }} vs {{ previousMatch.awayTeam.name }}</span>
@@ -40,70 +42,131 @@
             </button>
             <div class="nav-divider" v-if="hasPreviousMatch && hasNextMatch"></div>
             <button v-if="hasNextMatch" @click="navigateToNextMatch" class="nav-btn next">
+              <span class="nav-text">Next Match</span>
+              <i class="fas fa-chevron-right"></i>
               <div class="nav-info">
                 <span class="nav-label">Next Match</span>
                 <span class="nav-teams">{{ nextMatch.homeTeam.name }} vs {{ nextMatch.awayTeam.name }}</span>
                 <span v-if="nextMatch.confederationName" class="nav-confederation">{{ nextMatch.confederationName }} | Matchday {{ nextMatch.matchday }}</span>
                 <span v-else-if="nextMatch.groupName" class="nav-confederation">{{ nextMatch.groupName }} | Matchday {{ nextMatch.matchday }}</span>
               </div>
-              <i class="fas fa-chevron-right"></i>
             </button>
           </div>
 
           <!-- Match Score Section -->
           <div class="match-score-section">
-            <!-- Home Team with Goals -->
-            <div class="team-info home-team">
-              <CountryFlag :country-code="match.homeTeam.countryCode" :size="32" />
-              <div class="team-name clickable-team" @click="navigateToTeam('home')">{{ match.homeTeam.name }}</div>
-              <!-- Home Team Goals (Live or Final) -->
-              <div v-if="(liveSimulation.isRunning && getLiveTeamGoals('home').length > 0) || (!liveSimulation.isRunning && matchDetails && getTeamGoals('home').length > 0)" class="team-goals">
+            <!-- Top row with flags and score -->
+            <div class="score-and-flags">
+              <!-- Home Team Flag -->
+              <div class="team-info home-team">
+                <CountryFlag :country-code="match.homeTeam.countryCode" :size="48" />
+                <div class="team-name clickable-team" @click="navigateToTeam('home')">{{ match.homeTeam.name }}</div>
+              </div>
+              
+              <!-- Score Display -->
+              <div class="score-display">
+                <!-- Match Info -->
+                <div class="match-info-compact">
+                  <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
+                  <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
+                  <span v-else-if="match.round">{{ match.round }}</span>
+                  <span v-else>Tournament Match</span>
+                  <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
+                  <span v-if="match.city" class="venue-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ match.city }}
+                  </span>
+                </div>
+                <div class="score">
+                  <span class="home-score">{{ liveSimulation.isRunning ? liveSimulation.homeScore : (match.homeScore !== null ? match.homeScore : '-') }}</span>
+                  <span class="score-separator">:</span>
+                  <span class="away-score">{{ liveSimulation.isRunning ? liveSimulation.awayScore : (match.awayScore !== null ? match.awayScore : '-') }}</span>
+                </div>
+                <div class="match-status">
+                  <span v-if="!match.played" class="status-upcoming">Upcoming</span>
+                  <span v-else-if="liveSimulation.isRunning" class="status-live">{{ liveSimulation.currentMinute }}'</span>
+                  <span v-else class="status-finished">Final</span>
+                </div>
+                
+                <!-- Knockout Match Result Info -->
+                <div v-if="match.played && match.isKnockout" class="knockout-result-info">
+                  <!-- Show if match ended in a draw in regular time but no ET/penalties yet -->
+                  <div v-if="match.homeScore === match.awayScore && match.homeExtraTimeScore === null && match.homePenaltyScore === null" class="draw-notice">
+                    <i class="fas fa-equals"></i>
+                    <span class="result-label">Draw after 90 minutes</span>
+                    <span class="result-info">Match requires extra time</span>
+                  </div>
+                  
+                  <!-- Extra Time Result -->
+                  <div v-if="match.homeExtraTimeScore !== null" class="extra-time-result">
+                    <div class="result-phase-header">
+                      <i class="fas fa-clock"></i>
+                      <span>After Extra Time</span>
+                    </div>
+                    <div class="result-scores">
+                      <span class="total-score">{{ match.homeScore + match.homeExtraTimeScore }}</span>
+                      <span class="score-separator">-</span>
+                      <span class="total-score">{{ match.awayScore + match.awayExtraTimeScore }}</span>
+                    </div>
+                    <div class="score-breakdown">
+                      ({{ match.homeScore }}-{{ match.awayScore }} in regular time, {{ match.homeExtraTimeScore }}-{{ match.awayExtraTimeScore }} in extra time)
+                    </div>
+                  </div>
+                  
+                  <!-- Penalty Shootout Result -->
+                  <div v-if="match.homePenaltyScore !== null" class="penalties-result">
+                    <div class="result-phase-header">
+                      <i class="fas fa-bullseye"></i>
+                      <span>Penalty Shootout</span>
+                    </div>
+                    <div class="penalty-scores">
+                      <span class="penalty-score-value">{{ match.homePenaltyScore }}</span>
+                      <span class="score-separator">-</span>
+                      <span class="penalty-score-value">{{ match.awayPenaltyScore }}</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Match Winner (only show for draws that went to ET/penalties) -->
+                  <div v-if="getWinnerName(match) && (match.homeExtraTimeScore !== null || match.homePenaltyScore !== null)" class="match-winner-section">
+                    <div class="winner-divider"></div>
+                    <div class="winner-content">
+                      <i class="fas fa-trophy"></i>
+                      <div class="winner-details">
+                        <span class="winner-team-name">{{ getWinnerName(match) }}</span>
+                        <span class="winner-method">{{ getWinMethod(match) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Live Simulation Button -->
+                <div v-if="!match.played && !liveSimulation.isRunning" class="live-sim-button">
+                  <button @click="startLiveSimulation" class="btn-live-sim">
+                    <i class="fas fa-play"></i>
+                    Simulate Live
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Away Team Flag -->
+              <div class="team-info away-team">
+                <CountryFlag :country-code="match.awayTeam.countryCode" :size="48" />
+                <div class="team-name clickable-team" @click="navigateToTeam('away')">{{ match.awayTeam.name }}</div>
+              </div>
+            </div>
+            
+            <!-- Goals section below flags -->
+            <div class="goals-section" v-if="(liveSimulation.isRunning && (getLiveTeamGoals('home').length > 0 || getLiveTeamGoals('away').length > 0)) || (!liveSimulation.isRunning && matchDetails && (getTeamGoals('home').length > 0 || getTeamGoals('away').length > 0))">
+              <!-- Home Team Goals -->
+              <div class="team-goals home-goals">
                 <div v-for="goal in liveSimulation.isRunning ? getLiveTeamGoals('home') : getTeamGoals('home')" :key="goal._id || goal.id" class="goal-item" :class="{ 'new-goal': goal.isNew }">
                   <span class="goal-minute">{{ goal.minute }}'</span>
                   <span class="goal-scorer clickable-player" @click="navigateToPlayer(goal.player._id || goal.playerId)">{{ goal.player?.displayName || goal.scorer }}</span>
                 </div>
               </div>
-            </div>
-            
-            <div class="score-display">
-              <div class="score">
-                <span class="home-score">{{ liveSimulation.isRunning ? liveSimulation.homeScore : (match.homeScore !== null ? match.homeScore : '-') }}</span>
-                <span class="score-separator">:</span>
-                <span class="away-score">{{ liveSimulation.isRunning ? liveSimulation.awayScore : (match.awayScore !== null ? match.awayScore : '-') }}</span>
-              </div>
-              <div class="match-status">
-                <span v-if="!match.played" class="status-upcoming">Upcoming</span>
-                <span v-else-if="liveSimulation.isRunning" class="status-live">{{ liveSimulation.currentMinute }}'</span>
-                <span v-else class="status-finished">Final</span>
-              </div>
               
-              <!-- Live Simulation Button -->
-              <div v-if="!match.played && !liveSimulation.isRunning" class="live-sim-button">
-                <button @click="startLiveSimulation" class="btn-live-sim">
-                  <i class="fas fa-play"></i>
-                  Simulate Live
-                </button>
-              </div>
-              <!-- Match Info -->
-              <div class="match-info-compact">
-                <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
-                <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
-                <span v-else-if="match.round">{{ match.round }}</span>
-                <span v-else>Tournament Match</span>
-                <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
-                <span v-if="match.city" class="venue-info">
-                  <i class="fas fa-map-marker-alt"></i>
-                  {{ match.city }}
-                </span>
-              </div>
-            </div>
-            
-            <!-- Away Team with Goals -->
-            <div class="team-info away-team">
-              <CountryFlag :country-code="match.awayTeam.countryCode" :size="32" />
-              <div class="team-name clickable-team" @click="navigateToTeam('away')">{{ match.awayTeam.name }}</div>
-              <!-- Away Team Goals (Live or Final) -->
-              <div v-if="(liveSimulation.isRunning && getLiveTeamGoals('away').length > 0) || (!liveSimulation.isRunning && matchDetails && getTeamGoals('away').length > 0)" class="team-goals">
+              <!-- Away Team Goals -->
+              <div class="team-goals away-goals">
                 <div v-for="goal in liveSimulation.isRunning ? getLiveTeamGoals('away') : getTeamGoals('away')" :key="goal._id || goal.id" class="goal-item" :class="{ 'new-goal': goal.isNew }">
                   <span class="goal-minute">{{ goal.minute }}'</span>
                   <span class="goal-scorer clickable-player" @click="navigateToPlayer(goal.player._id || goal.playerId)">{{ goal.player?.displayName || goal.scorer }}</span>
@@ -165,6 +228,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import Breadcrumbs from '../components/Breadcrumbs.vue'
 import CountryFlag from '../components/CountryFlag.vue'
+import { API_URL } from '../config/api.js'
 
 export default {
   name: 'MatchDetailPage',
@@ -177,6 +241,7 @@ export default {
     return {
       username: '',
       subscriptionTier: 'basic',
+      userAvatar: null,
       match: null,
       matchDetails: null,
       loading: true,
@@ -220,7 +285,7 @@ export default {
         const token = localStorage.getItem('token')
         
         // Try to load from qualification matches first
-        let response = await fetch(`http://localhost:3001/api/qualification/${tournamentId}`, {
+        let response = await fetch(`${API_URL}/qualification/${tournamentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -320,7 +385,7 @@ export default {
         }
         
         // Try to load from group stage matches
-        response = await fetch(`http://localhost:3001/api/matches/${tournamentId}/matches`, {
+        response = await fetch(`${API_URL}/matches/${tournamentId}/matches`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -384,7 +449,7 @@ export default {
         }
         
         // If not found in group stage, try knockout stage
-        response = await fetch(`http://localhost:3001/api/knockout/${tournamentId}/bracket`, {
+        response = await fetch(`${API_URL}/knockout/${tournamentId}/bracket`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -420,6 +485,57 @@ export default {
               date: knockoutMatch.date || knockoutMatch.scheduledDate,
               isKnockout: true
             }
+            
+            // Populate allMatches with all knockout matches for navigation
+            this.allMatches = []
+            if (bracket.matches) {
+              // Define round order for proper navigation sequence
+              const roundOrder = ['round16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+              
+              // Collect all matches from all rounds
+              roundOrder.forEach(roundName => {
+                if (bracket.matches[roundName]) {
+                  bracket.matches[roundName].forEach(match => {
+                    this.allMatches.push({
+                      ...match,
+                      homeTeam: {
+                        name: match.homeTeam?.countryName || 'TBD',
+                        flag: match.homeTeam?.countryFlag || '?',
+                        countryCode: match.homeTeam?.countryCode
+                      },
+                      awayTeam: {
+                        name: match.awayTeam?.countryName || 'TBD',
+                        flag: match.awayTeam?.countryFlag || '?',
+                        countryCode: match.awayTeam?.countryCode
+                      },
+                      round: this.getMatchLabel(match),
+                      played: match.status === 'completed',
+                      date: match.date || match.scheduledDate,
+                      isKnockout: true,
+                      roundName: roundName,
+                      matchPosition: match.matchPosition
+                    })
+                  })
+                }
+              })
+              
+              // Sort matches by round order and match position
+              this.allMatches.sort((a, b) => {
+                const roundOrderA = roundOrder.indexOf(a.roundName)
+                const roundOrderB = roundOrder.indexOf(b.roundName)
+                
+                // Primary sort: by round order
+                if (roundOrderA !== roundOrderB) {
+                  return roundOrderA - roundOrderB
+                }
+                
+                // Secondary sort: by match position within the same round
+                return (a.matchPosition || 0) - (b.matchPosition || 0)
+              })
+            }
+            
+            // Find current match index in the sorted array
+            this.currentMatchIndex = this.allMatches.findIndex(m => m._id === matchId)
             
             // Try to load enhanced match details for knockout matches
             await this.loadEnhancedMatchDetails(matchId)
@@ -479,10 +595,76 @@ export default {
       return texts[decidedBy] || ''
     },
     
+    getWinnerName(match) {
+      if (!match.winner) return ''
+      
+      // Check if winner is an ID and compare with team IDs
+      if (typeof match.winner === 'string') {
+        if (match.homeTeam._id === match.winner || match.homeTeam.id === match.winner) {
+          return match.homeTeam.name
+        } else if (match.awayTeam._id === match.winner || match.awayTeam.id === match.winner) {
+          return match.awayTeam.name
+        }
+      }
+      
+      // If winner is an object with countryName or name
+      if (match.winner.countryName) return match.winner.countryName
+      if (match.winner.name) return match.winner.name
+      
+      // Fallback: determine winner based on scores
+      const homeTotalScore = (match.homeScore || 0) + (match.homeExtraTimeScore || 0)
+      const awayTotalScore = (match.awayScore || 0) + (match.awayExtraTimeScore || 0)
+      
+      if (match.homePenaltyScore !== null && match.awayPenaltyScore !== null) {
+        // Decided by penalties
+        return match.homePenaltyScore > match.awayPenaltyScore ? match.homeTeam.name : match.awayTeam.name
+      } else if (homeTotalScore !== awayTotalScore) {
+        // Decided by regular or extra time
+        return homeTotalScore > awayTotalScore ? match.homeTeam.name : match.awayTeam.name
+      }
+      
+      return ''
+    },
+    
+    getWinMethod(match) {
+      if (!match.played || !match.isKnockout) return ''
+      
+      // Check if decided by penalties
+      if (match.homePenaltyScore !== null && match.awayPenaltyScore !== null) {
+        return `Won ${match.homePenaltyScore}-${match.awayPenaltyScore} on penalties`
+      }
+      
+      // Check if decided in extra time
+      if (match.homeExtraTimeScore !== null) {
+        const homeTotalScore = (match.homeScore || 0) + (match.homeExtraTimeScore || 0)
+        const awayTotalScore = (match.awayScore || 0) + (match.awayExtraTimeScore || 0)
+        if (homeTotalScore !== awayTotalScore) {
+          return 'Won after extra time'
+        }
+      }
+      
+      // Check if decided in regular time
+      if (match.homeScore !== match.awayScore) {
+        return 'Won in regular time'
+      }
+      
+      // Based on decidedBy field if available
+      if (match.decidedBy) {
+        const methods = {
+          'regular': 'Won in regular time',
+          'extra_time': 'Won after extra time',
+          'penalties': 'Won on penalties'
+        }
+        return methods[match.decidedBy] || ''
+      }
+      
+      return ''
+    },
+    
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3001/api/profile', {
+        const response = await fetch(`${API_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -491,6 +673,7 @@ export default {
         if (response.ok) {
           const user = await response.json()
           this.subscriptionTier = user.subscriptionTier || 'basic'
+          this.userAvatar = user.avatar || null
         }
       } catch (error) {
         console.error('Error loading user profile:', error)
@@ -510,7 +693,7 @@ export default {
     async loadEnhancedMatchDetails(enhancedMatchId) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:3001/api/matches/detail/${enhancedMatchId}`, {
+        const response = await fetch(`${API_URL}/matches/detail/${enhancedMatchId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -622,17 +805,17 @@ export default {
       if (this.match.isQualification) {
         // For qualification matches, use the qualification endpoint
         const actualMatchId = this.extractMatchId()
-        url = `http://localhost:3001/api/qualification/${tournamentId}/simulate-match?_=${Date.now()}`
+        url = `${API_URL}/qualification/${tournamentId}/simulate-match?_=${Date.now()}`
         requestBody = { matchId: actualMatchId }
         console.log('🎯 FRONTEND: Using qualification endpoint')
       } else if (this.match.isKnockout) {
         // For knockout matches, use the knockout endpoint
-        url = `http://localhost:3001/api/knockout/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
+        url = `${API_URL}/knockout/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
         requestBody = {}
         console.log('🎯 FRONTEND: Using knockout match endpoint')
       } else {
         // For group stage matches, use the matches endpoint
-        url = `http://localhost:3001/api/matches/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
+        url = `${API_URL}/matches/${tournamentId}/simulate/match/${matchId}?_=${Date.now()}`
         requestBody = {}
         console.log('🎯 FRONTEND: Using group match endpoint')
       }
@@ -838,14 +1021,14 @@ export default {
 
 .match-detail-container {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1400px;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 10px;
 }
 
 .back-btn {
@@ -898,26 +1081,248 @@ export default {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
+/* Desktop Layout */
+@media (min-width: 1024px) {
+  .main-content {
+    padding: 3rem;
+  }
+  
+  .match-content {
+    padding: 2rem;
+  }
+  
+  .match-score-section {
+    grid-column: 1 / -1;
+    margin-bottom: 1rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .lineups-section {
+    grid-column: 1 / -1;
+  }
+  
+  .lineups-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .lineups-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .home-lineup h4,
+  .away-lineup h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    background: var(--background);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+}
+
 /* Match Score Section */
 .match-score-section {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
   background: var(--background);
   border-radius: var(--radius-lg);
-  padding: 2rem 1.5rem;
-  margin-bottom: 2rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
   border: 1px solid var(--border);
-  gap: 1rem;
+  gap: 0.5rem;
+}
+
+@media (max-width: 1023px) {
+  .match-score-section {
+    padding: 0.25rem;
+    gap: 0;
+    margin-top: -1rem;
+  }
+}
+
+/* Desktop layout for match score section */
+@media (min-width: 1024px) {
+  .match-score-section {
+    padding: 1.5rem 1.25rem;
+  }
+  
+  .score-and-flags {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  
+  .team-info {
+    flex: 1;
+    max-width: 240px;
+    margin-top: -0.75rem;
+  }
+  
+  .score-display {
+    flex: 0 0 auto;
+    min-width: 180px;
+    margin-top: 0;
+  }
+  
+  .goals-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.25rem;
+  }
+  
+  .team-goals {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  
+  .home-goals {
+    order: 1;
+  }
+  
+  .away-goals {
+    order: 2;
+  }
+  
+  /* Match Navigation for Desktop */
+  .match-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+  
+  .nav-btn {
+    flex: 1;
+    max-width: 350px;
+    padding: 1rem 1.25rem;
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--fifa-gold);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+  
+  .nav-btn:hover {
+    background: var(--background);
+    color: var(--fifa-blue);
+    border-color: var(--fifa-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.15);
+  }
+  
+  .nav-btn:hover::before {
+    transform: scaleX(1);
+  }
+  
+  .nav-btn.prev {
+    flex-direction: row;
+  }
+  
+  .nav-btn.next {
+    flex-direction: row-reverse;
+  }
+  
+  .nav-text {
+    display: none; /* Hidden on desktop, use icon instead */
+  }
+  
+  .nav-btn i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  
+  .nav-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .nav-label {
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-semibold);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .nav-teams {
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-bold);
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .nav-confederation {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Team display improvements for desktop */
+  .team-info .team-name {
+    font-size: 1.4rem;
+    font-weight: var(--font-weight-bold);
+  }
+  
+  .team-info.home-team,
+  .team-info.away-team {
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 102, 204, 0.15);
+  }
 }
 
 .team-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex: 1;
-  max-width: 300px;
+  max-width: 240px;
+}
+
+@media (max-width: 1023px) {
+  .team-info {
+    gap: 0;
+  }
 }
 
 .team-flag {
@@ -945,31 +1350,41 @@ export default {
   background: rgba(76, 175, 80, 0.1);
   border: 1px solid rgba(76, 175, 80, 0.3);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.8rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.6rem;
   width: 100%;
-  max-width: 200px;
+  max-width: 280px;
+  min-height: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .team-goals .goal-item {
+    max-width: 320px;
+    padding: 0.75rem 1rem;
+  }
 }
 
 .team-goals .goal-scorer {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: 0.935rem;
+  color: var(--fifa-dark-blue);
   flex: 1;
   text-align: left;
+  letter-spacing: 0.3px;
 }
 
 .team-goals .goal-minute {
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: #4CAF50;
-  background: white;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.765rem;
+  color: white;
+  background: linear-gradient(135deg, #4CAF50, #45B7AA);
+  padding: 0.3rem 0.6rem;
+  border-radius: 20px;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
 .team-goals .goal-scorer {
@@ -981,22 +1396,37 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.2rem;
+  text-align: center;
   flex: 0 0 auto;
   min-width: 150px;
 }
 
+@media (max-width: 1023px) {
+  .score-display {
+    gap: 0;
+  }
+}
+
 .match-info-compact {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   text-align: center;
-  padding: 0.5rem;
-  background: rgba(0, 102, 204, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(0, 102, 204, 0.1);
+  padding: 0.4rem 0.6rem;
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.08), rgba(0, 102, 204, 0.12));
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 102, 204, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 1023px) {
+  .match-info-compact {
+    display: none;
+  }
 }
 
 .matchday-info {
@@ -1021,20 +1451,57 @@ export default {
 .score {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  font-size: 4rem;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 4.25rem;
   font-weight: var(--font-weight-bold);
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  margin-top: -1rem;
+}
+
+@media (min-width: 1024px) {
+  .score {
+    font-size: 6.375rem;
+    gap: 2rem;
+    margin-top: 0;
+  }
 }
 
 .home-score, .away-score {
-  color: var(--fifa-blue);
-  min-width: 4rem;
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-dark-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  min-width: 5rem;
   text-align: center;
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  .home-score, .away-score {
+    min-width: 6rem;
+  }
+  
+  .home-score:hover, .away-score:hover {
+    transform: scale(1.05);
+    text-shadow: 3px 3px 8px rgba(0, 102, 204, 0.3);
+  }
 }
 
 .score-separator {
   color: var(--text-secondary);
   font-weight: normal;
+  font-size: 4.25rem;
+  opacity: 0.6;
+  font-family: 'Arial Black', 'Impact', sans-serif;
+}
+
+@media (min-width: 1024px) {
+  .score-separator {
+    font-size: 5.1rem;
+  }
 }
 
 .extra-scores {
@@ -1056,9 +1523,147 @@ export default {
 }
 
 .match-status {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.1rem;
+}
+
+.knockout-result-info {
+  margin-top: 0.75rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.draw-notice {
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+  color: #2d3436;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.draw-notice i {
+  font-size: 1.5rem;
+  color: #636e72;
+}
+
+.result-label {
+  font-weight: var(--font-weight-semibold);
   font-size: 1rem;
+}
+
+.result-info {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.extra-time-result,
+.penalties-result {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.result-phase-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #636e72;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.result-phase-header i {
+  color: #0066cc;
+}
+
+.result-scores,
+.penalty-scores {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  color: #2d3436;
+  margin-bottom: 0.5rem;
+}
+
+.total-score,
+.penalty-score-value {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.score-separator {
+  color: #b2bec3;
+  font-weight: normal;
+}
+
+.score-breakdown {
+  text-align: center;
+  color: #636e72;
+  font-size: 0.85rem;
+}
+
+.match-winner-section {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+  color: var(--white);
+  padding: 1.25rem;
+  position: relative;
+}
+
+.winner-divider {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.winner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.winner-content i {
+  font-size: 2rem;
+  color: #ffeaa7;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.winner-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.winner-team-name {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.winner-method {
+  font-size: 0.9rem;
+  opacity: 0.95;
   font-weight: var(--font-weight-medium);
 }
 
@@ -1091,21 +1696,41 @@ export default {
   background: linear-gradient(135deg, #ff4444, #cc0000);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 25px;
-  font-weight: bold;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-bold);
+  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+  box-shadow: 0 6px 24px rgba(255, 68, 68, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-live-sim::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
 }
 
 .btn-live-sim:hover {
   background: linear-gradient(135deg, #ff6666, #dd0000);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 32px rgba(255, 68, 68, 0.5);
+}
+
+.btn-live-sim:hover::before {
+  left: 100%;
 }
 
 .goal-notification {
@@ -1230,65 +1855,292 @@ export default {
 /* Responsive Design */
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .match-detail-container {
+    padding: 0;
   }
   
   .match-content {
-    padding: 1.5rem;
+    padding: 0.75rem;
   }
   
   .page-header {
     flex-direction: column;
-    gap: 16px;
+    gap: 4px;
     text-align: center;
+    padding: 0.5rem 0.75rem 0.25rem 0.75rem;
   }
   
   .page-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
   
+  /* Simplified match navigation for mobile */
+  .match-navigation {
+    padding: 0;
+    background: none;
+    border: none;
+    margin-bottom: 0.1rem !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .nav-btn {
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    width: auto;
+    height: auto;
+    min-width: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--fifa-blue);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .nav-btn:hover {
+    transform: none;
+    box-shadow: none;
+    background: none;
+    opacity: 0.8;
+  }
+  
+  .nav-btn i {
+    font-size: 1rem;
+  }
+  
+  .nav-btn.prev {
+    flex-direction: row;
+  }
+  
+  .nav-btn.next {
+    flex-direction: row;
+  }
+  
+  .nav-info {
+    display: none !important;
+  }
+  
+  .nav-text {
+    display: inline !important;
+  }
+  
+  .nav-divider {
+    display: none;
+  }
+  
+  /* Remove the ::after pseudo elements */
+  .nav-btn::after {
+    display: none;
+  }
+  
+  /* Compact score section */
   .match-score-section {
     flex-direction: column;
-    gap: 2rem;
-    padding: 2rem 1.5rem;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Top row with flags and score */
+  .score-and-flags {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
   }
   
   .team-info {
-    flex-direction: row;
-    gap: 1rem;
+    flex: 1;
+    max-width: none;
+    gap: 0.5rem;
+    flex-direction: column;
+    align-items: center;
+    position: static;
+    padding-bottom: 0;
   }
   
+  .team-info .country-flag,
   .team-flag {
-    font-size: 2.5rem;
+    font-size: 3rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    line-height: 1 !important;
+    display: block !important;
   }
   
   .team-name {
-    font-size: 1.2rem;
+    display: block !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--fifa-dark-blue) !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+  }
+  
+  .score-display {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
   }
   
   .score {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
+    gap: 0.5rem;
   }
   
-  .match-info-section {
-    grid-template-columns: 1fr;
+  .home-score, .away-score {
+    min-width: 2.5rem;
+  }
+  
+  .match-status {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+  
+  .match-info-compact {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .knockout-result-info {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+  
+  .result-scores,
+  .penalty-scores {
+    font-size: 1.5rem;
+  }
+  
+  .total-score,
+  .penalty-score-value {
+    font-size: 1.5rem;
+  }
+  
+  .winner-team-name {
+    font-size: 1.1rem;
+  }
+  
+  .score-breakdown {
+    font-size: 0.75rem;
+    padding: 0 0.5rem;
+  }
+  
+  /* Goals section below flags */
+  .goals-section {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
     gap: 1rem;
+    margin-top: 0.5rem;
   }
   
-  .stats-placeholder,
-  .commentary-placeholder {
-    padding: 3rem 1rem;
+  .team-goals {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+    flex: 1;
+    width: auto;
+  }
+  
+  .team-info.home-team .team-goals {
+    align-items: flex-start;
+  }
+  
+  .team-info.away-team .team-goals {
+    align-items: flex-end;
+  }
+  
+  .goal-item {
+    padding: 0.25rem 0.5rem !important;
+    max-width: none !important;
+    font-size: 0.75rem;
+    flex-direction: row !important;
+    gap: 0.25rem !important;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 4px;
+  }
+  
+  .goal-minute {
+    font-size: 0.7rem !important;
+    padding: 0.1rem 0.3rem !important;
+  }
+  
+  .goal-scorer {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Live simulation button */
+  .btn-live-sim {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Lineups section */
+  .lineups-section {
+    margin-top: 2rem;
+  }
+  
+  .lineups-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
   }
   
   .lineups-container {
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
   }
   
-  .home-lineup,
-  .away-lineup {
-    width: 100%;
+  .home-lineup h4,
+  .away-lineup h4 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
   }
+  
+  .player-item {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .jersey-number {
+    min-width: 24px;
+    font-size: 0.8rem;
+  }
+  
+  .player-name {
+    font-size: 0.85rem;
+  }
+  
+  .player-position {
+    font-size: 0.75rem;
+  }
+  
+  .goal-indicator {
+    font-size: 0.7rem;
+  }
+}
+
+/* Hide nav-text by default (desktop) */
+.nav-text {
+  display: none;
 }
 
 /* Enhanced Match Details Styles */
@@ -1475,20 +2327,30 @@ export default {
 }
 
 .captain-badge {
-  background: #ffd700;
-  color: #333;
-  padding: 0.2rem 0.4rem;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  font-weight: bold;
+  padding: 0.3rem 0.75rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #FFD700);
+  color: var(--dark);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   flex-shrink: 0;
 }
 
 .goal-indicator {
   color: #4CAF50;
-  font-weight: bold;
-  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.9rem;
   margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(46, 213, 115, 0.1));
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* Clickable styles */
