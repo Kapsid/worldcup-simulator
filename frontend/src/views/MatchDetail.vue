@@ -59,12 +59,24 @@
             <div class="score-and-flags">
               <!-- Home Team Flag -->
               <div class="team-info home-team">
-                <CountryFlag :country-code="match.homeTeam.countryCode" :size="32" />
+                <CountryFlag :country-code="match.homeTeam.countryCode" :size="48" />
                 <div class="team-name clickable-team" @click="navigateToTeam('home')">{{ match.homeTeam.name }}</div>
               </div>
               
               <!-- Score Display -->
               <div class="score-display">
+                <!-- Match Info -->
+                <div class="match-info-compact">
+                  <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
+                  <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
+                  <span v-else-if="match.round">{{ match.round }}</span>
+                  <span v-else>Tournament Match</span>
+                  <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
+                  <span v-if="match.city" class="venue-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ match.city }}
+                  </span>
+                </div>
                 <div class="score">
                   <span class="home-score">{{ liveSimulation.isRunning ? liveSimulation.homeScore : (match.homeScore !== null ? match.homeScore : '-') }}</span>
                   <span class="score-separator">:</span>
@@ -134,23 +146,11 @@
                     Simulate Live
                   </button>
                 </div>
-                <!-- Match Info -->
-                <div class="match-info-compact">
-                  <span v-if="match.isQualification && match.confederation">{{ match.confederation }} Qualification</span>
-                  <span v-else-if="match.groupId">{{ getGroupName(match.groupId) }}</span>
-                  <span v-else-if="match.round">{{ match.round }}</span>
-                  <span v-else>Tournament Match</span>
-                  <span v-if="match.matchday" class="matchday-info">Matchday {{ match.matchday }}</span>
-                  <span v-if="match.city" class="venue-info">
-                    <i class="fas fa-map-marker-alt"></i>
-                    {{ match.city }}
-                  </span>
-                </div>
               </div>
               
               <!-- Away Team Flag -->
               <div class="team-info away-team">
-                <CountryFlag :country-code="match.awayTeam.countryCode" :size="32" />
+                <CountryFlag :country-code="match.awayTeam.countryCode" :size="48" />
                 <div class="team-name clickable-team" @click="navigateToTeam('away')">{{ match.awayTeam.name }}</div>
               </div>
             </div>
@@ -1131,40 +1131,50 @@ export default {
   flex-direction: column;
   background: var(--background);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
   border: 1px solid var(--border);
-  gap: 1rem;
+  gap: 0.5rem;
+}
+
+@media (max-width: 1023px) {
+  .match-score-section {
+    padding: 0.25rem;
+    gap: 0;
+    margin-top: -1rem;
+  }
 }
 
 /* Desktop layout for match score section */
 @media (min-width: 1024px) {
   .match-score-section {
-    padding: 3rem 2rem;
+    padding: 1.5rem 1.25rem;
   }
   
   .score-and-flags {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 2rem;
+    gap: 1rem;
   }
   
   .team-info {
     flex: 1;
-    max-width: 300px;
+    max-width: 240px;
+    margin-top: -0.75rem;
   }
   
   .score-display {
     flex: 0 0 auto;
-    min-width: 200px;
+    min-width: 180px;
+    margin-top: 0;
   }
   
   .goals-section {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-top: 1rem;
+    gap: 1rem;
+    margin-top: 0.25rem;
   }
   
   .team-goals {
@@ -1293,10 +1303,10 @@ export default {
   
   .team-info.home-team,
   .team-info.away-team {
-    padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.5);
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.7);
     border-radius: var(--radius-md);
-    border: 1px solid rgba(0, 102, 204, 0.1);
+    border: 1px solid rgba(0, 102, 204, 0.15);
   }
 }
 
@@ -1304,9 +1314,15 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex: 1;
-  max-width: 300px;
+  max-width: 240px;
+}
+
+@media (max-width: 1023px) {
+  .team-info {
+    gap: 0;
+  }
 }
 
 .team-flag {
@@ -1334,31 +1350,41 @@ export default {
   background: rgba(76, 175, 80, 0.1);
   border: 1px solid rgba(76, 175, 80, 0.3);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.8rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.6rem;
   width: 100%;
-  max-width: 200px;
+  max-width: 280px;
+  min-height: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .team-goals .goal-item {
+    max-width: 320px;
+    padding: 0.75rem 1rem;
+  }
 }
 
 .team-goals .goal-scorer {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: 0.935rem;
+  color: var(--fifa-dark-blue);
   flex: 1;
   text-align: left;
+  letter-spacing: 0.3px;
 }
 
 .team-goals .goal-minute {
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: #4CAF50;
-  background: white;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.765rem;
+  color: white;
+  background: linear-gradient(135deg, #4CAF50, #45B7AA);
+  padding: 0.3rem 0.6rem;
+  border-radius: 20px;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
 .team-goals .goal-scorer {
@@ -1370,23 +1396,37 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.2rem;
   text-align: center;
   flex: 0 0 auto;
   min-width: 150px;
 }
 
+@media (max-width: 1023px) {
+  .score-display {
+    gap: 0;
+  }
+}
+
 .match-info-compact {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   text-align: center;
-  padding: 0.5rem;
-  background: rgba(0, 102, 204, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(0, 102, 204, 0.1);
+  padding: 0.4rem 0.6rem;
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.08), rgba(0, 102, 204, 0.12));
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 102, 204, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 1023px) {
+  .match-info-compact {
+    display: none;
+  }
 }
 
 .matchday-info {
@@ -1411,20 +1451,57 @@ export default {
 .score {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  font-size: 4rem;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 4.25rem;
   font-weight: var(--font-weight-bold);
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  margin-top: -1rem;
+}
+
+@media (min-width: 1024px) {
+  .score {
+    font-size: 6.375rem;
+    gap: 2rem;
+    margin-top: 0;
+  }
 }
 
 .home-score, .away-score {
-  color: var(--fifa-blue);
-  min-width: 4rem;
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-dark-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  min-width: 5rem;
   text-align: center;
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  .home-score, .away-score {
+    min-width: 6rem;
+  }
+  
+  .home-score:hover, .away-score:hover {
+    transform: scale(1.05);
+    text-shadow: 3px 3px 8px rgba(0, 102, 204, 0.3);
+  }
 }
 
 .score-separator {
   color: var(--text-secondary);
   font-weight: normal;
+  font-size: 4.25rem;
+  opacity: 0.6;
+  font-family: 'Arial Black', 'Impact', sans-serif;
+}
+
+@media (min-width: 1024px) {
+  .score-separator {
+    font-size: 5.1rem;
+  }
 }
 
 .extra-scores {
@@ -1446,14 +1523,17 @@ export default {
 }
 
 .match-status {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: var(--radius-full);
-  font-size: 1rem;
-  font-weight: var(--font-weight-medium);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.1rem;
 }
 
 .knockout-result-info {
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
   background: var(--white);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -1616,21 +1696,41 @@ export default {
   background: linear-gradient(135deg, #ff4444, #cc0000);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 25px;
-  font-weight: bold;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-bold);
+  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+  box-shadow: 0 6px 24px rgba(255, 68, 68, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-live-sim::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
 }
 
 .btn-live-sim:hover {
   background: linear-gradient(135deg, #ff6666, #dd0000);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 32px rgba(255, 68, 68, 0.5);
+}
+
+.btn-live-sim:hover::before {
+  left: 100%;
 }
 
 .goal-notification {
@@ -2227,20 +2327,30 @@ export default {
 }
 
 .captain-badge {
-  background: #ffd700;
-  color: #333;
-  padding: 0.2rem 0.4rem;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  font-weight: bold;
+  padding: 0.3rem 0.75rem;
+  background: linear-gradient(135deg, var(--fifa-gold), #FFD700);
+  color: var(--dark);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   flex-shrink: 0;
 }
 
 .goal-indicator {
   color: #4CAF50;
-  font-weight: bold;
-  font-size: 0.8rem;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.9rem;
   margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(46, 213, 115, 0.1));
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* Clickable styles */

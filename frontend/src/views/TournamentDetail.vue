@@ -146,7 +146,10 @@
                 v-if="tournament.type === 'manual'" 
                 @click="toggleTeamManagement" 
                 class="sidebar-action" 
-                :class="{ 'active': showTeamManagement }" 
+                :class="{ 
+                  'active': showTeamManagement,
+                  'highlight-action': nextRequiredAction === 'team-selection'
+                }" 
                 :disabled="tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Team Selection' : ''"
               >
@@ -157,7 +160,10 @@
                 v-else 
                 @click="toggleQualifying" 
                 class="sidebar-action" 
-                :class="{ 'active': showQualifying }" 
+                :class="{ 
+                  'active': showQualifying,
+                  'highlight-action': nextRequiredAction === 'qualifying'
+                }" 
                 :disabled="tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Qualifying' : ''"
               >
@@ -168,6 +174,9 @@
               <!-- Start Tournament -->
               <button 
                 class="sidebar-action" 
+                :class="{ 
+                  'highlight-action': nextRequiredAction === 'start-tournament'
+                }"
                 :disabled="!tournament.canActivate || tournament.status !== 'draft'" 
                 @click="activateTournament"
                 :title="sidebarCollapsed ? 'Start Tournament' : ''"
@@ -180,7 +189,10 @@
               <button 
                 @click="toggleDraw" 
                 class="sidebar-action" 
-                :class="{ 'active': showDraw }"
+                :class="{ 
+                  'active': showDraw,
+                  'highlight-action': nextRequiredAction === 'draw'
+                }"
                 :title="sidebarCollapsed ? 'World Cup Draw' : ''"
               >
                 <i class="fas fa-random"></i>
@@ -191,7 +203,10 @@
               <button 
                 @click="toggleGroupStage" 
                 class="sidebar-action" 
-                :class="{ 'active': showGroupStage }" 
+                :class="{ 
+                  'active': showGroupStage,
+                  'highlight-action': nextRequiredAction === 'group-stage'
+                }" 
                 :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Group Stage' : ''"
               >
@@ -203,7 +218,10 @@
               <button 
                 @click="toggleKnockout" 
                 class="sidebar-action" 
-                :class="{ 'active': showKnockout }" 
+                :class="{ 
+                  'active': showKnockout,
+                  'highlight-action': nextRequiredAction === 'knockout'
+                }" 
                 :disabled="tournament.status === 'draft' || tournament.status === 'cancelled'"
                 :title="sidebarCollapsed ? 'Knockout Stage' : ''"
               >
@@ -405,60 +423,6 @@
             :tournament="tournament" 
           />
           
-          <!-- Tournament Settings Section (moved to bottom) -->
-          <div class="tournament-details-bottom glass-white">
-            <div class="card-header">
-              <h3>Tournament Settings</h3>
-              <i class="fas fa-cog"></i>
-            </div>
-            <div class="tournament-details-grid">
-              <div class="detail-item">
-                <i class="fas fa-calendar"></i>
-                <div>
-                  <span class="detail-label">Status</span>
-                  <span class="detail-value" :class="`status-${tournament.status}`">{{ formatStatus(tournament.status) }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-users"></i>
-                <div>
-                  <span class="detail-label">Teams</span>
-                  <span class="detail-value">{{ tournament.teamCount || 0 }}/{{ tournament.settings?.maxTeams || 32 }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-globe"></i>
-                <div>
-                  <span class="detail-label">Type</span>
-                  <span class="detail-value">{{ formatTournamentType(tournament.type) }}</span>
-                </div>
-              </div>
-              <div class="detail-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <span class="detail-label">Host Country</span>
-                  <span class="detail-value">
-                    <CountryFlag :country-code="tournament.hostCountryCode" :size="20" />
-                    {{ tournament.hostCountry }}
-                  </span>
-                </div>
-              </div>
-              <div class="detail-item" v-if="tournament.createdAt">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <span class="detail-label">Created</span>
-                  <span class="detail-value">{{ formatDate(tournament.createdAt) }}</span>
-                </div>
-              </div>
-              <div class="detail-item" v-if="tournament.year">
-                <i class="fas fa-calendar-alt"></i>
-                <div>
-                  <span class="detail-label">Year</span>
-                  <span class="detail-value">{{ tournament.year }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </main>
@@ -564,6 +528,36 @@ export default {
         
         // Otherwise, still in draw phase
         return 'draw'
+      }
+      
+      return null
+    },
+    nextRequiredAction() {
+      if (!this.tournament) return null
+      
+      // If tournament is in draft and ready to start
+      if (this.tournament.status === 'draft' && this.tournament.canActivate) {
+        return 'start-tournament'
+      }
+      
+      // If tournament is in draft and still needs team selection/qualification
+      if (this.tournament.status === 'draft' && !this.tournament.canActivate) {
+        return this.tournament.type === 'manual' ? 'team-selection' : 'qualifying'
+      }
+      
+      // If tournament is active but draw hasn't been done
+      if (this.tournament.status === 'active' && !this.tournament.drawCompleted && this.tournament.teamCount >= 32) {
+        return 'draw'
+      }
+      
+      // If draw is complete but no matches have been played
+      if (this.tournament.status === 'active' && this.tournament.drawCompleted && !this.anyGroupMatchPlayed) {
+        return 'group-stage'
+      }
+      
+      // If all group matches are complete but knockout hasn't started
+      if (this.tournament.status === 'active' && this.allGroupMatchesCompleted && !this.knockoutPhaseDetected) {
+        return 'knockout'
       }
       
       return null
@@ -1818,6 +1812,38 @@ export default {
   justify-content: center;
 }
 
+/* Highlight next required action */
+.sidebar-action.highlight-action {
+  animation: pulse-highlight 2s ease-in-out infinite;
+  background: linear-gradient(135deg, var(--fifa-gold), #FFD700);
+  color: var(--fifa-dark-blue);
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  border: 1px solid var(--fifa-gold);
+}
+
+.sidebar-action.highlight-action:hover {
+  animation: none;
+  background: linear-gradient(135deg, #FFD700, var(--fifa-gold));
+  transform: translateX(4px) scale(1.05);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes pulse-highlight {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(255, 215, 0, 0.9), 0 0 60px rgba(255, 215, 0, 0.4);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    transform: scale(1);
+  }
+}
+
 .collapsed .sidebar-action {
   justify-content: center;
   padding: 12px 6px;
@@ -1859,78 +1885,6 @@ export default {
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Tournament Settings Bottom Section */
-.tournament-details-bottom {
-  margin-top: 32px;
-  padding: 24px;
-  border-radius: var(--radius-xl);
-}
-
-.tournament-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: rgba(0, 102, 204, 0.05);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(0, 102, 204, 0.1);
-  transition: all 0.3s ease;
-}
-
-.detail-item:hover {
-  background: rgba(0, 102, 204, 0.08);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
-}
-
-.detail-item i {
-  color: var(--fifa-gold);
-  font-size: 1.2rem;
-  min-width: 20px;
-}
-
-.detail-item div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detail-label {
-  font-size: 0.8rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.detail-value {
-  font-size: 1rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--fifa-dark-blue);
-}
-
-.detail-value.status-draft {
-  color: #6c757d;
-}
-
-.detail-value.status-active {
-  color: #28a745;
-}
-
-.detail-value.status-completed {
-  color: #007bff;
-}
-
-.detail-value.status-cancelled {
-  color: #dc3545;
-}
 
 /* Tab Navigation Styles */
 .tab-navigation {
@@ -2163,6 +2117,27 @@ export default {
     background: var(--fifa-blue);
   }
   
+  /* Mobile highlight styles */
+  .sidebar-action.highlight-action {
+    animation: pulse-highlight-mobile 2s ease-in-out infinite !important;
+    background: linear-gradient(135deg, var(--fifa-gold), #FFD700) !important;
+    color: var(--fifa-dark-blue) !important;
+  }
+  
+  .sidebar-action.highlight-action::before {
+    background: var(--fifa-gold) !important;
+    height: 4px !important;
+  }
+  
+  @keyframes pulse-highlight-mobile {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
   .sidebar-action i {
     font-size: 1.3rem !important;
     line-height: 1 !important;
@@ -2187,10 +2162,6 @@ export default {
   
   .tournament-content {
     padding-bottom: 60px;
-  }
-  
-  .tournament-details-grid {
-    grid-template-columns: 1fr;
   }
   
   .tournament-container {

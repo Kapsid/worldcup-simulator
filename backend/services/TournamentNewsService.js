@@ -180,8 +180,8 @@ class TournamentNewsService {
     const higherRankedScore = homeRanking < awayRanking ? match.homeScore : match.awayScore
     const lowerRankedScore = homeRanking < awayRanking ? match.awayScore : match.homeScore
 
-    // Case 1: Lower ranked team wins (30+ positions difference)
-    if (rankingDiff >= 30 && lowerRankedScore > higherRankedScore) {
+    // Case 1: Lower ranked team wins (50+ positions difference)
+    if (rankingDiff >= 50 && lowerRankedScore > higherRankedScore) {
       const title = `Major Upset!`
       const message = `${lowerRankedTeam.countryName} (World Rank #${lowerRankedTeam.worldRanking}) defeated ${higherRankedTeam.countryName} (World Rank #${higherRankedTeam.worldRanking}) ${lowerRankedScore}-${higherRankedScore}!`
 
@@ -203,8 +203,8 @@ class TournamentNewsService {
       )
     }
 
-    // Case 2: Draw between teams with 50+ positions difference
-    if (rankingDiff >= 50 && higherRankedScore === lowerRankedScore) {
+    // Case 2: Draw between teams with 80+ positions difference
+    if (rankingDiff >= 80 && higherRankedScore === lowerRankedScore) {
       const title = `Surprising Draw!`
       const message = `${lowerRankedTeam.countryName} (World Rank #${lowerRankedTeam.worldRanking}) held ${higherRankedTeam.countryName} (World Rank #${higherRankedTeam.worldRanking}) to a ${higherRankedScore}-${lowerRankedScore} draw!`
 

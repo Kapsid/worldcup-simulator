@@ -2,19 +2,25 @@
   <div class="admin-users">
     <div class="section-header">
       <h2>User Management</h2>
-      <div class="search-controls">
-        <input
-          v-model="searchQuery"
-          @input="debouncedSearch"
-          type="text"
-          placeholder="Search users..."
-          class="search-input"
-        />
-        <select v-model="sortBy" @change="loadUsers" class="sort-select">
-          <option value="createdAt">Sort by: Date Joined</option>
-          <option value="username">Sort by: Username</option>
-          <option value="name">Sort by: Name</option>
-        </select>
+      <div class="header-actions">
+        <button @click="showAddUser = true" class="btn-primary add-user-btn">
+          <i class="fas fa-user-plus"></i>
+          Add User
+        </button>
+        <div class="search-controls">
+          <input
+            v-model="searchQuery"
+            @input="debouncedSearch"
+            type="text"
+            placeholder="Search users..."
+            class="search-input"
+          />
+          <select v-model="sortBy" @change="loadUsers" class="sort-select">
+            <option value="createdAt">Sort by: Date Joined</option>
+            <option value="username">Sort by: Username</option>
+            <option value="name">Sort by: Name</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -194,6 +200,79 @@
         </div>
       </div>
     </div>
+
+    <!-- Add User Modal -->
+    <div v-if="showAddUser" class="modal-overlay" @click.self="closeAddUserModal">
+      <div class="modal add-user-modal">
+        <div class="modal-header">
+          <h3>Add New User</h3>
+          <button @click="closeAddUserModal" class="close-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-content">
+          <form @submit.prevent="addUser">
+            <div class="form-group">
+              <label>Full Name:</label>
+              <input 
+                v-model="newUserForm.name" 
+                type="text" 
+                class="form-control" 
+                required 
+                placeholder="Enter full name"
+              />
+            </div>
+            <div class="form-group">
+              <label>Username:</label>
+              <input 
+                v-model="newUserForm.username" 
+                type="text" 
+                class="form-control" 
+                required 
+                placeholder="Enter username"
+              />
+            </div>
+            <div class="form-group">
+              <label>Password:</label>
+              <input 
+                v-model="newUserForm.password" 
+                type="password" 
+                class="form-control" 
+                required 
+                placeholder="Enter password"
+                minlength="6"
+              />
+            </div>
+            <div class="form-group">
+              <label>Membership Plan:</label>
+              <select v-model="newUserForm.plan" class="form-control">
+                <option value="free">Free</option>
+                <option value="pro">Pro</option>
+                <option value="football_maniac">Football Maniac</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Status:</label>
+              <select v-model="newUserForm.status" class="form-control">
+                <option value="active">Active</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" @click="closeAddUserModal" class="btn-secondary">Cancel</button>
+              <button type="submit" :disabled="addingUser" class="btn-primary">
+                <i v-if="addingUser" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-user-plus"></i>
+                {{ addingUser ? 'Adding...' : 'Add User' }}
+              </button>
+            </div>
+          </form>
+          <p v-if="addUserError" class="error-message">{{ addUserError }}</p>
+          <p v-if="addUserSuccess" class="success-message">{{ addUserSuccess }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -220,7 +299,18 @@ export default {
         plan: '',
         status: ''
       },
-      searchTimeout: null
+      searchTimeout: null,
+      showAddUser: false,
+      addingUser: false,
+      addUserError: '',
+      addUserSuccess: '',
+      newUserForm: {
+        name: '',
+        username: '',
+        password: '',
+        plan: 'free',
+        status: 'active'
+      }
     }
   },
   computed: {
@@ -363,6 +453,62 @@ export default {
       this.editingUser = null
     },
 
+    async addUser() {
+      this.addingUser = true
+      this.addUserError = ''
+      this.addUserSuccess = ''
+      
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`${API_URL}/admin/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(this.newUserForm)
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          this.addUserSuccess = 'User added successfully!'
+          this.newUserForm = {
+            name: '',
+            username: '',
+            password: '',
+            plan: 'free',
+            status: 'active'
+          }
+          await this.loadUsers()
+          
+          // Auto close modal after success
+          setTimeout(() => {
+            this.closeAddUserModal()
+          }, 2000)
+        } else {
+          this.addUserError = data.error || 'Failed to add user'
+        }
+      } catch (error) {
+        this.addUserError = 'Network error. Please try again.'
+      } finally {
+        this.addingUser = false
+      }
+    },
+
+    closeAddUserModal() {
+      this.showAddUser = false
+      this.addUserError = ''
+      this.addUserSuccess = ''
+      this.newUserForm = {
+        name: '',
+        username: '',
+        password: '',
+        plan: 'free',
+        status: 'active'
+      }
+    },
+
     formatPlan(plan) {
       const plans = {
         free: 'Free',
@@ -397,6 +543,22 @@ export default {
   margin: 0;
   color: #2c3e50;
   font-size: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.add-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .search-controls {
@@ -780,10 +942,43 @@ export default {
   color: white;
 }
 
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  font-weight: 500;
+}
+
+.success-message {
+  color: #28a745;
+  text-align: center;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(40, 167, 69, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(40, 167, 69, 0.2);
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
   .section-header {
     flex-direction: column;
     gap: 1rem;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+  }
+  
+  .add-user-btn {
+    width: 100%;
+    justify-content: center;
   }
   
   .search-controls {
