@@ -178,7 +178,10 @@
                     <div v-if="event.cardType === 'yellow'" class="card-icon yellow">
                       <i class="fas fa-square"></i>
                     </div>
-                    <div v-else-if="event.cardType === 'red' || event.cardType === 'second_yellow'" class="card-icon red">
+                    <div v-else-if="event.cardType === 'second_yellow'" class="card-icon second-yellow">
+                      <i class="fas fa-square"></i><i class="fas fa-square"></i>
+                    </div>
+                    <div v-else-if="event.cardType === 'red'" class="card-icon red">
                       <i class="fas fa-square"></i>
                     </div>
                   </div>
@@ -216,7 +219,10 @@
                     <div v-if="event.cardType === 'yellow'" class="card-icon yellow">
                       <i class="fas fa-square"></i>
                     </div>
-                    <div v-else-if="event.cardType === 'red' || event.cardType === 'second_yellow'" class="card-icon red">
+                    <div v-else-if="event.cardType === 'second_yellow'" class="card-icon second-yellow">
+                      <i class="fas fa-square"></i><i class="fas fa-square"></i>
+                    </div>
+                    <div v-else-if="event.cardType === 'red'" class="card-icon red">
                       <i class="fas fa-square"></i>
                     </div>
                   </div>
@@ -235,9 +241,39 @@
             </div>
           </div>
 
-          <!-- Lineups Section -->
-          <div v-if="matchDetails" class="lineups-section">
-            <h3>Starting Lineups</h3>
+          <!-- Match Details Tabs -->
+          <div v-if="matchDetails" class="match-details-tabs">
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+              <button 
+                @click="activeTab = 'lineups'"
+                :class="{ 'active': activeTab === 'lineups' }"
+                class="tab-button"
+              >
+                Starting Lineups
+              </button>
+              <button 
+                v-if="match.played"
+                @click="activeTab = 'statistics'"
+                :class="{ 'active': activeTab === 'statistics' }"
+                class="tab-button"
+              >
+                Match Statistics
+              </button>
+              <button 
+                v-if="match.played"
+                @click="activeTab = 'mvp'"
+                :class="{ 'active': activeTab === 'mvp' }"
+                class="tab-button"
+              >
+                Team MVPs
+              </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+              <!-- Lineups Tab -->
+              <div v-if="activeTab === 'lineups'" class="lineups-section">
             <div class="lineups-container">
               <div class="home-lineup">
                 <h4>{{ match.homeTeam.name }} ({{ matchDetails.homeFormation }})</h4>
@@ -259,6 +295,9 @@
                         <span v-else>
                           ↑{{ getPlayerSubstitutionInfo(player.player._id, 'home').minute }}'
                         </span>
+                      </span>
+                      <span v-if="match.played && player.player?._id" class="player-rating">
+                        {{ getPlayerRating(player.player._id) }}/10
                       </span>
                     </span>
                     <span class="player-position">{{ player.position }}</span>
@@ -287,9 +326,100 @@
                           ↑{{ getPlayerSubstitutionInfo(player.player._id, 'away').minute }}'
                         </span>
                       </span>
+                      <span v-if="match.played && player.player?._id" class="player-rating">
+                        {{ getPlayerRating(player.player._id) }}/10
+                      </span>
                     </span>
                     <span class="player-position">{{ player.position }}</span>
                     <span v-if="player.isCaptain" class="captain-badge">(C)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+              </div>
+
+              <!-- Statistics Tab -->
+              <div v-if="activeTab === 'statistics' && match.played" class="statistics-section">
+            <div class="statistics-container">
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.possession?.home || 0 }}%</div>
+                <div class="stat-label">Possession</div>
+                <div class="stat-away">{{ matchDetails.possession?.away || 0 }}%</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.shots?.home || 0 }}</div>
+                <div class="stat-label">Shots</div>
+                <div class="stat-away">{{ matchDetails.shots?.away || 0 }}</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.shotsOnTarget?.home || 0 }}</div>
+                <div class="stat-label">Shots on Target</div>
+                <div class="stat-away">{{ matchDetails.shotsOnTarget?.away || 0 }}</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.xG?.home?.toFixed(1) || '0.0' }}</div>
+                <div class="stat-label">Expected Goals (xG)</div>
+                <div class="stat-away">{{ matchDetails.xG?.away?.toFixed(1) || '0.0' }}</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.corners?.home || 0 }}</div>
+                <div class="stat-label">Corners</div>
+                <div class="stat-away">{{ matchDetails.corners?.away || 0 }}</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.offsides?.home || 0 }}</div>
+                <div class="stat-label">Offsides</div>
+                <div class="stat-away">{{ matchDetails.offsides?.away || 0 }}</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.yellowCards?.home || 0 }}</div>
+                <div class="stat-label">Yellow Cards</div>
+                <div class="stat-away">{{ matchDetails.yellowCards?.away || 0 }}</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-home">{{ matchDetails.redCards?.home || 0 }}</div>
+                <div class="stat-label">Red Cards</div>
+                <div class="stat-away">{{ matchDetails.redCards?.away || 0 }}</div>
+              </div>
+                </div>
+              </div>
+
+              <!-- MVP Tab -->
+              <div v-if="activeTab === 'mvp' && match.played" class="mvp-section">
+                <div class="mvp-container">
+                  <div class="mvp-teams">
+                    <div class="mvp-team">
+                      <h4>{{ match.homeTeam.name }} MVP</h4>
+                      <div v-if="getTeamMVP('home')" class="mvp-player">
+                        <div class="mvp-info">
+                          <span class="mvp-name">{{ getTeamMVP('home').player?.displayName || 'Unknown Player' }}</span>
+                          <span class="mvp-position">{{ getTeamMVP('home').position }}</span>
+                          <div class="mvp-rating">{{ getPlayerRating(getTeamMVP('home').player?._id) }}/10</div>
+                        </div>
+                        <div class="mvp-stats">
+                          <span v-if="getPlayerGoalCount(getTeamMVP('home').player?._id, 'home') > 0" class="mvp-stat">
+                            ⚽ {{ getPlayerGoalCount(getTeamMVP('home').player?._id, 'home') }} Goals
+                          </span>
+                          <span class="mvp-stat">Rating: {{ getPlayerRating(getTeamMVP('home').player?._id) }}/10</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="mvp-team">
+                      <h4>{{ match.awayTeam.name }} MVP</h4>
+                      <div v-if="getTeamMVP('away')" class="mvp-player">
+                        <div class="mvp-info">
+                          <span class="mvp-name">{{ getTeamMVP('away').player?.displayName || 'Unknown Player' }}</span>
+                          <span class="mvp-position">{{ getTeamMVP('away').position }}</span>
+                          <div class="mvp-rating">{{ getPlayerRating(getTeamMVP('away').player?._id) }}/10</div>
+                        </div>
+                        <div class="mvp-stats">
+                          <span v-if="getPlayerGoalCount(getTeamMVP('away').player?._id, 'away') > 0" class="mvp-stat">
+                            ⚽ {{ getPlayerGoalCount(getTeamMVP('away').player?._id, 'away') }} Goals
+                          </span>
+                          <span class="mvp-stat">Rating: {{ getPlayerRating(getTeamMVP('away').player?._id) }}/10</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -324,6 +454,7 @@ export default {
       username: '',
       subscriptionTier: 'basic',
       userAvatar: null,
+      activeTab: 'lineups',
       match: null,
       matchDetails: null,
       loading: true,
@@ -363,6 +494,87 @@ export default {
     await this.loadMatchDetails()
   },
   methods: {
+    getShotPercentage(team) {
+      if (!this.matchDetails || !this.matchDetails.shots) return 0
+      const homeShots = this.matchDetails.shots.home || 0
+      const awayShots = this.matchDetails.shots.away || 0
+      const totalShots = homeShots + awayShots
+      if (totalShots === 0) return 0
+      
+      if (team === 'home') {
+        return Math.round((homeShots / totalShots) * 100)
+      } else {
+        return Math.round((awayShots / totalShots) * 100)
+      }
+    },
+
+    getPlayerRating(playerId) {
+      if (!this.matchDetails || !playerId) return 6.5
+      
+      // Enhanced rating calculation based on multiple factors
+      const goals = this.getPlayerGoals(playerId).length
+      const cards = this.getPlayerCards(playerId, 'home').concat(this.getPlayerCards(playerId, 'away'))
+      
+      // Start with a more varied base rating (5.0-8.0)
+      let rating = 5.0 + Math.random() * 3.0
+      
+      // Goals have significant impact
+      rating += goals * 2.0 // Add 2.0 for each goal (was 1.5)
+      
+      // Card penalties
+      rating -= cards.filter(c => c.cardType === 'yellow').length * 0.5 // Subtract 0.5 for yellow cards (was 0.3)
+      rating -= cards.filter(c => c.cardType === 'red' || c.cardType === 'second_yellow').length * 2.5 // Subtract 2.5 for red cards (was 2.0)
+      
+      // Position-based adjustments (defenders and goalkeepers get slight boost if team didn't concede much)
+      const isWinningTeam = this.match.homeScore !== this.match.awayScore
+      if (isWinningTeam) {
+        rating += 0.3 // Small bonus for winning team players
+      }
+      
+      // Clean sheet bonus for defenders and goalkeepers
+      const homePlayer = this.matchDetails.homeLineup.find(p => p.player?._id === playerId)
+      const awayPlayer = this.matchDetails.awayLineup.find(p => p.player?._id === playerId)
+      const player = homePlayer || awayPlayer
+      const isHomePlayer = !!homePlayer
+      
+      if (player && (player.position === 'GK' || player.position === 'CB' || player.position === 'LB' || player.position === 'RB')) {
+        const goalsAgainst = isHomePlayer ? this.match.awayScore : this.match.homeScore
+        if (goalsAgainst === 0) {
+          rating += 0.8 // Clean sheet bonus
+        } else if (goalsAgainst === 1) {
+          rating += 0.3 // Small bonus for only conceding one
+        }
+      }
+      
+      // Final random variance (smaller now since base is more varied)
+      rating += (Math.random() - 0.5) * 1.0 // ±0.5 variance
+      
+      return Math.max(4.0, Math.min(10.0, Math.round(rating * 10) / 10))
+    },
+
+    getTeamMVP(team) {
+      if (!this.matchDetails) return null
+      
+      const lineup = team === 'home' ? this.matchDetails.homeLineup : this.matchDetails.awayLineup
+      if (!lineup || lineup.length === 0) return null
+      
+      // Find player with highest rating
+      let mvp = null
+      let highestRating = 0
+      
+      lineup.forEach(player => {
+        if (player.player?._id) {
+          const rating = this.getPlayerRating(player.player._id)
+          if (rating > highestRating) {
+            highestRating = rating
+            mvp = player
+          }
+        }
+      })
+      
+      return mvp
+    },
+
     async loadMatchDetails() {
       try {
         const { tournamentId, matchId } = this.$route.params
@@ -907,6 +1119,17 @@ export default {
     },
     getPlayerCards(playerId, team) {
       if (!this.matchDetails || !this.matchDetails.cards) return []
+      
+      // During live simulation, only return cards that have been shown
+      if (this.liveSimulation.isRunning && this.liveSimulation.simulatedCards) {
+        return this.liveSimulation.simulatedCards.filter(card => 
+          card.team === team && 
+          card.player?._id === playerId && 
+          card.minute <= this.liveSimulation.currentMinute
+        )
+      }
+      
+      // Otherwise return all cards
       return this.matchDetails.cards.filter(card => 
         card.team === team && card.player?._id === playerId
       )
@@ -916,20 +1139,25 @@ export default {
       if (cards.length === 0) return null
       
       let yellowCount = 0
-      let hasRed = false
+      let hasSecondYellow = false
+      let hasDirectRed = false
       
       cards.forEach(card => {
         if (card.cardType === 'yellow') {
           yellowCount++
-        } else if (card.cardType === 'red' || card.cardType === 'second_yellow') {
-          hasRed = true
+        } else if (card.cardType === 'second_yellow') {
+          hasSecondYellow = true
+        } else if (card.cardType === 'red') {
+          hasDirectRed = true
         }
       })
       
-      if (hasRed) {
+      if (hasSecondYellow) {
+        return { type: 'second-yellow', display: '🟨🟥' }
+      } else if (hasDirectRed) {
         return { type: 'red', display: '🟥' }
       } else if (yellowCount > 0) {
-        return { type: 'yellow', display: yellowCount > 1 ? `🟨 ${yellowCount}` : '🟨' }
+        return { type: 'yellow', display: '🟨' }
       }
       
       return null
@@ -989,6 +1217,13 @@ export default {
       return null
     },
 
+    getStatBarWidth(homeVal, awayVal, side) {
+      const total = homeVal + awayVal
+      if (total === 0) return 50
+      const percentage = (homeVal / total) * 100
+      return side === 'home' ? percentage : 100 - percentage
+    },
+    
     getOrderedLineup(lineup, team) {
       if (!lineup) return []
       
@@ -2539,6 +2774,19 @@ export default {
   color: #FFD700;
 }
 
+.card-icon.second-yellow {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.card-icon.second-yellow i:first-child {
+  color: #FFD700;
+}
+
+.card-icon.second-yellow i:last-child {
+  color: #DC143C;
+}
+
 .card-icon.red {
   color: #DC143C;
 }
@@ -2737,11 +2985,140 @@ export default {
   text-transform: capitalize;
 }
 
-.lineups-section {
+/* Tabs */
+.match-tabs {
   background: var(--white);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
   border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tabs-nav {
+  display: flex;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-button:hover {
+  color: var(--text-primary);
+  background: var(--gray-100);
+}
+
+.tab-button.active {
+  color: var(--primary);
+  background: var(--white);
+  border-bottom-color: var(--primary);
+}
+
+.lineups-section,
+.statistics-section,
+.report-section {
+  padding: 1.5rem;
+}
+
+.lineups-section {
+  background: var(--white);
+  border-radius: 0;
+}
+
+/* Statistics */
+.statistics-section {
+  background: var(--white);
+}
+
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.stat-values {
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home-stat,
+.away-stat {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.stat-bar {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Report */
+.report-section {
+  background: var(--white);
+}
+
+.report-summary {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.key-moments h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.key-moments ul {
+  list-style: none;
+  padding: 0;
+}
+
+.key-moments li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--text-secondary);
+}
+
+.key-moments li:last-child {
+  border-bottom: none;
 }
 
 .lineups-section h3 {
@@ -2862,6 +3239,12 @@ export default {
   color: #FFD700;
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 235, 59, 0.1));
   border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.card-indicator.second-yellow {
+  color: #DC143C;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(220, 20, 60, 0.1));
+  border: 1px solid rgba(220, 20, 60, 0.3);
 }
 
 .card-indicator.red {
@@ -3084,6 +3467,250 @@ export default {
 .condition-value {
   color: #333;
   text-transform: capitalize;
+}
+
+/* Match Statistics Styles */
+.statistics-section {
+  width: 100%;
+  padding: 1rem;
+}
+
+.statistics-container {
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 33.33% 33.33% 33.33%;
+  align-items: center;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stat-row:hover {
+  background: rgba(0, 123, 255, 0.02);
+  transform: translateX(5px);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-home {
+  color: #007bff;
+  font-weight: var(--font-weight-bold);
+  text-align: left;
+  font-size: 1.1rem;
+  justify-self: start;
+}
+
+.stat-label {
+  color: #333;
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.95rem;
+  text-align: center;
+  justify-self: center;
+}
+
+.stat-bar {
+  height: 12px;
+  background: linear-gradient(90deg, #e9ecef, #dee2e6);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.stat-bar-home {
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  height: 100%;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px 0 0 8px;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.stat-bar-away {
+  background: linear-gradient(90deg, #dc3545, #c82333);
+  height: 100%;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.stat-away {
+  color: #dc3545;
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+  font-size: 1.1rem;
+  justify-self: end;
+  padding-right: 2rem;
+}
+
+/* Tab Styles */
+.match-details-tabs {
+  grid-column: 1 / -1;
+  margin-top: 2rem;
+}
+
+.tab-navigation {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+}
+
+.tab-button {
+  background: linear-gradient(135deg, #ffffff, #f0f0f0);
+  color: #333;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  cursor: pointer;
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button:hover {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.2);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 123, 255, 0.4);
+}
+
+.tab-button.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.2), transparent);
+  pointer-events: none;
+}
+
+.tab-content {
+  /* Content will inherit styles from lineups-section and statistics-section */
+}
+
+/* MVP Tab Styles */
+.mvp-section {
+  width: 100%;
+  padding: 1rem;
+}
+
+.mvp-container {
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.mvp-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.mvp-team h4 {
+  color: #333;
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.mvp-player {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 2px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.mvp-player:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+  border-color: #007bff;
+}
+
+.mvp-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.mvp-name {
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.mvp-position {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.mvp-rating {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+}
+
+.mvp-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.mvp-stat {
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-medium);
+}
+
+/* Player Rating Styles */
+.player-rating {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-bold);
+  margin-left: 0.5rem;
 }
 
 </style>

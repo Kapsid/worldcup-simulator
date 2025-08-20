@@ -223,7 +223,7 @@ class BasicEnhancedMatchService {
     
     // Generate home team cards
     for (let i = 0; i < homeCards; i++) {
-      const card = BasicEnhancedMatchService.generateSingleCard('home', homeLineup, playerCards, substitutions)
+      const card = BasicEnhancedMatchService.generateSingleCard('home', homeLineup, playerCards, substitutions, cards)
       if (card) {
         cards.push(card)
         BasicEnhancedMatchService.trackPlayerCard(playerCards, card.player, card.cardType)
@@ -232,7 +232,7 @@ class BasicEnhancedMatchService {
     
     // Generate away team cards
     for (let i = 0; i < awayCards; i++) {
-      const card = BasicEnhancedMatchService.generateSingleCard('away', awayLineup, playerCards, substitutions)
+      const card = BasicEnhancedMatchService.generateSingleCard('away', awayLineup, playerCards, substitutions, cards)
       if (card) {
         cards.push(card)
         BasicEnhancedMatchService.trackPlayerCard(playerCards, card.player, card.cardType)
@@ -248,9 +248,9 @@ class BasicEnhancedMatchService {
   /**
    * Generate a single card
    */
-  static generateSingleCard(team, lineup, playerCards, substitutions = []) {
+  static generateSingleCard(team, lineup, playerCards, substitutions = [], existingCards = []) {
     // Select a random minute (weighted towards certain periods)
-    const minute = BasicEnhancedMatchService.generateCardMinute()
+    let minute = BasicEnhancedMatchService.generateCardMinute()
     
     // Get active players at this minute (considering substitutions)
     const activePlayers = BasicEnhancedMatchService.getActivePlayersAtMinute(lineup, substitutions, team, minute)
@@ -265,14 +265,26 @@ class BasicEnhancedMatchService {
     let reason = 'foul'
     
     if (existingYellows.yellows > 0) {
-      // Player already has yellow, 25% chance of second yellow = red
-      if (Math.random() < 0.25) {
-        cardType = 'second_yellow'
-        reason = 'second_yellow'
+      // Player already has yellow, second card MUST be second yellow = red
+      cardType = 'second_yellow'
+      reason = 'second_yellow'
+      
+      // Find the minute of the first yellow card for this player
+      const firstYellow = existingCards.find(card => 
+        card.player.toString() === cardReceiver.player.toString() && 
+        card.cardType === 'yellow'
+      )
+      
+      if (firstYellow) {
+        // Ensure second yellow happens after first yellow (add 5-30 minutes)
+        const minSecondYellowMinute = firstYellow.minute + 5
+        if (minute <= firstYellow.minute) {
+          minute = Math.min(90, minSecondYellowMinute + Math.floor(Math.random() * 25))
+        }
       }
     } else {
-      // 5% chance of straight red card
-      if (Math.random() < 0.05) {
+      // 1% chance of straight red card (very rare)
+      if (Math.random() < 0.01) {
         cardType = 'red'
         reason = Math.random() < 0.5 ? 'violent_conduct' : 'serious_foul_play'
       }
@@ -619,6 +631,22 @@ class BasicEnhancedMatchService {
       goals.sort((a, b) => a.minute - b.minute)
       
       // Generate match statistics
+      const homeStrength = homeStartingXI.length > 0 ? 
+        homeStartingXI.reduce((sum, p) => sum + (p.player.overallRating || 70), 0) / homeStartingXI.length : 70
+      const awayStrength = awayStartingXI.length > 0 ?
+        awayStartingXI.reduce((sum, p) => sum + (p.player.overallRating || 70), 0) / awayStartingXI.length : 70
+      
+      const homePossession = Math.round(((homeStrength * 1.1) / (homeStrength * 1.1 + awayStrength)) * 100)
+      const awayPossession = Math.max(0, Math.min(100, 100 - homePossession))
+      
+      const homeShots = Math.round(8 + Math.random() * 12 + (homeStrength - awayStrength) * 0.3)
+      const awayShots = Math.round(8 + Math.random() * 12 + (awayStrength - homeStrength) * 0.3)
+      const homeShotsOnTarget = Math.round(homeShots * (0.3 + Math.random() * 0.3))
+      const awayShotsOnTarget = Math.round(awayShots * (0.3 + Math.random() * 0.3))
+      
+      const homeXg = (homeShotsOnTarget * 0.25 + (homeShots - homeShotsOnTarget) * 0.05 + Math.random() * 0.5).toFixed(2)
+      const awayXg = (awayShotsOnTarget * 0.25 + (awayShots - awayShotsOnTarget) * 0.05 + Math.random() * 0.5).toFixed(2)
+      
       const foulsHome = Math.round(8 + Math.random() * 10)
       const foulsAway = Math.round(8 + Math.random() * 10)
       
@@ -666,11 +694,27 @@ class BasicEnhancedMatchService {
             goals: goals,
             substitutions: substitutions,
             cards: cards,
-            possession: { home: 50, away: 50 },
-            shots: { home: 10, away: 8 },
-            shotsOnTarget: { home: 4, away: 3 },
-            corners: { home: 5, away: 3 },
+            possession: { 
+              home: isNaN(homePossession) ? 50 : Math.max(0, Math.min(100, homePossession)), 
+              away: isNaN(awayPossession) ? 50 : Math.max(0, Math.min(100, awayPossession))
+            },
+            shots: { home: Math.max(2, homeShots), away: Math.max(2, awayShots) },
+            shotsOnTarget: { home: Math.max(1, homeShotsOnTarget), away: Math.max(1, awayShotsOnTarget) },
+            xG: { home: parseFloat(homeXg), away: parseFloat(awayXg) },
+            corners: { home: Math.round(2 + Math.random() * 8), away: Math.round(2 + Math.random() * 8) },
+            offsides: { 
+              home: Math.round(1 + Math.random() * 4 + (homeShots / 10)), 
+              away: Math.round(1 + Math.random() * 4 + (awayShots / 10))
+            },
             fouls: { home: foulsHome, away: foulsAway },
+            passes: { 
+              home: Math.round((600 + Math.random() * 400) * (homePossession / 100)), 
+              away: Math.round((600 + Math.random() * 400) * (awayPossession / 100))
+            },
+            passAccuracy: { 
+              home: Math.round(75 + Math.random() * 15), 
+              away: Math.round(75 + Math.random() * 15)
+            },
             yellowCards: { home: yellowCardsHome, away: yellowCardsAway },
             redCards: { home: redCardsHome, away: redCardsAway },
             matchReport: matchReport,
