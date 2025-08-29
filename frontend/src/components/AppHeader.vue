@@ -33,7 +33,7 @@
               <i :class="userAvatar.icon" :style="{ color: userAvatar.color }"></i>
             </template>
             <template v-else-if="userAvatar && userAvatar.type === 'upload' && userAvatar.url">
-              <img :src="userAvatar.url" alt="User Avatar" class="avatar-image" />
+              <img :src="getAvatarUrl(userAvatar)" alt="User Avatar" class="avatar-image" />
             </template>
             <template v-else>
               {{ username.charAt(0).toUpperCase() }}
@@ -77,6 +77,8 @@
 </template>
 
 <script>
+import { API_BASE_URL } from '../config/api.js'
+
 export default {
   name: 'AppHeader',
   props: {
@@ -113,6 +115,13 @@ export default {
         'football_maniac': 'Football Maniac'
       }
       return tierNames[tier] || tier
+    },
+    getAvatarUrl(avatar) {
+      if (!avatar || avatar.type !== 'upload' || !avatar.url) return ''
+      // If the URL already starts with http, return as is
+      if (avatar.url.startsWith('http')) return avatar.url
+      // Otherwise, prepend the API base URL
+      return `${API_BASE_URL}${avatar.url}`
     }
   },
   watch: {
@@ -308,6 +317,10 @@ export default {
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.user-avatar i {
+  font-size: 1.5rem;
 }
 
 .user-details {

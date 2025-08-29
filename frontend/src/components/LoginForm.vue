@@ -98,15 +98,6 @@
       </div>
     </div>
     
-    <div class="divider">
-      <span>Don't have an account?</span>
-    </div>
-    
-    <button @click="$emit('switch-to-register')" class="btn-secondary register-btn">
-      <i class="fas fa-user-plus"></i>
-      Create Account
-    </button>
-    
   </div>
 </template>
 

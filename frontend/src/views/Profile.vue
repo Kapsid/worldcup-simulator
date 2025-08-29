@@ -26,8 +26,8 @@
             
             <div class="profile-info">
               <div class="profile-avatar" @click="showAvatarModal">
-                <img v-if="user.avatar && user.avatar.type === 'upload'" :src="user.avatar.url" alt="Profile" class="avatar-image" />
-                <i v-else-if="user.avatar && user.avatar.type === 'predefined'" :class="user.avatar.icon" class="avatar-icon"></i>
+                <img v-if="user.avatar && user.avatar.type === 'upload'" :src="getAvatarUrl(user.avatar)" alt="Profile" class="avatar-image" />
+                <i v-else-if="user.avatar && user.avatar.type === 'predefined'" :class="user.avatar.icon" class="avatar-icon" :style="{ color: user.avatar.color }"></i>
                 <i v-else class="fas fa-user-circle avatar-icon"></i>
                 <div class="avatar-overlay">
                   <i class="fas fa-camera"></i>
@@ -400,7 +400,7 @@
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
-import { API_URL } from '../config/api.js'
+import { API_URL, API_BASE_URL } from '../config/api.js'
 
 export default {
   name: 'Profile',
@@ -892,6 +892,7 @@ export default {
           })
         } else {
           this.avatarError = 'Please select an avatar'
+          this.updatingAvatar = false
           return
         }
 
@@ -905,10 +906,19 @@ export default {
           this.avatarError = data.error || 'Failed to update avatar'
         }
       } catch (error) {
+        console.error('Error updating avatar:', error)
         this.avatarError = 'Network error. Please try again.'
       } finally {
         this.updatingAvatar = false
       }
+    },
+
+    getAvatarUrl(avatar) {
+      if (!avatar || avatar.type !== 'upload' || !avatar.url) return ''
+      // If the URL already starts with http, return as is
+      if (avatar.url.startsWith('http')) return avatar.url
+      // Otherwise, prepend the API base URL
+      return `${API_BASE_URL}${avatar.url}`
     }
   }
 }

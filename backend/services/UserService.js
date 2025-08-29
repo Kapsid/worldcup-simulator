@@ -182,7 +182,21 @@ class UserService {
   async getUserProfile(userId) {
     try {
       const user = await User.findById(userId).select('-password')
-      return user
+      if (user) {
+        // Convert to plain object to ensure all fields are included
+        const userObj = user.toObject()
+        const profile = {
+          id: userObj._id,
+          username: userObj.username,
+          name: userObj.name,
+          email: userObj.email,
+          avatar: userObj.avatar,
+          subscriptionTier: userObj.subscriptionTier,
+          createdAt: userObj.createdAt
+        }
+        return profile
+      }
+      return null
     } catch (error) {
       console.error('Error getting user profile:', error)
       throw error
