@@ -17,6 +17,8 @@ import playersRoutes from './routes/players.js'
 import membershipRoutes from './routes/membership.js'
 import adminRoutes from './routes/admin.js'
 import countriesRoutes from './routes/countries.js'
+import paymentRoutes from './routes/payment.js'
+import statsRoutes from './routes/stats.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -125,6 +127,8 @@ app.use('/api/players', playersRoutes)
 app.use('/api/membership', membershipRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/countries', countriesRoutes)
+app.use('/api/payment', paymentRoutes)
+app.use('/api/stats', statsRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

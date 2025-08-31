@@ -9,7 +9,9 @@ const router = express.Router()
 router.get('/status', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id
+    console.log(`📊 Getting membership status for user ${userId}`)
     const membershipStatus = await MembershipService.getMembershipStatus(userId)
+    console.log(`📊 Membership status result:`, membershipStatus)
     
     res.json({
       success: true,
@@ -55,7 +57,7 @@ router.post('/upgrade', authenticateToken, async (req, res) => {
       })
     }
     
-    const validPlans = ['free', 'pro', 'football_maniac']
+    const validPlans = ['basic', 'pro']
     if (!validPlans.includes(plan)) {
       return res.status(400).json({
         success: false,
@@ -186,7 +188,7 @@ router.post('/debug/set-plan', authenticateToken, checkAdminAccess, async (req, 
       })
     }
     
-    const validPlans = ['free', 'pro', 'football_maniac']
+    const validPlans = ['basic', 'pro']
     if (!validPlans.includes(plan)) {
       return res.status(400).json({
         success: false,
@@ -271,6 +273,64 @@ router.post('/admin/check-expired', authenticateToken, checkAdminAccess, async (
     res.status(500).json({
       success: false,
       message: 'Failed to check expired memberships'
+    })
+  }
+})
+
+// Debug endpoint to sync all users' subscription tiers (admin only)
+router.post('/debug/sync-all', authenticateToken, checkAdminAccess, async (req, res) => {
+  try {
+    const User = (await import('../models/User.js')).default
+    const Membership = (await import('../models/Membership.js')).default
+    
+    // Get all users
+    const users = await User.find({})
+    let syncCount = 0
+    
+    for (const user of users) {
+      try {
+        let membership = await Membership.findOne({ user: user._id })
+        
+        if (!membership) {
+          // Create membership for users who don't have one
+          membership = new Membership({
+            user: user._id,
+            plan: user.subscriptionTier || 'basic',
+            status: 'active'
+          })
+          await membership.save()
+        }
+        
+        // Migrate 'free' to 'basic'
+        if (membership.plan === 'free') {
+          membership.plan = 'basic'
+          await membership.save()
+        }
+        
+        // Sync User model with Membership model
+        if (user.subscriptionTier !== membership.plan) {
+          user.subscriptionTier = membership.plan
+          await user.save()
+          syncCount++
+        }
+      } catch (userError) {
+        console.error(`Error syncing user ${user.username}:`, userError)
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Synced ${syncCount} users successfully`,
+      details: {
+        totalUsers: users.length,
+        syncedUsers: syncCount
+      }
+    })
+  } catch (error) {
+    console.error('Error syncing all users:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync users'
     })
   }
 })

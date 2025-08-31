@@ -14,7 +14,7 @@ class MembershipService {
       for (const user of usersWithoutMembership) {
         const existingMembership = await Membership.findOne({ user: user._id })
         if (!existingMembership) {
-          await this.createMembership(user._id, 'free')
+          await this.createMembership(user._id, 'basic')
         }
       }
     } catch (error) {
@@ -23,7 +23,7 @@ class MembershipService {
   }
 
   // Create a new membership for a user
-  async createMembership(userId, plan = 'free') {
+  async createMembership(userId, plan = 'basic') {
     try {
       // Check if membership already exists
       const existingMembership = await Membership.findOne({ user: userId })
@@ -38,6 +38,15 @@ class MembershipService {
       })
 
       await membership.save()
+
+      // Sync the User model's subscriptionTier
+      try {
+        const User = (await import('../models/User.js')).default
+        await User.findByIdAndUpdate(userId, { subscriptionTier: plan })
+      } catch (userError) {
+        console.error('Error syncing user subscription tier on creation:', userError)
+      }
+
       return membership
     } catch (error) {
       console.error('Error creating membership:', error)
@@ -59,7 +68,7 @@ class MembershipService {
         // Check if user is admin to create admin membership
         const User = (await import('../models/User.js')).default
         const user = await User.findById(userId)
-        const plan = user && user.username === 'admin' ? 'admin' : 'free'
+        const plan = user && user.username === 'admin' ? 'admin' : 'basic'
         membership = await this.createMembership(userId, plan)
         membership = await Membership.findById(membership._id).populate('user', 'username name')
       }
@@ -80,7 +89,7 @@ class MembershipService {
   // Update membership plan
   async updateMembershipPlan(userId, newPlan) {
     try {
-      const validPlans = ['free', 'pro', 'football_maniac', 'admin']
+      const validPlans = ['basic', 'pro', 'admin']
       if (!validPlans.includes(newPlan)) {
         throw new Error('Invalid membership plan')
       }
@@ -94,13 +103,21 @@ class MembershipService {
         membership.status = 'active'
         
         // Set expiration for paid plans (30 days from now)
-        if (newPlan !== 'free') {
+        if (newPlan !== 'basic') {
           membership.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         } else {
           membership.endDate = null
         }
         
         await membership.save()
+      }
+
+      // Sync the User model's subscriptionTier
+      try {
+        const User = (await import('../models/User.js')).default
+        await User.findByIdAndUpdate(userId, { subscriptionTier: newPlan })
+      } catch (userError) {
+        console.error('Error syncing user subscription tier:', userError)
       }
 
       return membership
@@ -211,8 +228,8 @@ class MembershipService {
         throw new Error('Membership not found')
       }
 
-      if (membership.plan === 'free') {
-        throw new Error('Cannot cancel free membership')
+      if (membership.plan === 'basic') {
+        throw new Error('Cannot cancel basic membership')
       }
 
       membership.status = 'cancelled'
@@ -250,16 +267,16 @@ class MembershipService {
   // Get all available plans
   getAvailablePlans() {
     return {
-      free: {
-        name: 'Free',
-        tournaments: 1,
-        worlds: 1,
+      basic: {
+        name: 'Basic',
+        tournaments: 1, // 1 standalone tournament
+        worlds: 1, // 1 world with unlimited tournaments
         canModifyStats: false,
         price: 0,
         description: 'Perfect for trying out the platform',
         features: [
-          'Create 1 tournament',
-          'Create 1 world',
+          '1 tournament separately',
+          '1 world (unlimited tournaments inside)',
           'Basic simulation features',
           'Community support'
         ],
@@ -267,36 +284,19 @@ class MembershipService {
       },
       pro: {
         name: 'Pro',
-        tournaments: 5,
-        worlds: 3,
-        canModifyStats: false,
-        price: 9.99,
-        description: 'Great for regular users who want more content',
-        features: [
-          'Create up to 5 tournaments',
-          'Create up to 3 worlds',
-          'Advanced statistics',
-          'Priority support',
-          'Historical data access'
-        ],
-        highlight: 'Most popular choice!'
-      },
-      football_maniac: {
-        name: 'Football Maniac',
         tournaments: -1, // Unlimited
         worlds: -1, // Unlimited
         canModifyStats: true,
-        price: 19.99,
-        description: 'Ultimate experience with full customization',
+        price: 7.99,
+        description: 'Unlimited access to all features',
         features: [
           'Unlimited tournaments',
-          'Unlimited worlds', 
+          'Unlimited worlds',
+          'Advanced statistics',
           'Player & stats editing',
-          'Custom team management',
-          'Export capabilities',
-          'Premium support'
+          'Priority support'
         ],
-        highlight: 'Full control & customization!'
+        highlight: 'Everything unlimited!'
       }
     }
   }
@@ -307,12 +307,12 @@ class MembershipService {
       const expiredMemberships = await Membership.find({
         endDate: { $lt: new Date() },
         status: 'active',
-        plan: { $ne: 'free' }
+        plan: { $ne: 'basic' }
       })
 
       for (const membership of expiredMemberships) {
         membership.status = 'expired'
-        membership.plan = 'free'
+        membership.plan = 'basic'
         membership.endDate = null
         membership.tournamentsCreated = 0
         membership.worldsCreated = 0

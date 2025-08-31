@@ -163,11 +163,11 @@
                   <span class="event-minute">{{ event.minute }}'</span>
                   <span v-if="event.type === 'substitution'" class="event-substitution">
                     <span class="player-out clickable-player" @click="navigateToPlayer(event.playerOut._id || event.playerOut)">
-                      {{ event.playerOut?.displayName || 'Unknown Player' }}
+                      {{ getPlayerDisplayName(event.playerOut) }}
                     </span>
                     <i class="fas fa-arrow-right substitution-arrow"></i>
                     <span class="player-in clickable-player" @click="navigateToPlayer(event.playerIn._id || event.playerIn)">
-                      {{ event.playerIn?.displayName || 'Unknown Player' }}
+                      {{ getPlayerDisplayName(event.playerIn) }}
                     </span>
                   </span>
                   <span v-else class="event-player clickable-player" @click="navigateToPlayer(event.player._id || event.player || event.playerId)">
@@ -204,11 +204,11 @@
                   <span class="event-minute">{{ event.minute }}'</span>
                   <span v-if="event.type === 'substitution'" class="event-substitution">
                     <span class="player-out clickable-player" @click="navigateToPlayer(event.playerOut._id || event.playerOut)">
-                      {{ event.playerOut?.displayName || 'Unknown Player' }}
+                      {{ getPlayerDisplayName(event.playerOut) }}
                     </span>
                     <i class="fas fa-arrow-right substitution-arrow"></i>
                     <span class="player-in clickable-player" @click="navigateToPlayer(event.playerIn._id || event.playerIn)">
-                      {{ event.playerIn?.displayName || 'Unknown Player' }}
+                      {{ getPlayerDisplayName(event.playerIn) }}
                     </span>
                   </span>
                   <span v-else class="event-player clickable-player" @click="navigateToPlayer(event.player._id || event.player || event.playerId)">
@@ -266,7 +266,7 @@
                 :class="{ 'active': activeTab === 'mvp' }"
                 class="tab-button"
               >
-                Team MVPs
+                Match MVP
               </button>
             </div>
 
@@ -387,39 +387,62 @@
               <!-- MVP Tab -->
               <div v-if="activeTab === 'mvp' && match.played" class="mvp-section">
                 <div class="mvp-container">
-                  <div class="mvp-teams">
-                    <div class="mvp-team">
-                      <h4>{{ match.homeTeam.name }} MVP</h4>
-                      <div v-if="getTeamMVP('home')" class="mvp-player">
-                        <div class="mvp-info">
-                          <span class="mvp-name">{{ getTeamMVP('home').player?.displayName || 'Unknown Player' }}</span>
-                          <span class="mvp-position">{{ getTeamMVP('home').position }}</span>
-                          <div class="mvp-rating">{{ getPlayerRating(getTeamMVP('home').player?._id) }}/10</div>
+                  <div v-if="getMatchMVP()" class="mvp-card">
+                    <div class="mvp-header">
+                      <i class="fas fa-trophy mvp-trophy"></i>
+                      <h3>Man of the Match</h3>
+                    </div>
+                    
+                    <div class="mvp-content">
+                      <div class="mvp-player-image">
+                        <div class="player-avatar">
+                          <i class="fas fa-user-circle"></i>
                         </div>
-                        <div class="mvp-stats">
-                          <span v-if="getPlayerGoalCount(getTeamMVP('home').player?._id, 'home') > 0" class="mvp-stat">
-                            ⚽ {{ getPlayerGoalCount(getTeamMVP('home').player?._id, 'home') }} Goals
-                          </span>
-                          <span class="mvp-stat">Rating: {{ getPlayerRating(getTeamMVP('home').player?._id) }}/10</span>
+                        <div class="mvp-rating-badge">
+                          <span class="rating-value">{{ getPlayerRating(getMatchMVP().player?._id) }}</span>
+                          <span class="rating-label">Rating</span>
+                        </div>
+                      </div>
+                      
+                      <div class="mvp-player-details">
+                        <h2 class="mvp-player-name clickable-player" @click="navigateToPlayer(getMatchMVP().player?._id)">
+                          {{ getMatchMVP().player?.displayName || 'Unknown Player' }}
+                        </h2>
+                        <div class="mvp-player-info">
+                          <span class="mvp-team-name">{{ getMatchMVP().teamName }}</span>
+                          <span class="mvp-separator">•</span>
+                          <span class="mvp-position">{{ getMatchMVP().position }}</span>
+                          <span class="mvp-separator">•</span>
+                          <span class="mvp-jersey">#{{ getMatchMVP().jerseyNumber }}</span>
+                        </div>
+                        
+                        <div class="mvp-performance">
+                          <div v-if="getPlayerGoalCount(getMatchMVP().player?._id, getMatchMVP().team) > 0" class="mvp-stat-item">
+                            <i class="fas fa-futbol"></i>
+                            <span>{{ getPlayerGoalCount(getMatchMVP().player?._id, getMatchMVP().team) }} {{ getPlayerGoalCount(getMatchMVP().player?._id, getMatchMVP().team) === 1 ? 'Goal' : 'Goals' }}</span>
+                          </div>
+                          <div v-if="getPlayerCardDisplay(getMatchMVP().player?._id, getMatchMVP().team)" class="mvp-stat-item">
+                            <span :class="'card-icon ' + getPlayerCardDisplay(getMatchMVP().player?._id, getMatchMVP().team).type">
+                              {{ getPlayerCardDisplay(getMatchMVP().player?._id, getMatchMVP().team).display }}
+                            </span>
+                          </div>
+                          <div v-if="getPlayerSubstitutionInfo(getMatchMVP().player?._id, getMatchMVP().team)" class="mvp-stat-item">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span v-if="getPlayerSubstitutionInfo(getMatchMVP().player?._id, getMatchMVP().team).type === 'in'">
+                              Subbed on {{ getPlayerSubstitutionInfo(getMatchMVP().player?._id, getMatchMVP().team).minute }}'
+                            </span>
+                            <span v-else>
+                              Subbed off {{ getPlayerSubstitutionInfo(getMatchMVP().player?._id, getMatchMVP().team).minute }}'
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div class="mvp-team">
-                      <h4>{{ match.awayTeam.name }} MVP</h4>
-                      <div v-if="getTeamMVP('away')" class="mvp-player">
-                        <div class="mvp-info">
-                          <span class="mvp-name">{{ getTeamMVP('away').player?.displayName || 'Unknown Player' }}</span>
-                          <span class="mvp-position">{{ getTeamMVP('away').position }}</span>
-                          <div class="mvp-rating">{{ getPlayerRating(getTeamMVP('away').player?._id) }}/10</div>
-                        </div>
-                        <div class="mvp-stats">
-                          <span v-if="getPlayerGoalCount(getTeamMVP('away').player?._id, 'away') > 0" class="mvp-stat">
-                            ⚽ {{ getPlayerGoalCount(getTeamMVP('away').player?._id, 'away') }} Goals
-                          </span>
-                          <span class="mvp-stat">Rating: {{ getPlayerRating(getTeamMVP('away').player?._id) }}/10</span>
-                        </div>
-                      </div>
-                    </div>
+                  </div>
+                  
+                  <div v-else class="no-mvp">
+                    <i class="fas fa-trophy"></i>
+                    <p>MVP data not available</p>
                   </div>
                 </div>
               </div>
@@ -459,6 +482,7 @@ export default {
       matchDetails: null,
       loading: true,
       error: '',
+      windowWidth: window.innerWidth,
       liveSimulation: {
         isRunning: false,
         currentMinute: 0,
@@ -490,10 +514,38 @@ export default {
   },
   async mounted() {
     this.username = localStorage.getItem('username') || 'User'
+    window.addEventListener('resize', this.handleResize)
     await this.loadUserProfile()
     await this.loadMatchDetails()
   },
+  
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
+    if (this.liveSimulation.timer) {
+      clearInterval(this.liveSimulation.timer)
+    }
+  },
   methods: {
+    getPlayerDisplayName(player) {
+      if (!player?.displayName) return 'Unknown'
+      
+      // Check if we're on mobile (viewport width <= 768px)
+      if (this.windowWidth <= 768) {
+        // Extract surname (last word in the name)
+        const fullName = player.displayName.trim()
+        const nameParts = fullName.split(' ')
+        const surname = nameParts[nameParts.length - 1]
+        console.log('Mobile surname extraction:', fullName, '->', surname)
+        return surname || fullName
+      }
+      
+      return player.displayName
+    },
+    
+    handleResize() {
+      this.windowWidth = window.innerWidth
+    },
+    
     getShotPercentage(team) {
       if (!this.matchDetails || !this.matchDetails.shots) return 0
       const homeShots = this.matchDetails.shots.home || 0
@@ -573,6 +625,45 @@ export default {
       })
       
       return mvp
+    },
+    
+    getMatchMVP() {
+      if (!this.matchDetails) return null
+      
+      // Get best player from both teams
+      let mvp = null
+      let highestRating = 0
+      let mvpTeam = null
+      
+      // Check home team
+      if (this.matchDetails.homeLineup) {
+        this.matchDetails.homeLineup.forEach(player => {
+          if (player.player?._id) {
+            const rating = this.getPlayerRating(player.player._id)
+            if (rating > highestRating) {
+              highestRating = rating
+              mvp = player
+              mvpTeam = 'home'
+            }
+          }
+        })
+      }
+      
+      // Check away team
+      if (this.matchDetails.awayLineup) {
+        this.matchDetails.awayLineup.forEach(player => {
+          if (player.player?._id) {
+            const rating = this.getPlayerRating(player.player._id)
+            if (rating > highestRating) {
+              highestRating = rating
+              mvp = player
+              mvpTeam = 'away'
+            }
+          }
+        })
+      }
+      
+      return mvp ? { ...mvp, team: mvpTeam, teamName: mvpTeam === 'home' ? this.match.homeTeam.name : this.match.awayTeam.name } : null
     },
 
     async loadMatchDetails() {
@@ -2636,6 +2727,33 @@ export default {
   .goal-scorer {
     font-size: 0.75rem !important;
   }
+  
+  /* Fix substitution events on small screens */
+  .event-substitution {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    font-size: 0.65rem;
+    max-width: calc(100% - 0.5rem);
+    overflow: hidden;
+  }
+  
+  .substitution-arrow {
+    font-size: 0.5rem;
+    transform: rotate(90deg);
+  }
+  
+  .player-out,
+  .player-in {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .event-item.substitution-event {
+    overflow: hidden;
+    padding-right: 0.25rem;
+  }
 }
 
 /* Match Events Section (Goals and Cards) */
@@ -2826,6 +2944,33 @@ export default {
     font-size: 0.75rem;
   }
   
+  /* Fix substitution overflow on mobile */
+  .event-substitution {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    max-width: calc(100% - 0.25rem);
+    overflow: hidden;
+  }
+  
+  .substitution-arrow {
+    font-size: 0.6rem;
+    flex-shrink: 0;
+  }
+  
+  .player-out,
+  .player-in {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+  }
+  
+  .event-item.substitution-event {
+    overflow: hidden;
+    padding-right: 0.25rem;
+  }
+  
   /* Live simulation button */
   .btn-live-sim {
     padding: 0.5rem 1rem;
@@ -2879,6 +3024,19 @@ export default {
     font-size: 0.7rem;
     margin-left: 0.25rem;
     padding: 0.1rem 0.3rem;
+  }
+  
+  /* Tab buttons on mobile */
+  .tab-navigation {
+    flex-direction: row;
+    gap: 0.25rem;
+  }
+  
+  .tab-button {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+    min-width: 0;
+    flex: 1;
   }
 }
 
@@ -3584,6 +3742,10 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tab-button:hover {
@@ -3617,89 +3779,255 @@ export default {
 }
 
 /* MVP Tab Styles */
+/* MVP Section Styles */
 .mvp-section {
   width: 100%;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .mvp-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.mvp-card {
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
   border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(0, 123, 255, 0.1);
 }
 
-.mvp-teams {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-
-.mvp-team h4 {
-  color: #333;
-  font-size: 1.2rem;
-  font-weight: var(--font-weight-bold);
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.mvp-player {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-radius: 15px;
+.mvp-header {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
   padding: 1.5rem;
-  border: 2px solid #dee2e6;
-  transition: all 0.3s ease;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
 }
 
-.mvp-player:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
-  border-color: #007bff;
+.mvp-trophy {
+  font-size: 2rem;
+  color: #ffd700;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-.mvp-info {
+.mvp-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.mvp-content {
+  padding: 2rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.mvp-player-image {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.player-avatar {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid white;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.player-avatar i {
+  font-size: 5rem;
+  color: #6c757d;
+}
+
+.mvp-rating-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 1rem;
+  justify-content: center;
+  border: 3px solid white;
+  box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
 }
 
-.mvp-name {
-  font-size: 1.1rem;
+.rating-value {
+  font-size: 1.3rem;
   font-weight: var(--font-weight-bold);
-  color: #333;
-  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.rating-label {
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.mvp-player-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.mvp-player-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.8rem;
+  font-weight: var(--font-weight-bold);
+  color: #2c3e50;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.mvp-player-name:hover {
+  color: #007bff;
+}
+
+.mvp-player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mvp-team-name {
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-semibold);
+  color: #007bff;
 }
 
 .mvp-position {
-  color: #666;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.mvp-rating {
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: var(--font-weight-bold);
   font-size: 1rem;
-}
-
-.mvp-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.mvp-stat {
-  background: rgba(0, 123, 255, 0.1);
-  color: #007bff;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  color: #6c757d;
   font-weight: var(--font-weight-medium);
+}
+
+.mvp-jersey {
+  font-size: 1rem;
+  color: #6c757d;
+  font-weight: var(--font-weight-bold);
+}
+
+.mvp-separator {
+  color: #dee2e6;
+}
+
+.mvp-performance {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.mvp-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 123, 255, 0.05);
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.mvp-stat-item i {
+  color: #007bff;
+}
+
+.no-mvp {
+  text-align: center;
+  padding: 3rem;
+  color: #6c757d;
+}
+
+.no-mvp i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Mobile Styles for MVP */
+@media (max-width: 768px) {
+  .mvp-section {
+    padding: 1rem;
+  }
+  
+  .mvp-header {
+    padding: 1rem;
+  }
+  
+  .mvp-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .mvp-trophy {
+    font-size: 1.5rem;
+  }
+  
+  .mvp-content {
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+    text-align: center;
+  }
+  
+  .player-avatar {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .player-avatar i {
+    font-size: 4rem;
+  }
+  
+  .mvp-rating-badge {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .rating-value {
+    font-size: 1.1rem;
+  }
+  
+  .mvp-player-name {
+    font-size: 1.4rem;
+    text-align: center;
+  }
+  
+  .mvp-player-info {
+    justify-content: center;
+  }
+  
+  .mvp-team-name {
+    font-size: 1rem;
+  }
+  
+  .mvp-performance {
+    justify-content: center;
+  }
+  
+  .mvp-stat-item {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
 }
 
 /* Player Rating Styles */

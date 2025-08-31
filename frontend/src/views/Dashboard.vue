@@ -4,12 +4,14 @@
       :username="username" 
       :subscription-tier="subscriptionTier"
       :user-avatar="userAvatar"
-      @logout="handleLogout" 
+      @logout="handleLogout"
+      @show-payment-modal="showPaymentModal = true"
     />
     
     <main class="main-content container">
       <WelcomeSection :username="username" />
     </main>
+    
   </div>
 </template>
 

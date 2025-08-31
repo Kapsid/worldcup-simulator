@@ -50,6 +50,16 @@
       </div>
     </form>
     
+    <!-- Register Section -->
+    <div class="divider">
+      <span>or</span>
+    </div>
+    
+    <button @click="handleSwitchToRegister" class="btn-secondary register-btn">
+      <i class="fas fa-user-plus"></i>
+      Create New Account
+    </button>
+    
     <!-- Password Reset Modal -->
     <div v-if="showResetPassword" class="modal-overlay" @click.self="showResetPassword = false">
       <div class="reset-password-modal">
@@ -164,6 +174,10 @@ export default {
       } finally {
         this.resetLoading = false
       }
+    },
+    
+    handleSwitchToRegister() {
+      this.$emit('switch-to-register')
     }
   }
 }

@@ -183,6 +183,24 @@ class UserService {
     try {
       const user = await User.findById(userId).select('-password')
       if (user) {
+        // Sync subscription tier with membership plan
+        try {
+          const MembershipService = (await import('./MembershipService.js')).default
+          const membership = await MembershipService.getMembership(userId)
+          
+          console.log(`🔄 Syncing user ${user.username}: User.subscriptionTier=${user.subscriptionTier}, Membership.plan=${membership?.plan}`)
+          
+          // Update user's subscriptionTier to match membership plan
+          if (membership && user.subscriptionTier !== membership.plan) {
+            console.log(`🔧 Updating user ${user.username} subscriptionTier from ${user.subscriptionTier} to ${membership.plan}`)
+            user.subscriptionTier = membership.plan
+            await user.save()
+          }
+        } catch (membershipError) {
+          console.error('Error syncing membership:', membershipError)
+          // Continue with original user data if membership sync fails
+        }
+
         // Convert to plain object to ensure all fields are included
         const userObj = user.toObject()
         const profile = {

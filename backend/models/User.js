@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   },
   subscriptionTier: {
     type: String,
-    enum: ['basic', 'pro', 'football_maniac'],
+    enum: ['basic', 'pro'],
     default: 'basic'
   },
   subscriptionStatus: {
@@ -35,8 +35,21 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'cancelled'],
     default: 'active'
   },
+  subscriptionPrice: {
+    type: Number,
+    default: 0 // 0 for basic, 7.99 for pro
+  },
   subscriptionExpiresAt: {
     type: Date
+  },
+  // Limitations tracking
+  tournamentCount: {
+    type: Number,
+    default: 0
+  },
+  worldCount: {
+    type: Number,
+    default: 0
   },
   avatar: {
     type: {

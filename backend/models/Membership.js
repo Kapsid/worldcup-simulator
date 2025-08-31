@@ -9,8 +9,8 @@ const membershipSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['free', 'pro', 'football_maniac', 'admin'],
-    default: 'free',
+    enum: ['basic', 'pro', 'admin'],
+    default: 'basic',
     required: true
   },
   status: {
@@ -91,11 +91,9 @@ membershipSchema.methods.canCreateTournament = async function() {
   });
   
   switch (this.plan) {
-    case 'free':
+    case 'basic':
       return standaloneTournamentCount < 1;
     case 'pro':
-      return standaloneTournamentCount < 5;
-    case 'football_maniac':
     case 'admin':
       return true; // Unlimited
     default:
@@ -113,11 +111,9 @@ membershipSchema.methods.canCreateWorld = function() {
   if (!this.isActive) return false;
   
   switch (this.plan) {
-    case 'free':
+    case 'basic':
       return this.worldsCreated < 1;
     case 'pro':
-      return this.worldsCreated < 3;
-    case 'football_maniac':
     case 'admin':
       return true; // Unlimited
     default:
@@ -132,32 +128,25 @@ membershipSchema.methods.canModifyStats = function() {
     return true;
   }
   
-  return this.isActive && (this.plan === 'football_maniac' || this.plan === 'admin');
+  return this.isActive && (this.plan === 'pro' || this.plan === 'admin');
 };
 
 // Method to get plan limits
 membershipSchema.methods.getPlanLimits = function() {
   const plans = {
-    free: {
-      tournaments: 1,
-      worlds: 1,
+    basic: {
+      tournaments: 1, // 1 standalone tournament
+      worlds: 1, // 1 world with unlimited tournaments
       canModifyStats: false,
       price: 0,
-      name: 'Free'
+      name: 'Basic'
     },
     pro: {
-      tournaments: 5,
-      worlds: 3,
-      canModifyStats: false,
-      price: 9.99,
-      name: 'Pro'
-    },
-    football_maniac: {
       tournaments: -1, // Unlimited
       worlds: -1, // Unlimited
       canModifyStats: true,
-      price: 19.99,
-      name: 'Football Maniac'
+      price: 7.99,
+      name: 'Pro'
     },
     admin: {
       tournaments: -1, // Unlimited
@@ -168,7 +157,7 @@ membershipSchema.methods.getPlanLimits = function() {
     }
   };
   
-  return plans[this.plan] || plans.free;
+  return plans[this.plan] || plans.basic;
 };
 
 // Method to increment usage counters

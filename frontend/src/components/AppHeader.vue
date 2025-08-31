@@ -43,7 +43,24 @@
             <span class="username">{{ username }}</span>
             <span class="user-role">{{ formatSubscriptionTier(subscriptionTier) }}</span>
           </div>
+          <div class="membership-badge" :class="`badge-${subscriptionTier}`">
+            <i v-if="subscriptionTier === 'pro'" class="fas fa-crown"></i>
+            <i v-else class="fas fa-user"></i>
+          </div>
         </div>
+        
+        <!-- Upgrade Button for Basic Users -->
+        <button 
+          v-if="subscriptionTier === 'basic'" 
+          @click="goToUpgrade" 
+          class="upgrade-btn"
+          title="Upgrade to Pro"
+        >
+          <i class="fas fa-crown"></i>
+          <span class="desktop-text">Upgrade to Pro</span>
+          <span class="mobile-text">Pro</span>
+        </button>
+        
         <button @click="handleLogout" class="logout-btn">
           <i class="fas fa-sign-out-alt"></i>
           <span>Sign Out</span>
@@ -108,11 +125,13 @@ export default {
     goToProfile() {
       this.$router.push('/profile')
     },
+    goToUpgrade() {
+      this.$emit('show-payment-modal')
+    },
     formatSubscriptionTier(tier) {
       const tierNames = {
         'basic': 'Basic',
-        'pro': 'Pro',
-        'football_maniac': 'Football Maniac'
+        'pro': 'Pro'
       }
       return tierNames[tier] || tier
     },
@@ -297,6 +316,33 @@ export default {
   transform: translateY(-1px);
 }
 
+.membership-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.badge-basic {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+
+.badge-pro {
+  background: linear-gradient(135deg, #ffd700, #ffed4a);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.membership-badge i {
+  font-size: 0.8rem;
+}
+
 .user-avatar {
   width: 40px;
   height: 40px;
@@ -361,6 +407,86 @@ export default {
   transform: translateY(-1px);
 }
 
+/* Upgrade Button Styles */
+.upgrade-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #FF6B35, #F7931E, #FFD700);
+  background-size: 200% 200%;
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.4s ease;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.95rem;
+  text-decoration: none;
+  margin-right: 12px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+  animation: header-pulse 3s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes header-pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+    background-position: 0% 50%;
+  }
+  100% {
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+    background-position: 100% 50%;
+  }
+}
+
+.upgrade-btn:hover {
+  background: linear-gradient(135deg, #FF8A65, #FFB74D, #FFF176);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.5);
+  animation: none;
+}
+
+.upgrade-btn:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.upgrade-btn i {
+  font-size: 1rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.upgrade-btn::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  background: linear-gradient(45deg, #FF6B35, #F7931E, #FFD700, #FF6B35);
+  background-size: 300% 300%;
+  border-radius: var(--radius-lg);
+  z-index: -1;
+  animation: header-gradient-border 2.5s ease infinite;
+  opacity: 0.6;
+}
+
+@keyframes header-gradient-border {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.upgrade-btn .desktop-text {
+  display: inline;
+}
+
+.upgrade-btn .mobile-text {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .desktop-nav {
     display: none;
@@ -397,6 +523,25 @@ export default {
   
   .logout-btn span {
     display: inline;
+  }
+  
+  /* Mobile upgrade button styles */
+  .upgrade-btn .desktop-text {
+    display: none;
+  }
+  
+  .upgrade-btn .mobile-text {
+    display: inline;
+  }
+  
+  .upgrade-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    gap: 6px;
+  }
+  
+  .upgrade-btn i {
+    font-size: 0.9rem;
   }
 }
 </style>

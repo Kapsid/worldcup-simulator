@@ -2,9 +2,10 @@
   <div class="profile">
     <AppHeader 
       :username="username" 
-      :subscription-tier="user.subscriptionTier || 'basic'"
+      :subscription-tier="membershipStatus?.plan || user.subscriptionTier || 'basic'"
       :user-avatar="user.avatar"
-      @logout="handleLogout" 
+      @logout="handleLogout"
+      @show-payment-modal="showPaymentModal = true"
     />
     
     <main class="main-content">
@@ -37,8 +38,8 @@
                 <h1>{{ user.name }}</h1>
                 <p class="username">@{{ user.username }}</p>
                 <div class="subscription-badge">
-                  <span :class="`tier-badge tier-${user.subscriptionTier || 'basic'}`">
-                    {{ formatSubscriptionTier(user.subscriptionTier) }}
+                  <span :class="`tier-badge tier-${membershipStatus?.plan || user.subscriptionTier || 'basic'}`">
+                    {{ formatSubscriptionTier(membershipStatus?.plan || user.subscriptionTier) }}
                   </span>
                 </div>
               </div>
@@ -173,6 +174,150 @@
                 </div>
               </div>
               
+              <!-- User Statistics -->
+              <div class="section-card glass-white full-width">
+                <div class="section-header">
+                  <h3>Your Statistics</h3>
+                  <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="section-content">
+                  <div v-if="loadingStats" class="loading-stats">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading your amazing stats...</span>
+                  </div>
+                  
+                  <div v-else-if="userStats" class="stats-container">
+                    <!-- Overview Stats Grid -->
+                    <div class="stats-grid">
+                      <div class="stat-card primary">
+                        <div class="stat-icon">
+                          <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-content">
+                          <div class="stat-number">{{ userStats.totalTournamentsIncludingWorlds || 0 }}</div>
+                          <div class="stat-label">Total Tournaments</div>
+                        </div>
+                      </div>
+                      
+                      <div class="stat-card secondary">
+                        <div class="stat-icon">
+                          <i class="fas fa-gamepad"></i>
+                        </div>
+                        <div class="stat-content">
+                          <div class="stat-number">{{ userStats.totalMatches || 0 }}</div>
+                          <div class="stat-label">Matches Simulated</div>
+                        </div>
+                      </div>
+                      
+                      <div class="stat-card success">
+                        <div class="stat-icon">
+                          <i class="fas fa-futbol"></i>
+                        </div>
+                        <div class="stat-content">
+                          <div class="stat-number">{{ userStats.totalGoals || 0 }}</div>
+                          <div class="stat-label">Goals Witnessed</div>
+                        </div>
+                      </div>
+                      
+                      <div class="stat-card warning">
+                        <div class="stat-icon">
+                          <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="stat-content">
+                          <div class="stat-number">{{ userStats.worldsCreated || 0 }}</div>
+                          <div class="stat-label">Worlds Created</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Achievement Stats -->
+                    <div class="detailed-stats">
+                      <div class="stat-row">
+                        <div class="stat-item">
+                          <i class="fas fa-clock"></i>
+                          <span class="stat-title">Total Playtime</span>
+                          <span class="stat-value">{{ formatPlaytime(userStats.totalPlaytime) }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                          <i class="fas fa-fire"></i>
+                          <span class="stat-title">Biggest Win</span>
+                          <span class="stat-value">{{ userStats.biggestWin?.homeScore || 0 }}-{{ userStats.biggestWin?.awayScore || 0 }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                          <i class="fas fa-star"></i>
+                          <span class="stat-title">Most Goals (Match)</span>
+                          <span class="stat-value">{{ userStats.mostGoalsInMatch || 0 }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                          <i class="fas fa-chart-line"></i>
+                          <span class="stat-title">Avg Goals/Match</span>
+                          <span class="stat-value">{{ userStats.averageGoalsPerMatch || 0 }}</span>
+                        </div>
+                      </div>
+                      
+                      <div class="stat-row">
+                        <div class="stat-item">
+                          <i class="fas fa-check-circle"></i>
+                          <span class="stat-title">Completed</span>
+                          <span class="stat-value">{{ userStats.completedTournaments || 0 }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                          <i class="fas fa-play"></i>
+                          <span class="stat-title">Active</span>
+                          <span class="stat-value">{{ userStats.activeTournaments || 0 }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                          <i class="fas fa-calendar"></i>
+                          <span class="stat-title">Account Age</span>
+                          <span class="stat-value">{{ userStats.accountAge || 0 }} days</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                          <i class="fas fa-square"></i>
+                          <span class="stat-title">Total Cards</span>
+                          <span class="stat-value">{{ userStats.totalCards || 0 }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Achievements Section - Hidden for now -->
+                    <!-- <div v-if="userStats.achievements && userStats.achievements.length > 0" class="achievements-section">
+                      <h4>🏆 Achievements ({{ userStats.achievements.length }})</h4>
+                      <div class="achievements-grid">
+                        <div 
+                          v-for="achievement in userStats.achievements" 
+                          :key="achievement.id"
+                          class="achievement-card"
+                          :class="{ 'unlocked': achievement.unlocked }"
+                        >
+                          <div class="achievement-icon" :style="{ color: achievement.color }">
+                            <i :class="achievement.icon"></i>
+                          </div>
+                          <div class="achievement-content">
+                            <div class="achievement-name">{{ achievement.name }}</div>
+                            <div class="achievement-description">{{ achievement.description }}</div>
+                          </div>
+                          <div v-if="achievement.unlocked" class="achievement-badge">
+                            <i class="fas fa-check"></i>
+                          </div>
+                        </div>
+                      </div>
+                    </div> -->
+                  </div>
+                  
+                  <div v-else class="stats-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Unable to load statistics</span>
+                    <button @click="loadUserStats" class="btn-retry">Retry</button>
+                  </div>
+                </div>
+              </div>
+              
               <!-- Subscription Settings -->
               <div class="section-card glass-white full-width">
                 <div class="section-header">
@@ -184,17 +329,66 @@
                     <div class="subscription-info">
                       <h4>Current Plan</h4>
                       <div class="plan-display">
-                        <span :class="`tier-badge tier-${membershipStatus?.plan || 'free'}`">
-                          {{ membershipStatus?.limits?.name || 'Free' }}
+                        <span :class="`tier-badge tier-${membershipStatus?.plan || 'basic'}`">
+                          {{ membershipStatus?.limits?.name || 'Basic' }}
                         </span>
                         <span class="plan-price">
-                          {{ membershipStatus?.limits?.price === 0 ? 'Free' : '$' + (membershipStatus?.limits?.price || 0) + '/month' }}
+                          {{ membershipStatus?.limits?.price === 0 ? 'Free' : '€' + (membershipStatus?.limits?.price || 0) + '/month' }}
                         </span>
                       </div>
                       <p v-if="membershipStatus?.endDate" class="expiration-info">
                         Expires on {{ formatDate(membershipStatus.endDate) }}
                       </p>
                     </div>
+                    
+                    <!-- Upgrade Call-to-Action for Basic Users -->
+                    <div v-if="(membershipStatus?.plan || 'basic') === 'basic'" class="upgrade-cta">
+                      <div class="upgrade-header">
+                        <i class="fas fa-rocket"></i>
+                        <h4>Unlock Your Full Potential!</h4>
+                      </div>
+                      <p class="upgrade-description">
+                        Ready to create unlimited tournaments and worlds? Upgrade to Pro for just €7.99/month!
+                      </p>
+                      <div class="upgrade-benefits">
+                        <div class="benefit-item">
+                          <i class="fas fa-trophy"></i>
+                          <span>Unlimited tournaments</span>
+                        </div>
+                        <div class="benefit-item">
+                          <i class="fas fa-globe"></i>
+                          <span>Unlimited worlds</span>
+                        </div>
+                        <div class="benefit-item">
+                          <i class="fas fa-edit"></i>
+                          <span>Player & stats editing</span>
+                        </div>
+                        <div class="benefit-item">
+                          <i class="fas fa-chart-line"></i>
+                          <span>Advanced analytics</span>
+                        </div>
+                      </div>
+                      <button 
+                        @click="upgradeNow"
+                        class="btn-upgrade"
+                      >
+                        <i class="fas fa-crown"></i>
+                        Upgrade to Pro Now - €7.99/month
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Debug Controls for Pro Users -->
+                  <div v-if="(membershipStatus?.plan || 'basic') === 'pro'" class="debug-section">
+                    <h4>🛠️ Debug Controls</h4>
+                    <p class="debug-description">Testing tools - downgrade to Basic to test upgrade flow</p>
+                    <button 
+                      @click="debugDowngrade"
+                      class="btn-debug-downgrade"
+                    >
+                      <i class="fas fa-arrow-down"></i>
+                      Debug: Downgrade to Basic
+                    </button>
                   </div>
                   
                   <!-- Membership Status -->
@@ -237,14 +431,13 @@
                         :key="planKey"
                         class="tier-card"
                         :class="{ 
-                          'current': planKey === (membershipStatus?.plan || 'free'),
-                          'premium': planKey === 'football_maniac'
+                          'current': planKey === (membershipStatus?.plan || 'basic')
                         }"
                       >
                         <div class="tier-header">
                           <h5>{{ plan.name }}</h5>
                           <div class="tier-price">
-                            <span class="price">${{ plan.price }}</span>
+                            <span class="price">{{ plan.price === 0 ? 'Free' : '€' + plan.price }}</span>
                             <span class="interval">{{ plan.price > 0 ? '/month' : '' }}</span>
                           </div>
                         </div>
@@ -263,7 +456,7 @@
                         </div>
                         <div class="tier-actions">
                           <button 
-                            v-if="planKey !== (membershipStatus?.plan || 'free')"
+                            v-if="planKey !== (membershipStatus?.plan || 'basic')"
                             @click="updateMembershipPlan(planKey)"
                             :disabled="updatingSubscription"
                             class="btn-primary tier-btn"
@@ -286,17 +479,17 @@
                   <div v-if="isAdmin" class="debug-controls">
                     <h4>Debug Controls</h4>
                     <div class="debug-buttons">
-                      <button @click="debugSetPlan('free')" class="btn-secondary debug-btn">
-                        Set Free Plan
+                      <button @click="debugSetPlan('basic')" class="btn-secondary debug-btn">
+                        Set Basic Plan
                       </button>
                       <button @click="debugSetPlan('pro')" class="btn-secondary debug-btn">
                         Set Pro Plan
                       </button>
-                      <button @click="debugSetPlan('football_maniac')" class="btn-secondary debug-btn">
-                        Set Football Maniac
-                      </button>
                       <button @click="debugResetUsage()" class="btn-secondary debug-btn">
                         Reset Usage Counters
+                      </button>
+                      <button @click="debugSyncData()" class="btn-secondary debug-btn">
+                        Sync User Data
                       </button>
                     </div>
                   </div>
@@ -395,17 +588,27 @@
         <p v-if="avatarError" class="error-message">{{ avatarError }}</p>
       </div>
     </div>
+    
+    <!-- Payment Modal -->
+    <PaymentModal 
+      :show="showPaymentModal" 
+      @close="showPaymentModal = false"
+      @payment-success="handlePaymentSuccess"
+    />
+    
   </div>
 </template>
 
 <script>
 import AppHeader from '../components/AppHeader.vue'
+import PaymentModal from '../components/PaymentModal.vue'
 import { API_URL, API_BASE_URL } from '../config/api.js'
 
 export default {
   name: 'Profile',
   components: {
-    AppHeader
+    AppHeader,
+    PaymentModal
   },
   data() {
     return {
@@ -443,6 +646,9 @@ export default {
       uploadPreview: null,
       updatingAvatar: false,
       avatarError: '',
+      showPaymentModal: false,
+      userStats: null,
+      loadingStats: false,
       predefinedAvatars: [
         { id: 1, icon: 'fas fa-user-astronaut', color: '#0066CC' },
         { id: 2, icon: 'fas fa-user-ninja', color: '#2E7D32' },
@@ -470,6 +676,7 @@ export default {
     }
     
     this.loadProfileData()
+    this.loadUserStats()
   },
   methods: {
     async loadProfileData() {
@@ -482,7 +689,9 @@ export default {
         ])
         console.log('📊 Profile data loaded:', {
           user: this.user,
+          'user.subscriptionTier': this.user?.subscriptionTier,
           membershipStatus: this.membershipStatus,
+          'membershipStatus.plan': this.membershipStatus?.plan,
           availablePlans: this.availablePlans,
           isAdmin: this.isAdmin
         })
@@ -673,6 +882,66 @@ export default {
       }
     },
     
+    upgradeNow() {
+      this.showPaymentModal = true
+    },
+    
+    async handlePaymentSuccess() {
+      // Refresh membership status after successful payment
+      await this.loadMembershipStatus()
+      
+      // Show success message
+      this.subscriptionSuccess = 'Successfully upgraded to Pro! Welcome to unlimited tournaments and worlds!'
+      this.subscriptionError = ''
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        this.subscriptionSuccess = ''
+      }, 5000)
+    },
+    
+    async loadUserStats() {
+      this.loadingStats = true
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`${API_URL}/stats/user`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok) {
+          this.userStats = data.data
+        } else {
+          console.error('Error loading user stats:', data.message)
+        }
+      } catch (error) {
+        console.error('Error loading user stats:', error)
+      } finally {
+        this.loadingStats = false
+      }
+    },
+    
+    formatPlaytime(minutes) {
+      if (!minutes || minutes === 0) return '0min'
+      
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      
+      if (hours > 0) {
+        return `${hours}h ${mins}min`
+      } else {
+        return `${mins}min`
+      }
+    },
+    
+    debugDowngrade() {
+      this.updateMembershipPlan('basic')
+    },
+    
     async updateMembershipPlan(plan) {
       this.updatingSubscription = true
       this.subscriptionError = ''
@@ -761,6 +1030,30 @@ export default {
       }
     },
 
+    async debugSyncData() {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`${API_URL}/membership/debug/sync-all`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok) {
+          this.subscriptionSuccess = data.message
+          await this.loadProfileData() // Reload all data
+        } else {
+          this.subscriptionError = data.message || 'Failed to sync data'
+        }
+      } catch (error) {
+        this.subscriptionError = 'Network error. Please try again.'
+      }
+    },
+
     getTournamentUsagePercentage() {
       if (!this.membershipStatus) return 0
       if (this.membershipStatus.limits.tournaments === -1) return 0 // Unlimited
@@ -782,8 +1075,7 @@ export default {
     formatSubscriptionTier(tier) {
       const tierNames = {
         'basic': 'Basic',
-        'pro': 'Pro',
-        'football_maniac': 'Football Maniac'
+        'pro': 'Pro'
       }
       return tierNames[tier] || tier
     },
@@ -793,7 +1085,7 @@ export default {
       if (!tierData) return ''
       
       if (tierData.price === 0) return 'Free'
-      return `$${tierData.price}/month`
+      return `€${tierData.price}/month`
     },
     
     formatDate(dateString) {
@@ -1066,15 +1358,6 @@ export default {
   color: #007bff;
 }
 
-.tier-badge.tier-football_maniac {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-}
-
-.tier-badge.tier-free {
-  background: rgba(108, 117, 125, 0.2);
-  color: #6c757d;
-}
 
 .profile-sections {
   margin-top: 24px;
@@ -1179,6 +1462,517 @@ export default {
   color: var(--gray);
   font-size: 0.9rem;
   margin: 0;
+}
+
+/* Upgrade CTA Styles */
+.upgrade-cta {
+  background: linear-gradient(135deg, var(--fifa-blue), var(--fifa-light-blue));
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-top: 20px;
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.upgrade-cta::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.upgrade-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.upgrade-header i {
+  font-size: 1.5rem;
+  color: var(--fifa-yellow);
+}
+
+.upgrade-header h4 {
+  color: white;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.upgrade-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.upgrade-benefits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+}
+
+.benefit-item i {
+  color: var(--fifa-yellow);
+  font-size: 0.9rem;
+}
+
+.btn-upgrade {
+  background: linear-gradient(135deg, #FF6B35, #F7931E, #FFD700);
+  background-size: 200% 200%;
+  color: white;
+  border: none;
+  padding: 18px 36px;
+  border-radius: var(--radius-xl);
+  font-weight: var(--font-weight-bold);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-transform: none;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+  min-width: 300px;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+    background-position: 0% 50%;
+  }
+  100% {
+    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.6);
+    background-position: 100% 50%;
+  }
+}
+
+.btn-upgrade:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(255, 107, 53, 0.5);
+  animation: none;
+  background: linear-gradient(135deg, #FF8A65, #FFB74D, #FFF176);
+}
+
+.btn-upgrade:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+.btn-upgrade i {
+  font-size: 1.4rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.btn-upgrade::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #FF6B35, #F7931E, #FFD700, #FF6B35);
+  background-size: 400% 400%;
+  border-radius: var(--radius-xl);
+  z-index: -1;
+  animation: gradient-border 3s ease infinite;
+  opacity: 0.7;
+}
+
+@keyframes gradient-border {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Debug Section Styles */
+.debug-section {
+  background: rgba(255, 152, 0, 0.1);
+  border: 2px dashed rgba(255, 152, 0, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.debug-section h4 {
+  color: #ff9800;
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.debug-description {
+  color: rgba(255, 152, 0, 0.8);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.btn-debug-downgrade {
+  background: #ff9800;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.btn-debug-downgrade:hover {
+  background: #f57c00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.btn-debug-downgrade i {
+  font-size: 0.9rem;
+}
+
+/* Statistics Section Styles */
+.loading-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  color: var(--gray);
+  font-size: 1.1rem;
+}
+
+.loading-stats i {
+  font-size: 1.5rem;
+  color: var(--fifa-blue);
+}
+
+.stats-container {
+  padding: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: white;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--fifa-blue);
+  transition: all 0.3s ease;
+}
+
+.stat-card.primary::before { background: linear-gradient(135deg, #4CAF50, #66BB6A); }
+.stat-card.secondary::before { background: linear-gradient(135deg, #2196F3, #42A5F5); }
+.stat-card.success::before { background: linear-gradient(135deg, #FF9800, #FFB74D); }
+.stat-card.warning::before { background: linear-gradient(135deg, #9C27B0, #BA68C8); }
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card:hover::before {
+  height: 6px;
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.stat-card.primary .stat-icon { background: linear-gradient(135deg, #4CAF50, #66BB6A); }
+.stat-card.secondary .stat-icon { background: linear-gradient(135deg, #2196F3, #42A5F5); }
+.stat-card.success .stat-icon { background: linear-gradient(135deg, #FF9800, #FFB74D); }
+.stat-card.warning .stat-icon { background: linear-gradient(135deg, #9C27B0, #BA68C8); }
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--gray);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.detailed-stats {
+  background: rgba(0, 102, 204, 0.05);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--fifa-blue);
+}
+
+.stat-item i {
+  font-size: 1.2rem;
+  color: var(--fifa-blue);
+  width: 20px;
+  text-align: center;
+}
+
+.stat-title {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+  color: var(--fifa-dark-blue);
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  font-size: 1.1rem;
+}
+
+.achievements-section {
+  margin-top: 30px;
+}
+
+.achievements-section h4 {
+  color: var(--fifa-dark-blue);
+  font-size: 1.3rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.achievement-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 2px solid #e0e6ed;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.achievement-card.unlocked {
+  border-color: var(--fifa-gold);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.achievement-content {
+  flex: 1;
+}
+
+.achievement-name {
+  font-weight: var(--font-weight-bold);
+  color: var(--fifa-dark-blue);
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.achievement-description {
+  color: var(--gray);
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.achievement-badge {
+  width: 24px;
+  height: 24px;
+  background: var(--fifa-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.stats-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px;
+  color: var(--gray);
+  text-align: center;
+}
+
+.stats-error i {
+  font-size: 2rem;
+  color: #ff6b6b;
+}
+
+.btn-retry {
+  background: var(--fifa-blue);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-retry:hover {
+  background: var(--fifa-dark-blue);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .stat-label {
+    font-size: 0.8rem;
+  }
+  
+  .detailed-stats {
+    padding: 16px;
+  }
+  
+  .stat-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .stat-item {
+    padding: 10px 12px;
+  }
+  
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .achievement-card {
+    padding: 12px;
+  }
 }
 
 .subscription-tiers h4 {
@@ -1354,10 +2148,6 @@ export default {
   font-size: 0.9rem;
 }
 
-.tier-card.premium {
-  border-color: #ffc107;
-  background: rgba(255, 193, 7, 0.05);
-}
 
 .tier-features li {
   display: flex;

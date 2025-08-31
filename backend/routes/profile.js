@@ -148,25 +148,28 @@ router.get('/subscription-tiers', (req, res) => {
       id: 'basic',
       name: 'Basic',
       price: 0,
-      currency: 'USD',
+      currency: 'EUR',
       interval: 'forever',
-      features: []
+      features: [
+        '1 tournament separately',
+        '1 world (unlimited tournaments inside)',
+        'Basic simulation features',
+        'Community support'
+      ]
     },
     {
       id: 'pro',
       name: 'Pro',
-      price: 5,
-      currency: 'USD',
+      price: 7.99,
+      currency: 'EUR',
       interval: 'month',
-      features: []
-    },
-    {
-      id: 'football_maniac',
-      name: 'Football Maniac',
-      price: 10,
-      currency: 'USD',
-      interval: 'month',
-      features: []
+      features: [
+        'Unlimited tournaments',
+        'Unlimited worlds',
+        'Advanced statistics',
+        'Player & stats editing',
+        'Priority support'
+      ]
     }
   ]
 
